@@ -33,7 +33,7 @@
       </div>
     </div>
 
-    <!-- Search/Filter (Opsional buat ke depannya) -->
+    <!-- Search/Filter -->
     <div class="px-5 mb-4">
         <input type="text" id="search-murid" placeholder="Cari nama atlet..." 
             class="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
@@ -75,35 +75,30 @@
           return;
         }
 
-        // Mapping layout EXACTLY seperti Jago Renang (siswa.js)
         container.innerHTML = data.map(siswa => {
-          // Format Tanggal (YYYY-MM-DD ke DD/MM/YYYY)
           let tglIndo = siswa.tanggal_lahir ? siswa.tanggal_lahir.split('-').reverse().join('/') : '-';
           
-          // Rapihin nomor WA (Mastiin format 62 buat link)
-          let waClean = siswa.no_wa ? siswa.no_wa.replace(/\\D/g, '') : '';
+          let waClean = siswa.no_wa ? siswa.no_wa.replace(/\D/g, '') : '';
           if (waClean.startsWith('0')) waClean = '62' + waClean.substring(1);
-          let linkWA = waClean ? \`https://wa.me/\${waClean}\` : '#';
+          let linkWA = waClean ? `https://wa.me/${waClean}` : '#';
 
-          return \`
+          return `
             <div class="siswa-item flex justify-between items-center bg-white border border-slate-200 rounded-xl p-3.5 mb-3 shadow-[0_2px_4px_rgba(0,0,0,0.02)] box-border">
                 
-                <!-- KIRI: Informasi Detail -->
                 <div class="flex-1 pr-4 min-w-0">
                     <div class="flex items-center gap-1.5 flex-wrap mb-1">
-                        <strong class="nama-siswa text-sky-600 text-[15px] font-bold break-words uppercase">\${siswa.nama_lengkap}</strong> 
+                        <strong class="nama-siswa text-sky-600 text-[15px] font-bold break-words uppercase">${siswa.nama_lengkap}</strong> 
                         <span class="bg-emerald-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap">Aktif</span>
                     </div>
                     <div class="text-[12px] text-slate-700 leading-relaxed">
-                        <span>📅 Lahir: \${tglIndo} | <b class="text-sky-600">\${siswa.kelompok_umur}</b></span><br>
+                        <span>📅 Lahir: ${tglIndo} | <b class="text-sky-600">${siswa.kelompok_umur}</b></span><br>
                         <span class="text-sky-700 font-bold">🏊 Program Reguler Dynamic</span><br>
-                        <span class="text-amber-500 text-[11px] font-bold">📱 WA: \${siswa.no_wa || '-'}</span>
+                        <span class="text-amber-500 text-[11px] font-bold">📱 WA: ${siswa.no_wa || '-'}</span>
                     </div>
                 </div>
 
-                <!-- KANAN: Tombol Aksi -->
                 <div class="flex flex-col gap-1.5 w-[110px] shrink-0 box-border">
-                    <a href="\${linkWA}" target="_blank" class="flex items-center justify-center gap-1 h-8 text-[11px] bg-emerald-500 text-white rounded-md font-bold w-full transition-colors active:scale-95">
+                    <a href="${linkWA}" target="_blank" class="flex items-center justify-center gap-1 h-8 text-[11px] bg-emerald-500 text-white rounded-md font-bold w-full transition-colors active:scale-95">
                         💬 Chat WA
                     </a>
                     <button class="flex items-center justify-center gap-1 h-8 text-[11px] bg-amber-500 text-white rounded-md font-bold w-full transition-colors active:scale-95">
@@ -112,22 +107,20 @@
                 </div>
 
             </div>
-          \`;
+          `;
         }).join('');
 
       } catch (err) {
-        container.innerHTML = \`
+        container.innerHTML = `
           <div class="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 text-sm font-semibold">
-            Gagal memuat data: \${err.message}
+            Gagal memuat data: ${err.message}
           </div>
-        \`;
+        `;
       }
     }
 
-    // Eksekusi load data
     fetchSiswa();
 
-    // Fungsi Filter/Search (di-export ke window biar bisa dipanggil dari input HTML)
     window.filterSiswa = function() {
         const input = document.getElementById('search-murid').value.toLowerCase();
         const items = document.querySelectorAll('.siswa-item');
