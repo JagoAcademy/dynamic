@@ -46,14 +46,14 @@
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-500 mb-1">KELOMPOK UMUR</label>
-            <select id="s_ku" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
-              <!-- PERBAIKAN DI SINI: Menggunakan &lt; agar tidak error HTML -->
-              <option value="KU V (Di bawah 8 th)">KU V (&lt; 8 Thn)</option>
-              <option value="KU IV (8-9 th)">KU IV (8-9 Thn)</option>
-              <option value="KU III (10-11 th)">KU III (10-11 Thn)</option>
-              <option value="KU II (12-13 th)">KU II (12-13 Thn)</option>
-              <option value="KU I (14-15 th)">KU I (14-15 Thn)</option>
-              <option value="Senior (>15 th)">Senior (> 15 Thn)</option>
+            <select id="s_ku" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-colors">
+              <option value="Pra-KU (< 8 th)">Pra-KU (&lt; 8 Thn)</option>
+              <option value="KU V (8-9 th)">KU V (8-9 Thn)</option>
+              <option value="KU IV (10-11 th)">KU IV (10-11 Thn)</option>
+              <option value="KU III (12-13 th)">KU III (12-13 Thn)</option>
+              <option value="KU II (14-15 th)">KU II (14-15 Thn)</option>
+              <option value="KU I (16 th)">KU I (16 Thn)</option>
+              <option value="Senior (17+ th)">Senior (17+ Thn)</option>
             </select>
           </div>
         </div>
@@ -131,7 +131,7 @@
       document.getElementById('welcomeText').innerText = `Semangat melatih, Coach ${localStorage.getItem('coach_name')}!`;
     }
 
-    // 2. Fungsi Logout (di-export ke window biar bisa dipanggil dari HTML)
+    // 2. Fungsi Logout
     window.logout = function() {
       localStorage.clear();
       window.location.href = 'login.html';
@@ -151,6 +151,40 @@
       
       document.getElementById(`tab-${tabName}`).classList.add('tab-active');
     }
+
+    // ========================================================
+    // AUTO-HITUNG KELOMPOK UMUR (KU) UPDATE
+    // ========================================================
+    document.getElementById('s_tgl').addEventListener('change', function() {
+      const tglLahir = this.value;
+      if (!tglLahir) return;
+      
+      const birthDate = new Date(tglLahir);
+      const today = new Date();
+      
+      // Hitung umur secara presisi
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+      }
+      
+      // Target elemen select KU
+      const selectKu = document.getElementById('s_ku');
+      
+      // Logika Penentuan KU Baru sesuai request
+      if (age < 8) selectKu.value = "Pra-KU (< 8 th)";
+      else if (age <= 9) selectKu.value = "KU V (8-9 th)";
+      else if (age <= 11) selectKu.value = "KU IV (10-11 th)";
+      else if (age <= 13) selectKu.value = "KU III (12-13 th)";
+      else if (age <= 15) selectKu.value = "KU II (14-15 th)";
+      else if (age <= 16) selectKu.value = "KU I (16 th)";
+      else selectKu.value = "Senior (17+ th)";
+      
+      // Kasih efek visual sedikit biar kelihatan kalau otomatis terganti
+      selectKu.classList.add('bg-blue-50', 'border-blue-300');
+      setTimeout(() => selectKu.classList.remove('bg-blue-50', 'border-blue-300'), 1000);
+    });
 
     // 4. Submit Form: Master Siswa
     document.getElementById('formSiswa').addEventListener('submit', async (e) => {
