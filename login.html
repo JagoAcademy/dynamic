@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login Coach - Dynamic Club</title>
+  <title>Login Portal - Dynamic Club</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -19,7 +19,6 @@
     
     <!-- Header Login -->
     <div class="bg-gradient-to-br from-blue-800 to-blue-600 p-8 text-center relative overflow-hidden">
-      <!-- Watermark Logo -->
       <div class="absolute top-[-20px] right-[-20px] w-40 h-40 transform rotate-12 pointer-events-none">
         <img src="/images/logo.png" class="w-full h-full object-contain brightness-0 invert opacity-10">
       </div>
@@ -29,13 +28,12 @@
           <img src="/images/logo.png" alt="Logo" class="w-full h-full object-contain">
         </div>
       </div>
-      <h2 class="text-2xl font-black text-white tracking-tight">COACH PORTAL</h2>
-      <p class="text-blue-200 text-sm font-medium mt-1">Masuk untuk mengelola data atlet</p>
+      <h2 class="text-2xl font-black text-white tracking-tight">LOGIN PORTAL</h2>
+      <p class="text-blue-200 text-sm font-medium mt-1">Akses masuk Coach dan Wali Murid</p>
     </div>
 
     <!-- Form Login -->
     <div class="p-8 pt-6">
-      <!-- Alert Error (Disembunyikan secara default) -->
       <div id="errorMsg" class="hidden bg-red-50 text-red-600 text-sm font-semibold p-3 rounded-xl mb-4 border border-red-100 text-center">
         Username atau Password salah!
       </div>
@@ -67,7 +65,7 @@
     </div>
   </div>
 
-  <!-- LOGIKA SUPABASE -->
+  <!-- LOGIKA SUPABASE & MULTI-ROLE -->
   <script type="module">
     import { supabase } from '/src/supabase.js';
 
@@ -93,15 +91,23 @@
           .eq('password', passVal)
           .single(); 
 
-        if (error || !data) {
-          throw new Error('Gagal login');
-        }
+        if (error || !data) throw new Error('Gagal login');
 
-        localStorage.setItem('coach_logged_in', 'true');
-        localStorage.setItem('coach_name', data.username);
+        // Simpan sesi global
+        localStorage.setItem('logged_in', 'true');
+        localStorage.setItem('user_name', data.username);
+        localStorage.setItem('user_role', data.role); // Simpan role-nya
         
-        // SUDAH DIGANTI KE COACH.HTML
-        window.location.href = 'coach.html';
+        // Redirect berdasarkan role
+        if (data.role === 'coach') {
+            window.location.href = 'coach.html';
+        } else if (data.role === 'parent') {
+            window.location.href = 'parent.html';
+        } else {
+            alert("Role tidak dikenali!");
+            submitBtn.innerHTML = 'Login Sekarang';
+            submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+        }
 
       } catch (err) {
         errorMsg.classList.remove('hidden');
@@ -110,6 +116,5 @@
       }
     });
   </script>
-
 </body>
 </html>
