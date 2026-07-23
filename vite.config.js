@@ -8,7 +8,8 @@ export default defineConfig({
         login: 'login.html',
         coach: 'coach.html',
         siswa: 'siswa.html',
-        parent: 'parent.html' // <-- Tambahin ini
+        parent: 'parent.html',
+        admin: 'admin.html' // <-- Tambahin baris ini
       }
     }
   }

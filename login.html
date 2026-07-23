@@ -96,18 +96,21 @@
         // Simpan sesi global
         localStorage.setItem('logged_in', 'true');
         localStorage.setItem('user_name', data.username);
-        localStorage.setItem('user_role', data.role); // Simpan role-nya
-        
-        // Redirect berdasarkan role
+        localStorage.setItem('user_role', data.role); 
+        // Simpan role-nya
+                // Redirect berdasarkan role
         if (data.role === 'coach') {
             window.location.href = 'coach.html';
         } else if (data.role === 'parent') {
             window.location.href = 'parent.html';
+        } else if (data.role === 'admin') {
+            window.location.href = 'admin.html'; // <-- INI TAMBAHANNYA
         } else {
             alert("Role tidak dikenali!");
             submitBtn.innerHTML = 'Login Sekarang';
             submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
         }
+
 
       } catch (err) {
         errorMsg.classList.remove('hidden');
