@@ -9,8 +9,8 @@ export default defineConfig({
         coach: 'coach.html',
         siswa: 'siswa.html',
         parent: 'parent.html',
-        admin: 'admin.html'
-        owner: 'owner.html' // <-- Tambahin baris ini
+        admin: 'admin.html',
+        owner: 'owner.html', // <-- Tambahin baris ini
       }
     }
   }
