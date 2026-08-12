@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Owner Portal - Tirta Nirwana</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col items-center">
+
+  <div class="w-full max-w-md bg-white min-h-screen shadow-2xl relative pb-20">
+    
+    <!-- Header Owner -->
+    <div class="bg-gradient-to-br from-slate-900 to-black px-6 pt-10 pb-6 rounded-b-[2rem] shadow-lg text-white">
+      <div class="flex justify-between items-center mb-2">
+        <h1 class="text-2xl font-black tracking-tight text-yellow-500 drop-shadow-sm">OWNER PORTAL</h1>
+        <button id="logoutBtn" class="bg-red-500/20 text-red-100 text-xs font-bold px-3 py-1.5 rounded-full border border-red-400/30 active:scale-95">LOGOUT</button>
+      </div>
+      <p class="text-slate-300 text-sm font-medium" id="welcomeOwner">Halo, Bos!</p>
+    </div>
+
+    <!-- Konten Dummy Dashboard Owner -->
+    <div class="p-6 space-y-4">
+      <h2 class="text-sm font-black text-slate-800 uppercase mb-2">Ringkasan Eksekutif</h2>
+      
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bg-blue-50 border border-blue-100 p-4 rounded-2xl text-center shadow-sm">
+          <span class="text-2xl mb-1 block">🏊</span>
+          <h3 class="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-1">Total Siswa</h3>
+          <p class="text-2xl font-black text-blue-900">Aktif</p>
+        </div>
+        <div class="bg-orange-50 border border-orange-100 p-4 rounded-2xl text-center shadow-sm">
+          <span class="text-2xl mb-1 block">💰</span>
+          <h3 class="text-[10px] font-bold text-orange-500 uppercase tracking-wider mb-1">Pemasukan</h3>
+          <p class="text-2xl font-black text-orange-900">Aman</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center mt-6">
+        <span class="text-4xl mb-2 block">📈</span>
+        <h3 class="font-bold text-slate-800">Sistem Analitik</h3>
+        <p class="text-sm text-slate-500 mt-1">Laporan keuangan dan absensi akan terintegrasi di sini.</p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script type="module" src="/src/js/owner.js"></script>
+</body>
+</html>
