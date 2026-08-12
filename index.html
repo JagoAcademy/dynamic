@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tirta Nirwana - Terbang di Air</title>
+  <title>Tirta Nirwana - Berprestasi Luar Biasa</title>
   
-  <!-- Primary Meta Tags (Sesuai Konfigurasi Terakhir) -->
-  <meta name="title" content="Tirta Nirwana - Terbang di Air" />
-  <meta name="description" content="Klub Renang Tirta Nirwana - Surabaya bersama Coach Nike. Yuk, gabung dan terbang di air bersama kami!" />
+  <!-- Primary Meta Tags -->
+  <meta name="title" content="Tirta Nirwana - Berprestasi Luar Biasa" />
+  <meta name="description" content="Berenang itu biasa, berprestasi luar biasa! Klub Renang Tirta Nirwana - Surabaya bersama Coach Nike." />
 
   <!-- Open Graph / Facebook / WhatsApp -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://tirtanirwana.vercel.app/" />
-  <meta property="og:title" content="Tirta Nirwana - Terbang di Air" />
-  <meta property="og:description" content="Klub Renang Tirta Nirwana - Surabaya bersama Coach Nike. Yuk, gabung dan terbang di air bersama kami!" />
+  <meta property="og:title" content="Tirta Nirwana - Berprestasi Luar Biasa" />
+  <meta property="og:description" content="Berenang itu biasa, berprestasi luar biasa! Klub Renang Tirta Nirwana - Surabaya." />
   <meta property="og:image" content="https://tirtanirwana.vercel.app/images/home.jpg" />
   <meta property="og:image:type" content="image/jpeg" />
   <meta property="og:image:width" content="1200" />
@@ -34,17 +34,9 @@
 </head>
 <body class="bg-slate-100 min-h-screen flex flex-col items-center relative">
 
-  <!-- 
-    PERUBAHAN UTAMA: 
-    Mengubah w-full max-w-md menjadi responsif.
-    - Mobile: w-full, max-w-md (mentok 448px)
-    - MD (Tablet): max-w-2xl
-    - LG (Desktop): max-w-5xl (melebar elegan)
-  -->
   <div class="w-full max-w-md md:max-w-2xl lg:max-w-5xl bg-slate-50 min-h-screen shadow-2xl relative pb-32 overflow-x-hidden transition-all duration-300">
     
     <!-- Hero Section -->
-    <!-- Desktop (LG): Kurangi padding bawah (pb) agar menu tidak terlalu 'terjun' ke bawah -->
     <div class="bg-gradient-to-br from-[#E65C00] to-[#E67E22] px-6 md:px-12 pt-14 pb-48 lg:pb-36 rounded-b-[3rem] shadow-lg text-white relative overflow-hidden">
       
       <!-- Efek Splash Background -->
@@ -52,14 +44,13 @@
       <div class="absolute bottom-10 left-0 w-40 h-40 lg:w-60 lg:h-60 bg-orange-300 opacity-20 rounded-full blur-3xl -ml-10"></div>
 
       <!-- LOGO WATERMARK BESAR -->
-      <!-- Desktop (LG): Besarkan watermark -->
       <img src="public/images/logo.png" alt="Logo Watermark" class="absolute -top-4 -right-12 lg:right-10 w-72 h-72 lg:w-96 lg:h-96 object-contain opacity-40 z-0 pointer-events-none drop-shadow-2xl transition-all">
 
-      <!-- Konten Teks Header -->
+      <!-- Konten Teks Header (UPDATED DARI CLIENT) -->
       <div class="relative z-10 mb-2 lg:mt-8">
-        <!-- Desktop (LG): Besarkan teks headline -->
-        <h1 class="text-[2.5rem] lg:text-[4rem] font-dynamic font-black tracking-tight leading-none uppercase italic mb-2 lg:mb-4 drop-shadow-md">
-          Terbang<br>di Air
+        <!-- Ukuran font dan line-height disesuaikan karena teksnya lebih panjang -->
+        <h1 class="text-[1.8rem] lg:text-[3.2rem] font-dynamic font-black tracking-tight leading-tight uppercase italic mb-2 lg:mb-4 drop-shadow-md">
+          Berenang Itu Biasa,<br>Berprestasi Luar Biasa
         </h1>
         <h2 class="text-lg lg:text-2xl font-bold mb-1 opacity-95">
           Bersama Tirta Nirwana
@@ -81,7 +72,6 @@
     </div>
 
     <!-- Container Grid Tombol Utama -->
-    <!-- Desktop (LG): Tarik margin negatif ke atas lebih sedikit, ubah grid jadi 4 kolom sejajar -->
     <div class="px-6 md:px-12 -mt-32 lg:-mt-16 relative z-20">
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         
@@ -121,7 +111,6 @@
     </div>
 
     <!-- BOTTOM FLOATING ACTION BAR -->
-    <!-- Desktop (LG): Lebarkan max-width agar navigasi bawah tidak terlalu kecil -->
     <div class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] md:w-[70%] lg:w-[40%] max-w-[380px] lg:max-w-none bg-white/95 backdrop-blur-xl border border-slate-100 flex justify-between items-center p-2 pl-6 lg:pl-8 lg:pr-4 z-50 rounded-full shadow-[0_20px_40px_rgba(0,0,0,0.12)] transition-all">
       
       <!-- Kiri: WhatsApp -->

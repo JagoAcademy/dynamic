@@ -10,24 +10,19 @@
 </head>
 <body class="bg-slate-100 min-h-screen flex justify-center items-center p-4">
 
-  <div class="w-full max-w-sm bg-white rounded-[2rem] shadow-2xl overflow-hidden">
+  <!-- Responsif: Di desktop lebarnya dibatasi max-w-lg agar form tidak melar jelek -->
+  <div class="w-full max-w-sm md:max-w-md lg:max-w-lg bg-white rounded-[2rem] shadow-2xl overflow-hidden transition-all duration-300">
     
-    <!-- Header Login (Tompel sudah dimusnahkan) -->
     <div class="bg-gradient-to-br from-[#E65C00] to-[#E67E22] p-8 text-center relative overflow-hidden">
-      
-      <!-- Lingkaran Logo (Fit Sempurna) -->
       <div class="relative z-10 flex justify-center mb-5">
         <div class="w-24 h-24 bg-white rounded-full p-1.5 shadow-xl border-4 border-white/40 flex items-center justify-center">
-          <!-- Pakai object-cover dan rounded-full biar membaur rapi ke circle -->
           <img src="public/images/logo.png" alt="Logo Tirta Nirwana" class="w-full h-full object-cover rounded-full bg-[#0B1B3D]">
         </div>
       </div>
-      
       <h2 class="text-2xl font-black text-white tracking-tight">LOGIN PORTAL</h2>
       <p class="text-orange-100 text-sm font-medium mt-1">Akses masuk Coach, Parent, Admin & Owner</p>
     </div>
 
-    <!-- Form Login -->
     <div class="p-8 pt-6">
       <div id="errorMsg" class="hidden bg-red-50 text-red-600 text-sm font-semibold p-3 rounded-xl mb-4 border border-red-100 text-center">
         Username atau Password salah!
@@ -36,31 +31,23 @@
       <form id="loginForm" class="space-y-5">
         <div>
           <label class="block text-slate-700 text-xs font-bold mb-2 uppercase tracking-wide">Username</label>
-          <input type="text" id="username" required placeholder="Masukkan username"
-            class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all">
+          <input type="text" id="username" required placeholder="Masukkan username" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all">
         </div>
-
         <div>
           <label class="block text-slate-700 text-xs font-bold mb-2 uppercase tracking-wide">Password</label>
-          <input type="password" id="password" required placeholder="••••••••"
-            class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all">
+          <input type="password" id="password" required placeholder="••••••••" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all">
         </div>
-
-        <button type="submit" id="submitBtn" 
-          class="w-full bg-[#0B1B3D] text-white font-bold text-sm uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-[#0B1B3D]/30 hover:bg-blue-900 active:scale-95 transition-all mt-4">
+        <button type="submit" id="submitBtn" class="w-full bg-[#0B1B3D] text-white font-bold text-sm uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-[#0B1B3D]/30 hover:bg-blue-900 active:scale-95 transition-all mt-4">
           Login Sekarang
         </button>
       </form>
       
       <div class="mt-6 text-center">
-        <a href="index.html" class="text-slate-400 hover:text-orange-500 text-sm font-medium transition-colors">
-          &larr; Kembali ke Beranda
-        </a>
+        <a href="index.html" class="text-slate-400 hover:text-orange-500 text-sm font-medium transition-colors">&larr; Kembali ke Beranda</a>
       </div>
     </div>
   </div>
 
-  <!-- Panggil JS eksternal -->
   <script type="module" src="/src/js/login.js"></script>
 </body>
 </html>

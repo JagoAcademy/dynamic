@@ -3,54 +3,52 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Daftar Atlet - Dynamic Club</title>
+  <title>Daftar Atlet - Tirta Nirwana</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
   
-  <style>
-    body { font-family: 'Inter', sans-serif; }
-  </style>
+  <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex flex-col items-center antialiased">
 
-  <div class="w-full max-w-md bg-slate-50 min-h-screen shadow-2xl relative pb-10">
+  <!-- Responsif: Data tabular cocok dibuat sangat lebar di desktop (lg:max-w-5xl) -->
+  <div class="w-full max-w-md md:max-w-3xl lg:max-w-5xl bg-slate-50 min-h-screen shadow-2xl relative pb-10 transition-all duration-300">
     
-    <!-- Header -->
-    <div class="bg-gradient-to-br from-blue-800 to-blue-600 px-6 pt-10 pb-8 rounded-b-[2.5rem] shadow-lg text-white mb-6 relative overflow-hidden">
+    <div class="bg-gradient-to-br from-[#0B1B3D] to-[#163063] px-6 md:px-10 pt-10 pb-8 rounded-b-[2.5rem] shadow-lg text-white mb-6 relative overflow-hidden">
       <div class="absolute top-[-20px] right-[-20px] w-40 h-40 transform rotate-12 pointer-events-none">
         <img src="/images/logo.png" class="w-full h-full object-contain brightness-0 invert opacity-10">
       </div>
       
       <div class="relative z-10 flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-black tracking-tight mb-1">ATLET REGULER</h1>
-          <p class="text-blue-200 text-sm font-medium">Database Dynamic Aquatic Club</p>
+          <h1 class="text-2xl font-black tracking-tight mb-1 text-orange-400">ATLET REGULER</h1>
+          <p class="text-slate-300 text-sm font-medium">Database Tirta Nirwana</p>
         </div>
-        <button onclick="window.location.href='index.html'" class="bg-white/20 p-2 rounded-full backdrop-blur-sm active:scale-95 transition-transform">
+        <button onclick="window.location.href='index.html'" class="bg-white/10 p-2 rounded-full border border-white/20 backdrop-blur-sm active:scale-95 transition-transform hover:bg-white/20">
           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
         </button>
       </div>
     </div>
 
     <!-- Search/Filter -->
-    <div class="px-5 mb-4">
+    <div class="px-6 md:px-10 mb-6">
         <input type="text" id="search-murid" placeholder="Cari nama atlet..." 
-            class="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+            class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 shadow-sm transition-all"
             onkeyup="filterSiswa()">
     </div>
 
     <!-- Container List Siswa -->
-    <div id="student-list" class="px-5">
-      <div class="flex justify-center items-center py-10">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    <!-- Desktop: Dibikin 2 kolom grid biar rapih berjejer -->
+    <div id="student-list" class="px-6 md:px-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="flex justify-center items-center py-10 md:col-span-2">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E65C00]"></div>
         <span class="ml-3 text-slate-500 font-semibold text-sm">Menarik data dari kolam...</span>
       </div>
     </div>
 
   </div>
 
-  <!-- LOGIKA SUPABASE & RENDER -->
   <script type="module">
     import { supabase } from '/src/supabase.js';
 
@@ -58,16 +56,12 @@
       const container = document.getElementById('student-list');
 
       try {
-        const { data, error } = await supabase
-          .from('siswa')
-          .select('*')
-          .order('created_at', { ascending: false });
-
+        const { data, error } = await supabase.from('siswa').select('*').order('created_at', { ascending: false });
         if (error) throw error;
 
         if (data.length === 0) {
           container.innerHTML = `
-            <div class="text-center py-10 bg-white rounded-2xl border border-slate-100 shadow-sm">
+            <div class="text-center py-10 bg-white rounded-2xl border border-slate-100 shadow-sm md:col-span-2">
               <p class="text-4xl mb-3">🏊‍♂️</p>
               <p class="text-slate-500 font-bold text-sm">Belum ada data atlet.</p>
             </div>
@@ -77,42 +71,39 @@
 
         container.innerHTML = data.map(siswa => {
           let tglIndo = siswa.tanggal_lahir ? siswa.tanggal_lahir.split('-').reverse().join('/') : '-';
-          
           let waClean = siswa.no_wa ? siswa.no_wa.replace(/\D/g, '') : '';
           if (waClean.startsWith('0')) waClean = '62' + waClean.substring(1);
           let linkWA = waClean ? `https://wa.me/${waClean}` : '#';
 
           return `
-            <div class="siswa-item flex justify-between items-center bg-white border border-slate-200 rounded-xl p-3.5 mb-3 shadow-[0_2px_4px_rgba(0,0,0,0.02)] box-border">
-                
+            <div class="siswa-item flex justify-between items-center bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow box-border">
                 <div class="flex-1 pr-4 min-w-0">
                     <div class="flex items-center gap-1.5 flex-wrap mb-1">
-                        <strong class="nama-siswa text-sky-600 text-[15px] font-bold break-words uppercase">${siswa.nama_lengkap}</strong> 
-                        <span class="bg-emerald-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap">Aktif</span>
+                        <strong class="nama-siswa text-[#0B1B3D] text-[15px] font-bold break-words uppercase">${siswa.nama_lengkap}</strong> 
+                        <span class="bg-green-500 text-white px-2 py-0.5 rounded text-[10px] font-bold whitespace-nowrap">Aktif</span>
                     </div>
-                    <div class="text-[12px] text-slate-700 leading-relaxed">
-                        <span>📅 Lahir: ${tglIndo} | <b class="text-sky-600">${siswa.kelompok_umur}</b></span><br>
-                        <span class="text-sky-700 font-bold">🏊 Program Reguler Dynamic</span><br>
-                        <span class="text-amber-500 text-[11px] font-bold">📱 WA: ${siswa.no_wa || '-'}</span>
+                    <div class="text-[12px] text-slate-600 leading-relaxed">
+                        <span>📅 Lahir: ${tglIndo} | <b class="text-[#E65C00]">${siswa.kelompok_umur}</b></span><br>
+                        <span class="text-[#0B1B3D] font-bold">🏊 Program Reguler Tirta</span><br>
+                        <span class="text-orange-500 text-[11px] font-bold">📱 WA: ${siswa.no_wa || '-'}</span>
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-1.5 w-[110px] shrink-0 box-border">
-                    <a href="${linkWA}" target="_blank" class="flex items-center justify-center gap-1 h-8 text-[11px] bg-emerald-500 text-white rounded-md font-bold w-full transition-colors active:scale-95">
+                <div class="flex flex-col gap-2 w-[110px] shrink-0 box-border">
+                    <a href="${linkWA}" target="_blank" class="flex items-center justify-center gap-1 h-8 text-[11px] bg-green-500 text-white rounded-md font-bold w-full transition-colors hover:bg-green-600 active:scale-95">
                         💬 Chat WA
                     </a>
-                    <button class="flex items-center justify-center gap-1 h-8 text-[11px] bg-amber-500 text-white rounded-md font-bold w-full transition-colors active:scale-95">
+                    <button class="flex items-center justify-center gap-1 h-8 text-[11px] bg-[#0B1B3D] text-white rounded-md font-bold w-full transition-colors hover:bg-blue-900 active:scale-95">
                         ✏️ Edit Data
                     </button>
                 </div>
-
             </div>
           `;
         }).join('');
 
       } catch (err) {
         container.innerHTML = `
-          <div class="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 text-sm font-semibold">
+          <div class="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 text-sm font-semibold md:col-span-2">
             Gagal memuat data: ${err.message}
           </div>
         `;
