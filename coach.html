@@ -3,50 +3,54 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Coach Dashboard - DAC</title>
+  <title>Coach Dashboard - Tirta Nirwana</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; }
-    .tab-active { border-bottom: 4px solid #2563eb; color: #1e40af; font-weight: 700; }
+    /* Tema Tab Oranye */
+    .tab-active { border-bottom: 4px solid #E65C00; color: #E65C00; font-weight: 700; }
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex flex-col items-center">
 
   <div class="w-full max-w-md bg-white min-h-screen shadow-2xl relative pb-20">
     
-    <!-- Header -->
-    <div class="bg-gradient-to-br from-blue-800 to-blue-600 px-6 pt-10 pb-6 rounded-b-[2rem] shadow-lg text-white">
+    <!-- Header Coach (Gradasi Oranye Khas Tirta Nirwana) -->
+    <div class="bg-gradient-to-br from-[#E65C00] to-[#E67E22] px-6 pt-10 pb-6 rounded-b-[2rem] shadow-lg text-white">
       <div class="flex justify-between items-center mb-2">
-        <h1 class="text-2xl font-black tracking-tight">COACH PANEL</h1>
-        <button onclick="logout()" class="bg-red-500/20 text-red-100 text-xs font-bold px-3 py-1.5 rounded-full border border-red-400/30 active:scale-95">LOGOUT</button>
+        <h1 class="text-2xl font-black tracking-tight drop-shadow-sm">COACH PANEL</h1>
+        <button onclick="logout()" class="bg-red-500/80 text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/30 active:scale-95 shadow-sm">LOGOUT</button>
       </div>
-      <p class="text-blue-100 text-sm font-medium" id="welcomeText">Halo, Coach!</p>
+      <p class="text-orange-100 text-sm font-medium" id="welcomeText">Halo, Coach!</p>
     </div>
 
     <!-- Navigation Tabs -->
-    <div class="flex justify-around bg-white border-b border-slate-200 mt-2 px-2 sticky top-0 z-50">
+    <div class="flex justify-around bg-white border-b border-slate-200 mt-2 px-2 sticky top-0 z-50 shadow-sm">
       <button onclick="switchTab('siswa')" id="tab-siswa" class="tab-active flex-1 py-4 text-sm text-slate-500 font-semibold transition-all">🏊 Siswa</button>
       <button onclick="switchTab('jadwal')" id="tab-jadwal" class="flex-1 py-4 text-sm text-slate-500 font-semibold transition-all">⏱️ Jadwal</button>
       <button onclick="switchTab('event')" id="tab-event" class="flex-1 py-4 text-sm text-slate-500 font-semibold transition-all">📅 Event</button>
     </div>
 
-    <!-- CONTENT: TAB MASTER SISWA -->
+    <!-- CONTENT: TAB MASTER SISWA (Di Sini Input Siswanya Bray!) -->
     <div id="content-siswa" class="p-6">
-      <h2 class="text-lg font-bold text-slate-800 mb-4">Tambah Master Siswa</h2>
-      <form id="formSiswa" class="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-100 shadow-sm">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-2xl">📝</span>
+        <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Tambah Master Siswa</h2>
+      </div>
+      <form id="formSiswa" class="space-y-4 bg-orange-50/50 p-5 rounded-2xl border border-orange-100 shadow-sm">
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">NAMA LENGKAP</label>
-          <input type="text" id="s_nama" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+          <label class="block text-xs font-bold text-slate-600 mb-1">NAMA LENGKAP</label>
+          <input type="text" id="s_nama" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">TGL LAHIR</label>
-            <input type="date" id="s_tgl" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+            <label class="block text-xs font-bold text-slate-600 mb-1">TGL LAHIR</label>
+            <input type="date" id="s_tgl" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">KELOMPOK UMUR</label>
-            <select id="s_ku" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-colors">
+            <label class="block text-xs font-bold text-slate-600 mb-1">KELOMPOK UMUR</label>
+            <select id="s_ku" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-colors">
               <option value="Pra-KU (< 8 th)">Pra-KU (&lt; 8 Thn)</option>
               <option value="KU V (8-9 th)">KU V (8-9 Thn)</option>
               <option value="KU IV (10-11 th)">KU IV (10-11 Thn)</option>
@@ -58,29 +62,33 @@
           </div>
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">NOMOR WA (Contoh: 62812...)</label>
-          <input type="number" id="s_wa" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+          <label class="block text-xs font-bold text-slate-600 mb-1">NOMOR WA (Contoh: 62812...)</label>
+          <input type="number" id="s_wa" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all">
         </div>
-        <button type="submit" class="w-full bg-blue-600 text-white font-bold text-sm py-3 rounded-xl mt-2 active:scale-95 transition-all">Simpan Data Siswa</button>
+        <!-- Tombol submit diganti warna Navy agar kontras -->
+        <button type="submit" class="w-full bg-[#0B1B3D] text-white font-bold text-sm py-3 rounded-xl mt-2 active:scale-95 transition-all shadow-md">Simpan Data Siswa</button>
       </form>
     </div>
 
     <!-- CONTENT: TAB JADWAL LATIHAN -->
     <div id="content-jadwal" class="p-6 hidden">
-      <h2 class="text-lg font-bold text-slate-800 mb-4">Input Jadwal Latihan</h2>
-      <form id="formJadwal" class="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-100 shadow-sm">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-2xl">📋</span>
+        <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Input Jadwal Latihan</h2>
+      </div>
+      <form id="formJadwal" class="space-y-4 bg-orange-50/50 p-5 rounded-2xl border border-orange-100 shadow-sm">
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">NAMA KOLAM</label>
-          <input type="text" id="j_kolam" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+          <label class="block text-xs font-bold text-slate-600 mb-1">NAMA KOLAM</label>
+          <input type="text" id="j_kolam" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">TANGGAL</label>
-            <input type="date" id="j_tgl" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+            <label class="block text-xs font-bold text-slate-600 mb-1">TANGGAL</label>
+            <input type="date" id="j_tgl" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">HARI</label>
-            <select id="j_hari" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+            <label class="block text-xs font-bold text-slate-600 mb-1">HARI</label>
+            <select id="j_hari" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
               <option value="Senin">Senin</option><option value="Selasa">Selasa</option>
               <option value="Rabu">Rabu</option><option value="Kamis">Kamis</option>
               <option value="Jumat">Jumat</option><option value="Sabtu">Sabtu</option>
@@ -90,45 +98,48 @@
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">JAM (Misal: 15:30)</label>
-            <input type="time" id="j_jam" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+            <label class="block text-xs font-bold text-slate-600 mb-1">JAM (Misal: 15:30)</label>
+            <input type="time" id="j_jam" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">JUDUL LATIHAN</label>
-            <input type="text" id="j_judul" placeholder="Endurance/Sprint" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+            <label class="block text-xs font-bold text-slate-600 mb-1">JUDUL LATIHAN</label>
+            <input type="text" id="j_judul" placeholder="Endurance/Sprint" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
           </div>
         </div>
-        <button type="submit" class="w-full bg-blue-600 text-white font-bold text-sm py-3 rounded-xl mt-2 active:scale-95 transition-all">Simpan Jadwal</button>
+        <button type="submit" class="w-full bg-[#0B1B3D] text-white font-bold text-sm py-3 rounded-xl mt-2 active:scale-95 transition-all shadow-md">Simpan Jadwal</button>
       </form>
     </div>
 
     <!-- CONTENT: TAB EVENT -->
     <div id="content-event" class="p-6 hidden">
-      <h2 class="text-lg font-bold text-slate-800 mb-4">Buat Kalender Event</h2>
-      <form id="formEvent" class="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-100 shadow-sm">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-2xl">🏆</span>
+        <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Buat Kalender Event</h2>
+      </div>
+      <form id="formEvent" class="space-y-4 bg-orange-50/50 p-5 rounded-2xl border border-orange-100 shadow-sm">
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">NAMA EVENT KAJI / LOMBA</label>
-          <input type="text" id="e_nama" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+          <label class="block text-xs font-bold text-slate-600 mb-1">NAMA EVENT KAJI / LOMBA</label>
+          <input type="text" id="e_nama" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-500 mb-1">UPLOAD POSTER/GAMBAR EVENT</label>
-          <input type="file" id="e_file" accept="image/*" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+          <label class="block text-xs font-bold text-slate-600 mb-1">UPLOAD POSTER EVENT</label>
+          <input type="file" id="e_file" accept="image/*" required class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-orange-100 file:text-orange-700 hover:file:bg-orange-200 cursor-pointer">
         </div>
-        <button type="submit" id="btnEvent" class="w-full bg-blue-600 text-white font-bold text-sm py-3 rounded-xl mt-2 active:scale-95 transition-all">Upload & Simpan Event</button>
+        <button type="submit" id="btnEvent" class="w-full bg-[#0B1B3D] text-white font-bold text-sm py-3 rounded-xl mt-2 active:scale-95 transition-all shadow-md">Upload & Simpan Event</button>
       </form>
     </div>
 
   </div>
 
-  <!-- SCRIPT LOGIKA DASHBOARD & SUPABASE -->
+  <!-- SCRIPT LOGIKA DASHBOARD & SUPABASE (VANILLA) -->
   <script type="module">
     import { supabase } from '/src/supabase.js';
 
-    // 1. Proteksi Halaman (Cek apakah sudah login)
-    if (localStorage.getItem('coach_logged_in') !== 'true') {
+    // 1. PROTEKSI HALAMAN (BUG FIX: Disesuaikan dengan session login portal global)
+    if (localStorage.getItem('logged_in') !== 'true' || localStorage.getItem('user_role') !== 'coach') {
       window.location.href = 'login.html'; 
     } else {
-      document.getElementById('welcomeText').innerText = `Semangat melatih, Coach ${localStorage.getItem('coach_name')}!`;
+      document.getElementById('welcomeText').innerText = `Semangat melatih, Coach ${localStorage.getItem('user_name')}!`;
     }
 
     // 2. Fungsi Logout
@@ -153,7 +164,7 @@
     }
 
     // ========================================================
-    // AUTO-HITUNG KELOMPOK UMUR (KU) UPDATE
+    // AUTO-HITUNG KELOMPOK UMUR (KU)
     // ========================================================
     document.getElementById('s_tgl').addEventListener('change', function() {
       const tglLahir = this.value;
@@ -162,17 +173,14 @@
       const birthDate = new Date(tglLahir);
       const today = new Date();
       
-      // Hitung umur secara presisi
       let age = today.getFullYear() - birthDate.getFullYear();
       const m = today.getMonth() - birthDate.getMonth();
       if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
           age--;
       }
       
-      // Target elemen select KU
       const selectKu = document.getElementById('s_ku');
       
-      // Logika Penentuan KU Baru sesuai request
       if (age < 8) selectKu.value = "Pra-KU (< 8 th)";
       else if (age <= 9) selectKu.value = "KU V (8-9 th)";
       else if (age <= 11) selectKu.value = "KU IV (10-11 th)";
@@ -181,15 +189,16 @@
       else if (age <= 16) selectKu.value = "KU I (16 th)";
       else selectKu.value = "Senior (17+ th)";
       
-      // Kasih efek visual sedikit biar kelihatan kalau otomatis terganti
-      selectKu.classList.add('bg-blue-50', 'border-blue-300');
-      setTimeout(() => selectKu.classList.remove('bg-blue-50', 'border-blue-300'), 1000);
+      selectKu.classList.add('bg-orange-100', 'border-orange-300');
+      setTimeout(() => selectKu.classList.remove('bg-orange-100', 'border-orange-300'), 1000);
     });
 
-    // 4. Submit Form: Master Siswa
+    // 4. Submit Form: Master Siswa (Sesuai SQL Schema kamu)
     document.getElementById('formSiswa').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const btn = e.target.querySelector('button'); btn.innerText = "Menyimpan...";
+      const btn = e.target.querySelector('button'); 
+      const originalText = btn.innerText;
+      btn.innerText = "Menyimpan...";
       
       const { error } = await supabase.from('siswa').insert([{
         nama_lengkap: document.getElementById('s_nama').value,
@@ -200,13 +209,15 @@
 
       if(error) alert("Gagal nyimpen: " + error.message);
       else { alert("✅ Data Siswa Berhasil Disimpan!"); e.target.reset(); }
-      btn.innerText = "Simpan Data Siswa";
+      btn.innerText = originalText;
     });
 
     // 5. Submit Form: Jadwal Latihan
     document.getElementById('formJadwal').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const btn = e.target.querySelector('button'); btn.innerText = "Menyimpan...";
+      const btn = e.target.querySelector('button'); 
+      const originalText = btn.innerText;
+      btn.innerText = "Menyimpan...";
 
       const { error } = await supabase.from('jadwal_latihan').insert([{
         nama_kolam: document.getElementById('j_kolam').value,
@@ -218,10 +229,10 @@
 
       if(error) alert("Gagal nyimpen: " + error.message);
       else { alert("✅ Jadwal Latihan Berhasil Disimpan!"); e.target.reset(); }
-      btn.innerText = "Simpan Jadwal";
+      btn.innerText = originalText;
     });
 
-    // 6. Submit Form: Event (Beserta Upload Gambar ke Storage)
+    // 6. Submit Form: Event
     document.getElementById('formEvent').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('btnEvent');
