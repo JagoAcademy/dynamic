@@ -3,45 +3,72 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Parent Portal - DAC</title>
+  <title>Parent Portal - Tirta Nirwana</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex flex-col items-center antialiased">
 
-  <div class="w-full max-w-md bg-slate-50 min-h-screen shadow-2xl relative pb-10">
+  <div class="w-full max-w-md bg-white min-h-screen shadow-2xl relative pb-10">
     
-    <!-- Header Parent (Warna Hijau Tosca biar beda sama Coach) -->
-    <div class="bg-gradient-to-br from-teal-700 to-teal-500 px-6 pt-10 pb-8 rounded-b-[2.5rem] shadow-lg text-white mb-6 relative overflow-hidden">
-      <div class="absolute top-[-20px] right-[-20px] w-40 h-40 transform rotate-12 pointer-events-none">
-        <img src="/images/logo.png" class="w-full h-full object-contain brightness-0 invert opacity-10">
-      </div>
+    <!-- Header Parent (Gradasi Oranye Khas Tirta Nirwana, Tompel Dimusnahkan!) -->
+    <div class="bg-gradient-to-br from-[#E65C00] to-[#E67E22] px-6 pt-10 pb-8 rounded-b-[2.5rem] shadow-lg text-white mb-6 relative overflow-hidden">
       
       <div class="relative z-10 flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-black tracking-tight mb-1">PARENT PORTAL</h1>
-          <p class="text-teal-100 text-sm font-medium" id="welcomeParent">Halo, Ayah/Bunda!</p>
+          <h1 class="text-2xl font-black tracking-tight mb-1 drop-shadow-sm">PARENT PORTAL</h1>
+          <p class="text-orange-100 text-sm font-medium" id="welcomeParent">Halo, Ayah/Bunda!</p>
         </div>
-        <button onclick="logout()" class="bg-white/20 p-2 text-xs font-bold rounded-full backdrop-blur-sm active:scale-95 transition-transform border border-teal-400/50">
+        <button onclick="logout()" class="bg-red-500/80 text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/30 active:scale-95 shadow-sm transition-all">
           LOGOUT
         </button>
       </div>
     </div>
 
-    <!-- Konten Dummy Parent -->
-    <div class="px-5 space-y-4">
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
-            <span class="text-4xl mb-2 block">👨‍👩‍👦</span>
-            <h3 class="font-bold text-slate-800">Selamat Datang di Portal Wali</h3>
-            <p class="text-sm text-slate-500 mt-1">Fitur rapor anak dan tagihan akan segera hadir di sini.</p>
+    <!-- Konten Parent Portal -->
+    <div class="px-6 space-y-4">
+        
+        <!-- Main Welcome Card -->
+        <div class="bg-orange-50/50 p-6 rounded-3xl border border-orange-100 shadow-sm text-center relative overflow-hidden">
+            
+            <!-- Efek dekorasi tipis di background card -->
+            <div class="absolute -top-6 -right-6 w-20 h-20 bg-orange-200/40 rounded-full blur-xl pointer-events-none"></div>
+
+            <!-- Ikon SVG Premium (Pengganti Emoji Jadul) -->
+            <div class="mx-auto w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-md mb-4 border border-orange-200 relative z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-[#0B1B3D]">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                </svg>
+            </div>
+            
+            <h3 class="font-black text-[#0B1B3D] uppercase tracking-wide relative z-10">Portal Wali Siswa</h3>
+            <p class="text-sm text-slate-500 mt-2 leading-relaxed relative z-10">Terima kasih telah mempercayakan pelatihan ananda kepada Tirta Nirwana.</p>
         </div>
+
+        <!-- Grid Coming Soon Features -->
+        <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center mt-6 mb-2">Modul Sedang Dikembangkan</h4>
+        <div class="grid grid-cols-2 gap-4">
+            <!-- Dummy Rapor -->
+            <div class="bg-white border border-slate-200 p-4 rounded-2xl text-center opacity-70 grayscale">
+                <span class="text-3xl mb-2 block drop-shadow-sm">📊</span>
+                <h4 class="text-[11px] font-bold text-slate-700 uppercase mb-1">Rapor Anak</h4>
+                <span class="inline-block text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-semibold">Segera Hadir</span>
+            </div>
+            <!-- Dummy Tagihan -->
+            <div class="bg-white border border-slate-200 p-4 rounded-2xl text-center opacity-70 grayscale">
+                <span class="text-3xl mb-2 block drop-shadow-sm">💳</span>
+                <h4 class="text-[11px] font-bold text-slate-700 uppercase mb-1">E-Tagihan</h4>
+                <span class="inline-block text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-semibold">Segera Hadir</span>
+            </div>
+        </div>
+
     </div>
 
   </div>
 
   <script>
-    // Proteksi halaman khusus Parent
+    // Proteksi halaman khusus Parent (Sama persis seperti bawaannya)
     if (localStorage.getItem('logged_in') !== 'true' || localStorage.getItem('user_role') !== 'parent') {
       window.location.href = 'login.html'; 
     } else {
