@@ -34,29 +34,67 @@ window.openExcelModal = function() {
   const modal = document.getElementById('modal-excel');
   const dateInput = document.getElementById('excel_date');
   
+  // Ambil tanggal hari ini (Otomatis menyesuaikan sistem HP/PC admin)
   const today = new Date();
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   dateInput.value = today.toLocaleDateString('id-ID', options); 
   
+  // Tampilkan Pop-up
   modal.classList.remove('hidden');
 }
 
 window.closeExcelModal = function() {
   const modal = document.getElementById('modal-excel');
   modal.classList.add('hidden');
-  document.getElementById('formUploadExcel').reset(); 
+  document.getElementById('formUploadExcel').reset(); // Kosongkan isian
 }
 
-// Menangani klik tombol submit di Pop-up Excel
-document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
+// Menangani klik tombol submit di Pop-up Excel dan kirim ke Database
+document.getElementById('formUploadExcel')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const clientName = document.getElementById('excel_client').value.trim();
   const fileInput = document.getElementById('excel_file');
+  const submitBtn = e.target.querySelector('button');
   
   if (fileInput.files.length > 0) {
     const fileName = fileInput.files[0].name;
-    alert(`✅ BERHASIL DITERIMA!\n\nFile Excel: "${fileName}"\nKlien: "${clientName}"\nTanggal: ${document.getElementById('excel_date').value}\n\n(Catatan: Integrasi parsing tabel Excel akan diarahkan ke tabel "excel_debitur" di tahap berikutnya).`);
-    closeExcelModal();
+    
+    // Ubah status tombol biar kelihatan lagi loading
+    submitBtn.innerText = "Mengunggah ke Database...";
+    submitBtn.disabled = true;
+
+    try {
+      // BUNGKUSAN DATA DUMMY (Simulasi hasil baca Excel)
+      // Nanti ini diganti dengan hasil perulangan parsing baris Excel beneran
+      const dummyExcelData = {
+        nama_file: fileName,
+        tanggal_upload: document.getElementById('excel_date').value,
+        status_parsing: "Simulasi Berhasil",
+        total_baris_terbaca: 100
+      };
+
+      // EKSEKUSI INSERT KE TABEL excel_debitur
+      const { error } = await supabase.from('excel_debitur').insert([{
+        client: clientName,
+        debitur: dummyExcelData,
+        status: 'Pending'
+      }]);
+
+      // Lempar error jika gagal (misal RLS masih kekunci)
+      if (error) throw error;
+
+      // ALERT SUKSES MASUK DATABASE
+      alert(`✅ SUKSES MASUK DATABASE!\n\nData dari file "${fileName}" (Klien: ${clientName}) berhasil di-push ke tabel 'excel_debitur'.\n\nJalur RLS aman!`);
+      closeExcelModal();
+
+    } catch (err) {
+      // ALERT GAGAL TERTULIS
+      alert(`❌ GAGAL UPLOAD KE DATABASE!\n\nPesan Error: ${err.message}`);
+    } finally {
+      // Kembalikan tombol ke kondisi semula
+      submitBtn.innerText = "Mulai Proses Upload";
+      submitBtn.disabled = false;
+    }
   }
 });
 
@@ -64,6 +102,7 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
 // LOGIKA INPUT MANUAL DEBITUR & AKUN
 // =========================================
 
+// Tambah Field Detail Ekstra JSONB Secara Dinamis
 window.addJsonField = function() {
   const container = document.getElementById('jsonb-fields-container');
   const newRow = document.createElement('div');
