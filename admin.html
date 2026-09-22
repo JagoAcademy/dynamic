@@ -14,6 +14,7 @@
 </head>
 <body class="bg-slate-100 min-h-screen relative">
   
+  <!-- HEADER NAV -->
   <nav class="w-full bg-gradient-to-r from-[#0B1B3D] to-[#163063] px-6 lg:px-12 py-5 shadow-lg text-white sticky top-0 z-40 flex justify-between items-center">
     <div class="flex items-center gap-4">
       <img src="/images/logo.png" class="w-10 h-10 lg:w-12 lg:h-12 bg-white p-1.5 rounded-full shadow-md object-contain">
@@ -25,13 +26,16 @@
     <button onclick="logout()" class="bg-red-500/20 text-red-100 text-xs font-bold px-4 py-2 rounded-full border border-red-400/30 hover:bg-red-500 hover:text-white transition-all active:scale-95">LOGOUT</button>
   </nav>
 
-  <div class="w-full bg-white border-b border-slate-200 sticky top-[76px] lg:top-[88px] z-30 shadow-sm">
-    <div class="max-w-7xl mx-auto flex px-4">
-      <button onclick="switchTab('akun')" id="tab-akun" class="tab-active py-4 px-6 text-sm text-slate-500 font-semibold transition-all hover:text-orange-600">👥 Kelola Akun</button>
-      <button onclick="switchTab('debitur')" id="tab-debitur" class="py-4 px-6 text-sm text-slate-500 font-semibold transition-all hover:text-orange-600">📁 Manajemen Debitur</button>
+  <!-- NAVIGATION TABS -->
+  <div class="w-full bg-white border-b border-slate-200 sticky top-[76px] lg:top-[88px] z-30 shadow-sm overflow-x-auto">
+    <div class="max-w-7xl mx-auto flex px-4 min-w-max">
+      <button onclick="switchTab('akun')" id="tab-akun" class="tab-active py-4 px-5 text-sm text-slate-500 font-semibold transition-all hover:text-orange-600">👥 Kelola Akun</button>
+      <button onclick="switchTab('debitur')" id="tab-debitur" class="py-4 px-5 text-sm text-slate-500 font-semibold transition-all hover:text-orange-600">📁 Manajemen Debitur</button>
+      <button onclick="switchTab('penugasan')" id="tab-penugasan" class="py-4 px-5 text-sm text-slate-500 font-semibold transition-all hover:text-orange-600">📍 Penugasan Kolektor</button>
     </div>
   </div>
 
+  <!-- MAIN WORKSPACE -->
   <main class="max-w-7xl mx-auto p-6 lg:p-10 w-full">
     
     <!-- TAB 1: KELOLA AKUN -->
@@ -41,7 +45,6 @@
             <span class="text-3xl">📋</span>
             <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Buat Akun Collector</h2>
         </div>
-        
         <form id="formCollector" class="space-y-4">
           <input type="text" id="c_name" required placeholder="Nama Lengkap Collector" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
           <input type="text" id="c_user" required placeholder="Username Login" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
@@ -54,29 +57,22 @@
 
     <!-- TAB 2: MANAJEMEN DEBITUR -->
     <div id="content-debitur" class="hidden">
-      
       <!-- FORM INPUT MANUAL -->
       <div class="bg-white p-6 lg:p-8 rounded-2xl border border-slate-200 shadow-sm mb-8 transition-all">
         <div class="flex items-center mb-6 pb-4 border-b border-slate-100">
             <h2 class="text-sm font-black text-[#0B1B3D] uppercase">Input Data Kasus Baru (Manual)</h2>
         </div>
-
         <form id="formEditDebitur" class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
             <div class="space-y-3">
               <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Informasi Dasar</h3>
-              <div>
-                 <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tanggal Upload (Otomatis)</label>
-                 <input type="text" id="manual_date" readonly class="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-xl px-4 py-2.5 text-sm font-bold cursor-not-allowed mb-1">
-              </div>
+              <input type="text" id="manual_date" readonly class="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-xl px-4 py-2.5 text-sm font-bold cursor-not-allowed mb-1">
               <input type="text" id="input_client" required placeholder="Nama Perusahaan Klien" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
               <input type="text" id="input_nama" required placeholder="Nama Lengkap Debitur" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
               <input type="text" id="input_nik" required placeholder="Nomor ID Akun / NIK" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
               <input type="number" id="input_amount" required placeholder="Total Terutang (Rp)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
               <input type="date" id="input_tgl" required title="Tanggal Jatuh Tempo" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
             </div>
-
             <div class="space-y-3">
               <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Area Penugasan</h3>
               <textarea id="input_alamat" placeholder="Alamat Lengkap" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500"></textarea>
@@ -90,7 +86,6 @@
                 <input type="text" id="input_provinsi" placeholder="Provinsi" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
               </div>
             </div>
-
             <div class="space-y-3">
               <div class="flex justify-between items-center mb-2">
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Detail Ekstra (JSON)</h3>
@@ -103,7 +98,6 @@
                 </div>
               </div>
             </div>
-
           </div>
           <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-6 active:scale-95 transition-all hover:bg-orange-600 shadow-md">Simpan Data Debitur (Manual) ke Database</button>
         </form>
@@ -115,7 +109,6 @@
              <h2 class="text-sm font-black text-[#0B1B3D] uppercase">Daftar Kasus Debitur</h2>
              <span id="total-pending" class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wide">0 Pending</span>
           </div>
-          
           <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
               <select id="filter_client" onchange="filterList()" class="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-orange-500 transition-all cursor-pointer">
                  <option value="ALL">Semua Klien</option>
@@ -126,12 +119,12 @@
           </div>
       </div>
 
-      <!-- LIST DEBITUR -->
+      <!-- LIST DEBITUR (TAB 2) -->
       <div id="admin-debitur-list" class="space-y-3">
         <p class="text-sm text-slate-500 py-4 text-center bg-white rounded-2xl border border-slate-200">Memuat data database...</p>
       </div>
 
-      <!-- PAGINATION CONTROLS (BARU) -->
+      <!-- PAGINATION TAB 2 -->
       <div id="pagination-controls" class="hidden flex justify-between items-center mt-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
          <span id="page-info" class="text-[11px] font-bold text-slate-500">Menampilkan 0 - 0 dari 0 data</span>
          <div class="flex gap-2">
@@ -139,11 +132,51 @@
             <button id="btn-next" onclick="nextPage()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
          </div>
       </div>
-      
     </div>
+
+    <!-- TAB 3: PENUGASAN KOLEKTOR -->
+    <div id="content-penugasan" class="hidden">
+       
+       <!-- FILTER AREA PENUGASAN -->
+       <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6">
+          <h2 class="text-sm font-black text-[#0B1B3D] uppercase mb-4 tracking-wide border-b border-slate-100 pb-3">📍 Filter Area Penugasan</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+             <select id="filter_assign_client" onchange="runAssignFilter()" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer">
+                <option value="ALL">Semua Klien</option>
+             </select>
+             <input type="text" id="filter_assign_kecamatan" onkeyup="runAssignFilter()" placeholder="Filter Kecamatan..." class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
+             <input type="text" id="filter_assign_kelurahan" onkeyup="runAssignFilter()" placeholder="Filter Kelurahan..." class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
+             <input type="text" id="filter_assign_kodepos" onkeyup="runAssignFilter()" placeholder="Filter Kode Pos..." class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
+          </div>
+       </div>
+
+       <!-- ACTION ASSIGN BAR -->
+       <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-5 rounded-2xl border border-blue-200 shadow-sm mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div class="flex items-center gap-3">
+             <h2 class="text-sm font-black text-blue-900 uppercase">Pilih Debitur & Kolektor</h2>
+             <span id="assign-selected-count" class="bg-white text-blue-700 border border-blue-200 text-[11px] font-black px-3 py-1.5 rounded-full">0 Dipilih</span>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+             <select id="select_kolektor" class="w-full sm:w-56 bg-white border border-blue-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer">
+                <option value="">-- Pilih Kolektor --</option>
+                <!-- Opsi kolektor diisi dari database via JS -->
+             </select>
+             <button type="button" onclick="submitPenugasan()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl shadow-[0_4px_10px_rgba(37,99,235,0.3)] transition-all active:scale-95">
+                 🚀 TUGASKAN SEKARANG
+             </button>
+          </div>
+       </div>
+
+       <!-- LIST DEBITUR (TAB 3) DENGAN CHECKBOX -->
+       <div id="assign-debitur-list" class="space-y-3">
+          <p class="text-sm text-slate-500 py-4 text-center bg-white rounded-2xl border border-slate-200">Memuat data penugasan...</p>
+       </div>
+
+    </div>
+
   </main>
 
-  <!-- MODAL / POP-UP UPLOAD EXCEL -->
+  <!-- MODAL EXCEL (TETAP SAMA) -->
   <div id="modal-excel" class="fixed inset-0 bg-slate-900/60 z-[100] hidden flex items-center justify-center backdrop-blur-sm transition-opacity px-4">
     <div class="bg-white w-full max-w-md p-6 lg:p-8 rounded-3xl shadow-2xl relative border border-slate-200">
       <button onclick="closeExcelModal()" class="absolute top-4 right-5 text-slate-400 hover:text-red-500 font-bold text-2xl leading-none transition-colors">&times;</button>
