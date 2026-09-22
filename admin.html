@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Panel - Tirta Nirwana</title>
+  <title>Admin Panel - AVIANDO</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
@@ -12,200 +12,63 @@
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex flex-col items-center">
-
-  <!-- Responsif: Melebar jadi 4xl di desktop -->
   <div class="w-full max-w-md md:max-w-2xl lg:max-w-4xl bg-white min-h-screen shadow-2xl relative pb-20 transition-all duration-300">
-    
     <div class="bg-gradient-to-br from-[#0B1B3D] to-[#163063] px-6 md:px-10 pt-10 pb-6 rounded-b-[2rem] shadow-lg text-white">
       <div class="flex justify-between items-center mb-2">
         <h1 class="text-2xl font-black tracking-tight text-orange-400">ADMIN PORTAL</h1>
         <button onclick="logout()" class="bg-red-500/20 text-red-100 text-xs font-bold px-3 py-1.5 rounded-full border border-red-400/30 active:scale-95">LOGOUT</button>
       </div>
-      <p class="text-slate-300 text-sm font-medium" id="welcomeAdmin">Halo, Super Admin!</p>
+      <p class="text-slate-300 text-sm font-medium" id="welcomeAdmin">Halo, Admin!</p>
     </div>
-
     <div class="flex justify-around bg-white border-b border-slate-200 mt-2 px-2 sticky top-0 z-50 shadow-sm">
       <button onclick="switchTab('akun')" id="tab-akun" class="tab-active flex-1 py-4 text-sm text-slate-500 font-semibold transition-all">👥 Kelola Akun</button>
-      <button onclick="switchTab('siswa')" id="tab-siswa" class="flex-1 py-4 text-sm text-slate-500 font-semibold transition-all">🏊 Master Siswa</button>
+      <button onclick="switchTab('debitur')" id="tab-debitur" class="flex-1 py-4 text-sm text-slate-500 font-semibold transition-all">📁 Manajemen Data Debitur</button>
     </div>
 
     <!-- TAB 1: KELOLA AKUN -->
-    <!-- Desktop: Form Coach & Parent sejajar kiri kanan (grid-cols-2) -->
     <div id="content-akun" class="p-6 md:p-10 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-      
-      <div class="bg-slate-50 p-5 lg:p-8 rounded-2xl border border-slate-200 shadow-sm">
+      <div class="bg-slate-50 p-5 lg:p-8 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2">
         <div class="flex items-center gap-2 mb-4">
             <span class="text-2xl">📋</span>
-            <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Buat Akun Coach</h2>
+            <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Buat Akun Collector</h2>
         </div>
-        <form id="formCoach" class="space-y-3">
-          <input type="text" id="c_user" required placeholder="Username Coach" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-          <input type="password" id="c_pass" required placeholder="Password Coach" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-          <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all">Simpan Akun Coach</button>
+        <form id="formCollector" class="space-y-3">
+          <input type="text" id="c_user" required placeholder="Username Collector" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
+          <input type="password" id="c_pass" required placeholder="Password Collector" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
+          <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all">Simpan Akun Collector</button>
         </form>
       </div>
-
-      <div class="bg-slate-50 p-5 lg:p-8 rounded-2xl border border-slate-200 shadow-sm">
-        <div class="flex items-center gap-2 mb-4">
-            <span class="text-2xl">👨‍👩‍👦</span>
-            <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Buat Akun Parent</h2>
-        </div>
-        <form id="formParent" class="space-y-3">
-          <input type="text" id="p_user" required placeholder="Username Wali Murid" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-          <input type="password" id="p_pass" required placeholder="Password Wali Murid" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-          <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all">Simpan Akun Parent</button>
-        </form>
-      </div>
-
     </div>
 
-    <!-- TAB 2: MASTER SISWA -->
-    <div id="content-siswa" class="p-6 md:p-10 hidden">
+    <!-- TAB 2: MANAJEMEN DEBITUR -->
+    <div id="content-debitur" class="p-6 md:p-10 hidden">
       <div id="editContainer" class="hidden mb-6 bg-orange-50 p-5 lg:p-8 rounded-2xl border border-orange-200 shadow-sm">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-sm font-black text-orange-900 uppercase">Edit Data Siswa</h2>
+            <h2 class="text-sm font-black text-orange-900 uppercase">Input / Edit Data Debitur</h2>
             <button onclick="batalEdit()" class="text-xs font-bold text-red-500 bg-red-100 px-3 py-1.5 rounded">Batal</button>
         </div>
-        <form id="formEditSiswa" class="space-y-3">
+        <form id="formEditDebitur" class="space-y-3">
           <input type="hidden" id="edit_id">
-          <input type="text" id="edit_nama" required class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm focus:ring-2 focus:ring-orange-500">
+          <input type="text" id="edit_nama" required placeholder="Nama Lengkap Debitur" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm focus:ring-2 focus:ring-orange-500">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input type="date" id="edit_tgl" required class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-            <select id="edit_ku" required class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-              <option value="Pra-KU (< 8 th)">Pra-KU (&lt; 8 Thn)</option>
-              <option value="KU V (8-9 th)">KU V (8-9 Thn)</option>
-              <option value="KU IV (10-11 th)">KU IV (10-11 Thn)</option>
-              <option value="KU III (12-13 th)">KU III (12-13 Thn)</option>
-              <option value="KU II (14-15 th)">KU II (14-15 Thn)</option>
-              <option value="KU I (16 th)">KU I (16 Thn)</option>
-              <option value="Senior (17+ th)">Senior (17+ Thn)</option>
+            <input type="date" id="edit_tgl" required title="Tanggal Jatuh Tempo" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm focus:ring-2 focus:ring-orange-500">
+            <select id="edit_kategori" required class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm focus:ring-2 focus:ring-orange-500">
+              <option value="Lancar">Lancar</option>
+              <option value="Kurang Lancar">Kurang Lancar</option>
+              <option value="Diragukan">Diragukan</option>
+              <option value="Macet">Macet</option>
             </select>
           </div>
-          <input type="number" id="edit_wa" required placeholder="628..." class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-          <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all">Update Database Siswa</button>
+          <input type="number" id="edit_wa" required placeholder="Nomor WA (628...)" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm focus:ring-2 focus:ring-orange-500">
+          <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all">Simpan Data Debitur</button>
         </form>
       </div>
-
-      <h2 class="text-sm font-black text-slate-800 uppercase mb-3">Daftar Master Siswa</h2>
-      <!-- Desktop: List siswa jadi grid card 2 kolom -->
-      <div id="admin-student-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <h2 class="text-sm font-black text-slate-800 uppercase mb-3">Daftar Kasus Debitur</h2>
+      <div id="admin-debitur-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <p class="text-sm text-slate-500 text-center py-4 lg:col-span-2">Memuat data database...</p>
       </div>
     </div>
-
   </div>
-
-  <script type="module">
-    import { supabase } from '/src/supabase.js';
-
-    if (localStorage.getItem('logged_in') !== 'true' || localStorage.getItem('user_role') !== 'admin') {
-      window.location.href = 'login.html'; 
-    } else {
-      document.getElementById('welcomeAdmin').innerText = `Halo, ${localStorage.getItem('user_name')}!`;
-    }
-
-    window.logout = function() {
-      localStorage.clear();
-      window.location.href = 'login.html';
-    }
-
-    window.switchTab = function(tabName) {
-      document.getElementById('content-akun').classList.add('hidden');
-      document.getElementById('content-siswa').classList.add('hidden');
-      document.getElementById(`content-${tabName}`).classList.remove('hidden');
-      document.getElementById('tab-akun').classList.remove('tab-active');
-      document.getElementById('tab-siswa').classList.remove('tab-active');
-      document.getElementById(`tab-${tabName}`).classList.add('tab-active');
-      if(tabName === 'siswa') loadSiswaAdmin();
-    }
-
-    async function buatAkun(e, role) {
-      e.preventDefault();
-      const btn = e.target.querySelector('button'); 
-      btn.innerText = "Memproses...";
-      
-      let userPrefix = role === 'coach' ? 'c' : 'p';
-      let userVal = document.getElementById(`${userPrefix}_user`).value;
-      let passVal = document.getElementById(`${userPrefix}_pass`).value;
-
-      try {
-        const { error } = await supabase.from('users').insert([{ username: userVal, password: passVal, role: role }]);
-        if (error) throw error;
-        alert(`✅ Akun ${role.toUpperCase()} "${userVal}" berhasil dibuat!`);
-        e.target.reset();
-      } catch (err) {
-        alert("Gagal bikin akun (Mungkin username sudah ada): " + err.message);
-      } finally {
-        btn.innerText = `Simpan Akun ${role.charAt(0).toUpperCase() + role.slice(1)}`;
-      }
-    }
-
-    document.getElementById('formCoach').addEventListener('submit', (e) => buatAkun(e, 'coach'));
-    document.getElementById('formParent').addEventListener('submit', (e) => buatAkun(e, 'parent'));
-
-    async function loadSiswaAdmin() {
-      const container = document.getElementById('admin-student-list');
-      try {
-        const { data, error } = await supabase.from('siswa').select('*').order('nama_lengkap', { ascending: true });
-        if (error) throw error;
-        if (data.length === 0) {
-          container.innerHTML = `<p class="text-sm text-slate-500 text-center py-4 lg:col-span-2">Database kosong.</p>`;
-          return;
-        }
-        container.innerHTML = data.map(s => {
-          let tglIndo = s.tanggal_lahir ? s.tanggal_lahir.split('-').reverse().join('/') : '-';
-          return `
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center hover:shadow-md transition-shadow">
-              <div>
-                <h3 class="font-bold text-[#0B1B3D] text-[14px] uppercase">${s.nama_lengkap}</h3>
-                <p class="text-[11px] text-slate-500 font-medium">📅 ${tglIndo} | <span class="text-orange-600 font-bold">${s.kelompok_umur}</span></p>
-                <p class="text-[11px] text-slate-500 font-medium">📱 WA: ${s.no_wa || '-'}</p>
-              </div>
-              <button onclick="bukaEditSiswa('${s.id}', '${s.nama_lengkap}', '${s.tanggal_lahir}', '${s.kelompok_umur}', '${s.no_wa}')" 
-                      class="bg-orange-100 text-orange-700 text-[11px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all">
-                Edit
-              </button>
-            </div>
-          `;
-        }).join('');
-      } catch (err) {
-        container.innerHTML = `<p class="text-sm text-red-500 lg:col-span-2">Error: ${err.message}</p>`;
-      }
-    }
-
-    window.bukaEditSiswa = function(id, nama, tgl, ku, wa) {
-      document.getElementById('editContainer').classList.remove('hidden');
-      document.getElementById('edit_id').value = id;
-      document.getElementById('edit_nama').value = nama;
-      document.getElementById('edit_tgl').value = tgl;
-      document.getElementById('edit_ku').value = ku;
-      document.getElementById('edit_wa').value = wa;
-      window.scrollTo({ top: 0, behavior: 'smooth' }); 
-    }
-
-    window.batalEdit = function() {
-      document.getElementById('editContainer').classList.add('hidden');
-      document.getElementById('formEditSiswa').reset();
-    }
-
-    document.getElementById('formEditSiswa').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = e.target.querySelector('button'); btn.innerText = "Mengupdate...";
-      const id = document.getElementById('edit_id').value;
-      try {
-        const { error } = await supabase.from('siswa').update({
-          nama_lengkap: document.getElementById('edit_nama').value,
-          tanggal_lahir: document.getElementById('edit_tgl').value,
-          kelompok_umur: document.getElementById('edit_ku').value,
-          no_wa: document.getElementById('edit_wa').value
-        }).eq('id', id);
-        if (error) throw error;
-        alert("✅ Data siswa berhasil diperbarui!");
-        window.batalEdit();
-        loadSiswaAdmin();
-      } catch (err) { alert("Gagal update: " + err.message); } 
-      finally { btn.innerText = "Update Database Siswa"; }
-    });
-  </script>
+  <script type="module" src="/src/admin.js"></script>
 </body>
 </html>

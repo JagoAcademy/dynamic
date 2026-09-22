@@ -6,11 +6,9 @@ export default defineConfig({
       input: {
         main: 'index.html',
         login: 'login.html',
-        coach: 'coach.html',
-        siswa: 'siswa.html',
-        parent: 'parent.html',
+        collector: 'collector.html',
         admin: 'admin.html',
-        owner: 'owner.html', // <-- Tambahin baris ini
+        owner: 'owner.html',
       }
     }
   }
