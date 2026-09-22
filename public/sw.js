@@ -1,37 +1,32 @@
-// Naikkan versi cache (misal ke v2, v3, dst) jika kamu ingin memaksa browser clear cache aset lama
-const CACHE_NAME = 'acs-cache-v2'; 
+const CACHE_NAME = 'acs-cache-v3'; // Naikkan versi ke v3 untuk hapus sisa cache error kemarin
 
+// Cukup daftarkan aset statis yang PASTI ada di folder public/ atau root hasil build
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/login.html',
-  '/collector.html',
-  '/admin.html',
-  '/owner.html',
   '/style.css',
   '/images/logo.png',
   '/manifest.json'
 ];
 
-// 1. Tahap Install: Amankan semua aset utama ke dalam cache baru
+// 1. Install Event
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('📦 PWA: Mengarsipkan aset ke cache baru...');
-      return cache.addAll(ASSETS_TO_CACHE);
+      console.log('📦 PWA: Mengarsipkan aset dasar...');
+      // Menggunakan return agar jika ada 1 file gagal, proses tidak langsung merusak SW
+      return cache.addAll(ASSETS_TO_CACHE).catch(err => console.log("PWA Cache Warning:", err));
     })
   );
-  // Paksa Service Worker baru langsung aktif detik ini juga tanpa menunggu
-  self.skipWaiting(); 
+  self.skipWaiting();
 });
 
-// 2. Tahap Activate: Bersihkan total semua cache versi lama (Clear Cache otomatis)
+// 2. Activate Event: Hapus cache lama (Clear Cache Otomatis)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cache) => {
-          // Jika ada nama cache lama yang tidak cocok dengan versi baru, ledakkan/hapus!
           if (cache !== CACHE_NAME) {
             console.log('🗑️ PWA: Menghapus cache versi lama:', cache);
             return caches.delete(cache);
@@ -39,24 +34,34 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => {
-      console.log('🚀 PWA: Cache lama bersih, versi baru siap mengambil alih!');
-      // Paksa halaman web yang sedang terbuka langsung dikontrol oleh SW baru
-      return self.clients.claim(); 
+      return self.clients.claim();
     })
   );
 });
 
-// 3. Tahap Fetch: Strategi Cache First / Network Fallback
+// 3. Fetch Event: Strategi Network-First untuk Aset Dinamis Vite
+// Ini kunci utamanya agar file build Vite (di dalam folder /assets/) tidak memicu error PWA
 self.addEventListener('fetch', (event) => {
-  // Hanya tangani request dengan skema http/https (menghindari error ekstensi browser)
   if (!event.request.url.startsWith(self.location.origin)) {
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      // Jika aset ada di cache, pakai cache. Jika tidak ada, ambil dari jaringan/Vercel.
-      return cachedResponse || fetch(event.request);
-    })
+    // Cari di jaringan dulu (Network First) agar file buatan Vite selalu yang terbaru
+    fetch(event.request)
+      .then((response) => {
+        // Jika sukses didapat dari Vercel, simpan salinannya ke cache untuk mode offline
+        if (response.status === 200 && event.request.method === 'GET') {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        // Jika offline / gagal tersambung ke Vercel, baru ambil dari cache cadangan
+        return caches.match(event.request);
+      })
   );
 });
