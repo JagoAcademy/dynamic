@@ -5,26 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Login Portal - AVIANDO</title>
   
-  <!-- Memanggil style.css milikmu yang sudah ada di root -->
+  <!-- Memanggil style.css yang berada di root -->
   <link rel="stylesheet" href="/style.css">
   
   <style>
-    /* Hanya menambahkan modifikasi gaya khusus untuk form di dalam kontainer */
+    /* Modifikasi gaya khusus agar form pas dan tidak memotong footer di HP */
     .form-box {
       width: 100%;
       background-color: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(4px);
       border-radius: 20px;
-      padding: 24px;
+      padding: 18px 20px; /* Diperkecil agar menghemat ruang vertical */
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
-      margin-top: 12px;
+      margin-top: 10px;
     }
 
     .form-group {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      margin-bottom: 16px;
+      gap: 4px;
+      margin-bottom: 12px; /* Diperkecil sedikit */
       text-align: left;
     }
 
@@ -38,7 +38,7 @@
 
     .form-input {
       width: 100%;
-      padding: 12px 14px;
+      padding: 10px 14px; /* Lebih ramping */
       border: 1.5px solid #e5e7eb;
       border-radius: 10px;
       font-size: 13px;
@@ -58,7 +58,7 @@
       color: #dc2626;
       font-size: 11px;
       font-weight: 600;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       text-align: center;
     }
 
@@ -68,7 +68,7 @@
 
     .btn-back {
       display: inline-block;
-      margin-top: 16px;
+      margin-top: 12px;
       color: #172554;
       font-size: 12px;
       text-decoration: none;
@@ -83,10 +83,10 @@
 </head>
 <body>
 
-  <!-- Menggunakan susunan class bawaan style.css milikmu -->
+  <!-- Menggunakan struktur kontainer utama dari style.css -->
   <div class="app-container">
     
-    <!-- BAGIAN ATAS -->
+    <!-- BAGIAN ATAS: Identitas & Form Input -->
     <div class="top-section">
       
       <!-- Lingkaran Logo ACS -->
@@ -96,28 +96,28 @@
       
       <!-- Judul Identitas Halaman -->
       <h1 class="title-main" style="font-size: 22px;">LOGIN PORTAL</h1>
-      <p class="title-sub" style="margin-bottom: 4px;">Portal Log In: Collector, Admin, & Owner AVIANDO</p>
+      <p class="title-sub" style="margin-bottom: 2px;">Portal Log In: Collector, Admin, & Owner AVIANDO</p>
       
-      <!-- Box Form Pembungkus -->
+      <!-- Box Form Utama -->
       <div class="form-box">
         <!-- Notifikasi Pesan Error -->
         <div id="errorMsg" class="alert-error hidden">Username atau password salah!</div>
 
         <form id="loginForm">
-          <!-- Input Username / Email -->
+          <!-- Input Username -->
           <div class="form-group">
-            <label for="username">Username / Email</label>
-            <input type="text" id="username" class="form-input" placeholder="Masukkan username atau email" required>
+            <label for="username">Username</label>
+            <input type="text" id="username" class="form-input" placeholder="Masukkan username" required autocomplete="username">
           </div>
           
           <!-- Input Password -->
           <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" id="password" class="form-input" placeholder="Masukkan password" required>
+            <input type="password" id="password" class="form-input" placeholder="Masukkan password" required autocomplete="current-password">
           </div>
           
-          <!-- Tombol Eksekusi Kirim Data -->
-          <button type="submit" id="submitBtn" class="btn-login" style="margin-bottom: 0;">
+          <!-- Tombol Akses Login -->
+          <button type="submit" id="submitBtn" class="btn-login" style="margin-bottom: 0; padding: 12px 16px;">
             Login Sekarang
           </button>
         </form>
@@ -128,7 +128,7 @@
       
     </div>
 
-    <!-- BAGIAN BAWAH -->
+    <!-- BAGIAN BAWAH: Menjamin posisi footer selalu terkunci rapi di bawah layar -->
     <div class="bottom-section">
       <div class="footer">
         <img src="/images/logo.png" alt="Logo Footer" class="footer-logo">
@@ -140,7 +140,7 @@
 
   </div>
 
-  <!-- Logika Operasional Autentikasi Menggunakan Struktur JavaScript Mentahmu -->
+  <!-- Logika Autentikasi Sinkron dengan Struktur Tabel Database Barumu -->
   <script type="module">
     import { supabase } from '/src/supabase.js';
 
@@ -153,29 +153,29 @@
       btn.disabled = true;
       errorMsg.classList.add('hidden');
 
-      const username = document.getElementById('username').value;
-      // Konversi otomatis string login jika bukan email asli
-      const targetEmail = username.includes('@') ? username : username + '@aviando.local';
+      const usernameVal = document.getElementById('username').value.trim();
+      const passwordVal = document.getElementById('password').value;
 
       try {
-        // Melakukan validasi pencocokan akun ke database Supabase
+        // Mencocokkan data langsung menggunakan parameter 'username' dan 'password' kustom KPI
         const { data, error } = await supabase
           .from('users')
           .select('*')
-          .eq('email', targetEmail)
+          .eq('username', usernameVal)
+          .eq('password', passwordVal)
           .single();
 
         if (error || !data) {
-          throw new Error("Kredensial tidak ditemukan.");
+          throw new Error("Kredensial tidak ditemukan atau tidak cocok.");
         }
 
-        // Perekaman Sesi Akses ke Penyimpanan Lokal Browser (Session)
+        // Penyimpanan Data Sesi Akses Ke Memori Browser
         localStorage.setItem('logged_in', 'true');
         localStorage.setItem('user_id', data.id);
         localStorage.setItem('user_name', data.name);
         localStorage.setItem('user_role', data.role);
 
-        // Pengalihan Halaman Berdasarkan Tingkatan Akses Pengguna
+        // Pengalihan Halaman Dashboard Secara Akurat Berdasarkan Tingkat Hak Akses (Role)
         if (data.role === 'admin') window.location.href = 'admin.html';
         else if (data.role === 'owner') window.location.href = 'owner.html';
         else if (data.role === 'collector') window.location.href = 'collector.html';
@@ -184,7 +184,7 @@
       } catch (err) {
         errorMsg.innerText = "Username atau password salah!";
         errorMsg.classList.remove('hidden');
-        console.error(err);
+        console.error("Login Error Details:", err);
       } finally {
         btn.innerText = "Login Sekarang";
         btn.disabled = false;
