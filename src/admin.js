@@ -1,5 +1,6 @@
 import { supabase } from './supabase.js';
 
+// Cek Sesi Admin
 if (localStorage.getItem('logged_in') !== 'true' || localStorage.getItem('user_role') !== 'admin') {
   window.location.href = 'login.html';
 } else {
@@ -7,11 +8,13 @@ if (localStorage.getItem('logged_in') !== 'true' || localStorage.getItem('user_r
   document.getElementById('welcomeAdmin').innerText = `Halo, ${adminName}!`;
 }
 
+// Fungsi Logout
 window.logout = function() {
   localStorage.clear();
   window.location.href = 'login.html';
 }
 
+// Navigasi Tab
 window.switchTab = function(tabName) {
   document.getElementById('content-akun').classList.add('hidden');
   document.getElementById('content-debitur').classList.add('hidden');
@@ -23,19 +26,43 @@ window.switchTab = function(tabName) {
   if(tabName === 'debitur') loadDebitur();
 }
 
+// Form Buat Akun Collector
 document.getElementById('formCollector')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = e.target.querySelector('button'); 
   btn.innerText = "Memproses...";
-  const emailVal = document.getElementById('c_user').value;
+  
+  // Ambil semua data real dari form HTML
+  const nameVal = document.getElementById('c_name').value.trim();
+  const usernameVal = document.getElementById('c_user').value.trim();
+  const passwordVal = document.getElementById('c_pass').value;
+  const phoneVal = document.getElementById('c_phone').value.trim();
+  
+  // Ambil ID admin yang sedang login buat direkam di kolom created_by
+  const adminId = localStorage.getItem('user_id'); 
 
   try {
     const { error } = await supabase.from('users').insert([
-      { email: emailVal + '@aviando.local', name: emailVal, role: 'collector' }
+      { 
+        name: nameVal,
+        username: usernameVal, 
+        password: passwordVal, 
+        phone: phoneVal || null, 
+        role: 'collector',
+        created_by: adminId 
+      }
     ]);
-    if (error) throw error;
-    alert(`✅ Akun Collector "${emailVal}" berhasil dibuat!`);
-    e.target.reset();
+    
+    if (error) {
+      // Menangkap error dari DB jika username sudah pernah dipakai
+      if (error.code === '23505') {
+        throw new Error("Username tersebut sudah digunakan, silakan pilih yang lain.");
+      }
+      throw error;
+    }
+    
+    alert(`✅ Akun Collector atas nama "${nameVal}" berhasil dibuat!`);
+    e.target.reset(); // Kosongkan form setelah sukses
   } catch (err) {
     alert("Gagal membuat akun: " + err.message);
   } finally {
@@ -43,6 +70,7 @@ document.getElementById('formCollector')?.addEventListener('submit', async (e) =
   }
 });
 
+// Load Daftar Debitur
 async function loadDebitur() {
   const container = document.getElementById('admin-debitur-list');
   try {
@@ -50,7 +78,7 @@ async function loadDebitur() {
     if (error) throw error;
     
     if (data.length === 0) {
-      container.innerHTML = `<p class="text-sm text-slate-500 text-center py-4 lg:col-span-2">Database debitur kosong.</p>`;
+      container.innerHTML = `<p class="text-sm text-slate-500 text-center py-4 col-span-full">Database debitur kosong.</p>`;
       return;
     }
     
@@ -67,6 +95,6 @@ async function loadDebitur() {
       `;
     }).join('');
   } catch (err) {
-    container.innerHTML = `<p class="text-sm text-red-500 lg:col-span-2">Error: ${err.message}</p>`;
+    container.innerHTML = `<p class="text-sm text-red-500 col-span-full">Error: ${err.message}</p>`;
   }
 }

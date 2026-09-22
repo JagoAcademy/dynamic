@@ -43,11 +43,21 @@
             <span class="text-3xl">📋</span>
             <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Buat Akun Collector</h2>
         </div>
+        
         <form id="formCollector" class="space-y-4">
-          <input type="text" id="c_user" required placeholder="Username Collector (Email)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
+          <!-- Input Nama Asli -->
+          <input type="text" id="c_name" required placeholder="Nama Lengkap Collector" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
+          
+          <!-- Input Username & Password -->
+          <input type="text" id="c_user" required placeholder="Username Login" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
           <input type="password" id="c_pass" required placeholder="Password Akun" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
+          
+          <!-- Input Kontak Opsional -->
+          <input type="number" id="c_phone" placeholder="Nomor HP / WA (Opsional)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
+          
           <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all hover:bg-orange-600 shadow-md">Simpan Akun Collector</button>
         </form>
+
       </div>
     </div>
 
@@ -86,6 +96,7 @@
     </div>
 
   </main>
+  
   <script type="module" src="/src/admin.js"></script>
 </body>
 </html>
