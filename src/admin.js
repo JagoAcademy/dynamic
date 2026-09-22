@@ -26,6 +26,46 @@ window.switchTab = function(tabName) {
   if(tabName === 'debitur') loadDebitur();
 }
 
+// =========================================
+// LOGIKA POP-UP UPLOAD EXCEL
+// =========================================
+
+window.openExcelModal = function() {
+  const modal = document.getElementById('modal-excel');
+  const dateInput = document.getElementById('excel_date');
+  
+  // Ambil tanggal hari ini (Otomatis menyesuaikan sistem HP/PC admin)
+  const today = new Date();
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  dateInput.value = today.toLocaleDateString('id-ID', options); // Cth output: "Rabu, 23 September 2026"
+  
+  // Tampilkan Pop-up
+  modal.classList.remove('hidden');
+}
+
+window.closeExcelModal = function() {
+  const modal = document.getElementById('modal-excel');
+  modal.classList.add('hidden');
+  document.getElementById('formUploadExcel').reset(); // Kosongkan isian
+}
+
+// Menangani klik tombol submit di Pop-up Excel
+document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const clientName = document.getElementById('excel_client').value.trim();
+  const fileInput = document.getElementById('excel_file');
+  
+  if (fileInput.files.length > 0) {
+    const fileName = fileInput.files[0].name;
+    alert(`✅ BERHASIL DITERIMA!\n\nFile Excel: "${fileName}"\nKlien: "${clientName}"\nTanggal: ${document.getElementById('excel_date').value}\n\n(Catatan: Mesin pembaca Excel (parsing .xlsx to JSON) akan diintegrasikan di tahap instalasi Node/Modul selanjutnya).`);
+    closeExcelModal();
+  }
+});
+
+// =========================================
+// LOGIKA INPUT MANUAL DEBITUR & AKUN
+// =========================================
+
 // Tambah Field Detail Ekstra JSONB Secara Dinamis
 window.addJsonField = function() {
   const container = document.getElementById('jsonb-fields-container');
@@ -76,14 +116,12 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   const btn = e.target.querySelector('button');
   btn.innerText = "Menyimpan Data...";
 
-  // 1. Tangkap Data Inti Wajib
   const namaKlien = document.getElementById('input_client').value.trim();
   const namaDebitur = document.getElementById('input_nama').value.trim();
   const nikDebitur = document.getElementById('input_nik').value.trim();
   const amount = document.getElementById('input_amount').value;
   const dueDate = document.getElementById('input_tgl').value;
 
-  // 2. Rangkai Data JSONB Elastis (Memasukkan Klien, Amount, dan Due Date ke dalam JSONB)
   const jsonbData = {
     klien_asal: namaKlien,
     total_terutang: amount,
@@ -93,19 +131,16 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   const jsonRows = document.querySelectorAll('.json-row');
   
   jsonRows.forEach(row => {
-    // Membaca field "No WhatsApp" yang di-lock atau field custom yang diketik
     const keyInput = row.querySelector('.json-key') || row.querySelector('input[readonly]');
     const valInput = row.querySelector('.json-val');
     
     if (keyInput && valInput && valInput.value.trim() !== '') {
-      // Mengubah spasi menjadi underscore otomatis, misal "Alamat Kantor" -> "alamat_kantor"
       const keyStr = keyInput.value.trim().replace(/\s+/g, '_').toLowerCase(); 
       jsonbData[keyStr] = valInput.value.trim();
     }
   });
 
   try {
-    // Eksekusi insert murni ke tabel debtors
     const { error } = await supabase.from('debtors').insert([{
       name: namaDebitur,
       nik: nikDebitur,
@@ -120,14 +155,13 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
     alert(`✅ Data Debitur ${namaDebitur} dari Klien ${namaKlien} berhasil disimpan!`);
     e.target.reset();
     
-    // Hapus sisa field json tambahan, balik ke default state
     document.getElementById('jsonb-fields-container').innerHTML = `
       <div class="flex gap-2 json-row">
         <input type="text" value="No WhatsApp" readonly class="w-1/3 bg-slate-100 border border-slate-200 text-slate-500 rounded-lg px-3 py-2 text-xs font-semibold">
         <input type="text" placeholder="6281234..." required class="json-val w-2/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
       </div>
     `;
-    loadDebitur(); // Refresh tabel
+    loadDebitur();
 
   } catch (err) {
     alert("Gagal simpan debitur: " + err.message);
@@ -149,10 +183,7 @@ async function loadDebitur() {
     }
     
     container.innerHTML = data.map(d => {
-      // Menarik data Klien Asal dari JSONB
       const namaKlien = d.contact_info?.klien_asal || 'Klien Tidak Diketahui';
-      
-      // Filter key json agar tidak menampilkan data mentah di badge
       const ignoredKeys = ['klien_asal', 'total_terutang', 'jatuh_tempo'];
       const contactKeys = Object.keys(d.contact_info || {}).filter(k => !ignoredKeys.includes(k));
       const labels = contactKeys.map(key => `<span class="bg-slate-100 text-slate-500 text-[10px] px-2 py-1 rounded font-bold mr-1 mb-1 inline-block">${key}</span>`).join('');
