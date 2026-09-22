@@ -1,37 +1,21 @@
 {
-  "id": "/aviando-collector-system",
-  "short_name": "ACS",
   "name": "Aviando Collector System",
+  "short_name": "ACS",
   "description": "Sistem Penagihan Terpadu Aviando",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0f2b5c",
+  "theme_color": "#0f2b5c",
   "icons": [
     {
       "src": "/images/logo.png",
-      "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any"
+      "type": "image/png"
     },
     {
       "src": "/images/logo.png",
-      "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any"
-    },
-    {
-      "src": "/images/logo.png",
-      "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/images/logo.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "maskable"
+      "type": "image/png"
     }
-  ],
-  "start_url": "/",
-  "background_color": "#0f2b5c",
-  "theme_color": "#0f2b5c",
-  "display": "standalone",
-  "orientation": "portrait"
+  ]
 }
