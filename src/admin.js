@@ -27,86 +27,91 @@ window.switchTab = function(tabName) {
 }
 
 // =========================================
-// LOGIKA POP-UP UPLOAD EXCEL (DENGAN DEBUGGER)
+// THE MAGIC: LOGIKA PARSING & UPLOAD EXCEL
 // =========================================
 
 window.openExcelModal = function() {
   const modal = document.getElementById('modal-excel');
   const dateInput = document.getElementById('excel_date');
   
-  // Ambil tanggal hari ini (Otomatis menyesuaikan sistem HP/PC admin)
   const today = new Date();
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   dateInput.value = today.toLocaleDateString('id-ID', options); 
   
-  // Tampilkan Pop-up
   modal.classList.remove('hidden');
 }
 
 window.closeExcelModal = function() {
   const modal = document.getElementById('modal-excel');
   modal.classList.add('hidden');
-  document.getElementById('formUploadExcel').reset(); // Kosongkan isian
+  document.getElementById('formUploadExcel').reset(); 
 }
 
-// Menangani klik tombol submit di Pop-up Excel dan kirim ke Database
-document.getElementById('formUploadExcel')?.addEventListener('submit', async (e) => {
+// Menangani klik tombol submit dan membaca isi file Excel asli
+document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
   e.preventDefault();
   const clientName = document.getElementById('excel_client').value.trim();
   const fileInput = document.getElementById('excel_file');
   const submitBtn = e.target.querySelector('button');
   
   if (fileInput.files.length > 0) {
-    const fileName = fileInput.files[0].name;
-    
-    submitBtn.innerText = "Mengunggah ke Database...";
+    const file = fileInput.files[0];
+    submitBtn.innerText = "Membaca & Parsing File...";
     submitBtn.disabled = true;
 
-    try {
-      // DEBUG 1: Cek apakah tombol berfungsi dan data form tertangkap
-      alert(`[DEBUG 1 - PERSIAPAN]\nMulai memproses upload...\nKlien: ${clientName}\nFile: ${fileName}`);
+    // Gunakan FileReader untuk membaca file biner di browser
+    const reader = new FileReader();
 
-      const dummyExcelData = {
-        nama_file: fileName,
-        tanggal_upload: document.getElementById('excel_date').value,
-        status_parsing: "Simulasi Berhasil",
-        total_baris_terbaca: 100
-      };
+    reader.onload = async (event) => {
+      try {
+        const data = new Uint8Array(event.target.result);
+        
+        // Panggil objek XLSX (dari CDN SheetJS yang dipasang di HTML)
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        // Ambil Sheet (Halaman) pertama dari file Excel
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        // AJAIB: Ubah isi Excel menjadi deretan Array Object (JSON)
+        const excelRows = XLSX.utils.sheet_to_json(worksheet);
 
-      const payload = {
-        client: clientName,
-        debitur: dummyExcelData,
-        status: 'Pending'
-      };
+        if (excelRows.length === 0) {
+          throw new Error("File Excel/CSV terlihat kosong atau formatnya tidak bisa dibaca.");
+        }
 
-      // DEBUG 2: Cek wujud data sebelum dikirim ke Supabase
-      alert(`[DEBUG 2 - PAYLOAD SIAP KIRIM]\nMemanggil Supabase dengan data:\n${JSON.stringify(payload, null, 2)}`);
+        submitBtn.innerText = `Menyimpan ${excelRows.length} Baris...`;
 
-      // EKSEKUSI INSERT (ditambah .select() agar Supabase membalas dengan data jika sukses)
-      const { data, error } = await supabase
-        .from('excel_debitur')
-        .insert([payload])
-        .select();
+        // Proses Mapping JSON sesuai struktur tabel 'excel_debitur'
+        // Setiap baris dari Excel akan diubah jadi 1 row di Supabase
+        const payload = excelRows.map(row => {
+          return {
+            client: clientName,
+            debitur: row,      // <- Ini kunci ajaibnya. Seluruh kolom Excel (Nama, ID, Nominal) lumer masuk ke sini otomatis!
+            status: 'Pending'
+          };
+        });
 
-      if (error) {
-        // DEBUG 3: Cek detail eror asli bawaan Supabase jika ditolak
-        alert(`[DEBUG 3 - DITOLAK SUPABASE]\nKode Error: ${error.code}\nPesan: ${error.message}\nDetail: ${error.details}\nHint: ${error.hint}`);
-        throw error;
+        // Tembak massal (Bulk Insert) ke Supabase dalam satu perintah!
+        const { error } = await supabase
+          .from('excel_debitur')
+          .insert(payload);
+
+        if (error) throw error;
+
+        alert(`✅ SUCCESS MAGIC DONE!\n\nSebanyak ${excelRows.length} data debitur berhasil di-parsing dan masuk ke Database dengan mulus!`);
+        closeExcelModal();
+
+      } catch (err) {
+        alert(`❌ GAGAL PARSING EXCEL!\n\nPesan Error: ${err.message}`);
+      } finally {
+        submitBtn.innerText = "Mulai Proses Parsing & Upload";
+        submitBtn.disabled = false;
       }
-
-      // DEBUG 4: Sukses!
-      alert(`✅ [DEBUG 4 - SUKSES MASUK DB!]\n\nData berhasil di-insert!\nRespon Database:\n${JSON.stringify(data, null, 2)}`);
-      closeExcelModal();
-
-    } catch (err) {
-      // Menangkap eror sistem / jaringan
-      if (!err.code) { 
-        alert(`❌ [EROR JARINGAN / SISTEM]\n\nPesan Error: ${err.message}`);
-      }
-    } finally {
-      submitBtn.innerText = "Mulai Proses Upload";
-      submitBtn.disabled = false;
-    }
+    };
+    
+    // Trigger pembacaan file
+    reader.readAsArrayBuffer(file);
   }
 });
 
@@ -114,7 +119,6 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
 // LOGIKA INPUT MANUAL DEBITUR & AKUN
 // =========================================
 
-// Tambah Field Detail Ekstra JSONB Secara Dinamis
 window.addJsonField = function() {
   const container = document.getElementById('jsonb-fields-container');
   const newRow = document.createElement('div');
@@ -158,7 +162,7 @@ document.getElementById('formCollector')?.addEventListener('submit', async (e) =
   }
 });
 
-// Form Simpan Debitur Manual & JSONB
+// Form Simpan Debitur Manual
 document.getElementById('formEditDebitur')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = e.target.querySelector('button');
@@ -189,7 +193,6 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   });
 
   try {
-    // Arahkan insert ke tabel baru: manual_debitur
     const { error } = await supabase.from('manual_debitur').insert([{
       name: namaDebitur,
       nik: nikDebitur,
@@ -219,11 +222,10 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   }
 });
 
-// Load Daftar Debitur dari tabel manual_debitur
+// Load Daftar Debitur Manual
 async function loadDebitur() {
   const container = document.getElementById('admin-debitur-list');
   try {
-    // Arahkan tarikan data dari tabel baru: manual_debitur
     const { data, error } = await supabase.from('manual_debitur').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     
