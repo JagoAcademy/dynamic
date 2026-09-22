@@ -27,69 +27,77 @@
     .font-dynamic { font-family: 'Montserrat', sans-serif; }
   </style>
 </head>
-<body class="bg-slate-50 min-h-screen flex flex-col text-slate-800">
-  
-  <main class="flex-grow flex flex-col">
-    <!-- HERO SECTION (Full Width) -->
-    <section class="w-full bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] relative flex-grow flex items-center pt-16 pb-24 lg:pt-0 lg:pb-0">
-      <div class="max-w-7xl mx-auto px-6 w-full flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+<!-- Background biru gelap dipasang di body agar full sampai ke bawah -->
+<body class="bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] min-h-screen flex flex-col font-sans text-slate-800">
+
+  <!-- WRAPPER UTAMA -->
+  <main class="flex-grow flex flex-col justify-center items-center w-full px-6 py-12 lg:py-20">
+    <div class="max-w-6xl mx-auto w-full flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-20">
+
+      <!-- BAGIAN KIRI / ATAS: Hero Text & Tombol Login -->
+      <div class="w-full lg:w-1/2 flex flex-col items-center lg:items-start text-center lg:text-left z-10">
         
-        <!-- Kiri: Logo & Text -->
-        <div class="w-full lg:w-1/2 flex flex-col items-center lg:items-start text-center lg:text-left z-10">
-          <div class="bg-white p-3 rounded-full shadow-[0_0_30px_rgba(255,255,255,0.15)] inline-block mb-6 lg:mb-8">
-            <img src="/images/logo.png" alt="Logo ACS" class="w-24 h-24 lg:w-32 lg:h-32 object-contain">
-          </div>
-          <h1 class="text-[2rem] lg:text-[3.5rem] font-dynamic font-black tracking-tight leading-tight uppercase mb-4 text-white drop-shadow-md">
-            AVIANDO<br>COLLECTOR SYSTEM
-          </h1>
-          <h2 class="text-lg lg:text-2xl font-bold text-[#ff6b35] mb-6">
-            Sistem Penagihan Terpadu
-          </h2>
-          <p class="text-sm lg:text-base text-slate-300 font-medium max-w-lg leading-relaxed mb-8 mx-auto lg:mx-0">
-            Platform manajemen tugas penagihan. Pantau aktivitas lapangan dan tingkatkan <span class="text-white font-bold">recovery rate</span> secara real-time.
-          </p>
-          <a href="login.html" class="bg-[#ff6b35] hover:bg-[#e65c00] text-white py-4 px-8 rounded-2xl shadow-[0_8px_20px_rgba(255,107,53,0.3)] flex items-center justify-center gap-3 transition-all active:scale-95 group w-full sm:w-auto">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 group-hover:scale-110 transition-transform"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>
-            <span class="font-bold tracking-wide uppercase text-sm">Akses Login Portal</span>
-          </a>
+        <!-- Logo -->
+        <div class="bg-white p-3 rounded-full shadow-[0_0_30px_rgba(255,255,255,0.15)] inline-block mb-6 lg:mb-8">
+          <img src="/images/logo.png" alt="Logo ACS" class="w-24 h-24 lg:w-32 lg:h-32 object-contain">
         </div>
 
-        <!-- Kanan: Features Stack (Bentuk List di Desktop) -->
-        <div class="w-full lg:w-1/2 flex justify-center lg:justify-end z-10">
-          <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4 w-full max-w-lg">
-            <!-- Feature 1 -->
-            <div class="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 flex items-center gap-5 shadow-xl hover:bg-white/15 transition-all">
-              <div class="text-4xl">⚖️</div>
-              <div class="text-left">
-                <h3 class="font-bold uppercase tracking-wider text-[#ff6b35]">Task Assign</h3>
-                <p class="text-xs text-slate-300 mt-1">Distribusi kasus otomatis</p>
-              </div>
-            </div>
-            <!-- Feature 2 -->
-            <div class="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 flex items-center gap-5 shadow-xl hover:bg-white/15 transition-all">
-              <div class="text-4xl">⚡</div>
-              <div class="text-left">
-                <h3 class="font-bold uppercase tracking-wider text-[#ff6b35]">Fast Update</h3>
-                <p class="text-xs text-slate-300 mt-1">Laporan instan dari lapangan</p>
-              </div>
-            </div>
-            <!-- Feature 3 -->
-            <div class="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 flex items-center gap-5 shadow-xl hover:bg-white/15 transition-all">
-              <div class="text-4xl">📊</div>
-              <div class="text-left">
-                <h3 class="font-bold uppercase tracking-wider text-[#ff6b35]">Real-Time</h3>
-                <p class="text-xs text-slate-300 mt-1">Pantau recovery rate akurat</p>
-              </div>
-            </div>
+        <!-- Teks -->
+        <h1 class="text-[2.2rem] lg:text-[3.5rem] font-dynamic font-black tracking-tight leading-tight uppercase mb-3 text-white drop-shadow-md">
+          AVIANDO<br>COLLECTOR SYSTEM
+        </h1>
+        <h2 class="text-lg lg:text-2xl font-bold text-[#ff6b35] mb-6">
+          Sistem Penagihan Terpadu
+        </h2>
+        <p class="text-sm lg:text-base text-slate-300 font-medium max-w-lg leading-relaxed mb-8 mx-auto lg:mx-0">
+          Platform manajemen tugas penagihan. Pantau aktivitas lapangan dan tingkatkan <span class="text-white font-bold">recovery rate</span> secara real-time.
+        </p>
+
+        <!-- Tombol CTA -->
+        <a href="login.html" class="w-full lg:w-auto bg-[#ff6b35] hover:bg-[#e65c00] text-white py-4 px-8 rounded-xl shadow-[0_8px_20px_rgba(255,107,53,0.3)] flex items-center justify-center gap-3 transition-all active:scale-95 group">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 group-hover:scale-110 transition-transform">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+          </svg>
+          <span class="font-bold tracking-wide uppercase text-sm">Akses Login Portal</span>
+        </a>
+      </div>
+
+      <!-- BAGIAN KANAN / BAWAH: Fitur Berjejer ke Bawah -->
+      <div class="w-full lg:w-1/2 flex flex-col gap-4 z-10 max-w-md lg:max-w-lg mx-auto lg:mx-0">
+        
+        <!-- Card 1 -->
+        <div class="bg-white/10 backdrop-blur-md p-5 rounded-2xl border border-white/10 flex items-center gap-5 shadow-lg hover:bg-white/15 transition-all">
+          <div class="text-4xl drop-shadow-md">⚖️</div>
+          <div class="text-left">
+            <h3 class="font-bold uppercase tracking-wider text-[#ff6b35] text-sm">Task Assign</h3>
+            <p class="text-xs text-slate-300 mt-1">Distribusi kasus otomatis</p>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bg-white/10 backdrop-blur-md p-5 rounded-2xl border border-white/10 flex items-center gap-5 shadow-lg hover:bg-white/15 transition-all">
+          <div class="text-4xl drop-shadow-md">⚡</div>
+          <div class="text-left">
+            <h3 class="font-bold uppercase tracking-wider text-[#ff6b35] text-sm">Fast Update</h3>
+            <p class="text-xs text-slate-300 mt-1">Laporan instan dari lapangan</p>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-white/10 backdrop-blur-md p-5 rounded-2xl border border-white/10 flex items-center gap-5 shadow-lg hover:bg-white/15 transition-all">
+          <div class="text-4xl drop-shadow-md">📊</div>
+          <div class="text-left">
+            <h3 class="font-bold uppercase tracking-wider text-[#ff6b35] text-sm">Real-Time</h3>
+            <p class="text-xs text-slate-300 mt-1">Pantau recovery rate akurat</p>
           </div>
         </div>
 
       </div>
-    </section>
+    </div>
   </main>
 
-  <!-- FOOTER -->
-  <footer class="w-full bg-slate-50 pt-16 pb-8 border-t border-slate-200 flex flex-col items-center justify-center shrink-0">
+  <!-- FOOTER (Background Putih Solid di paling bawah) -->
+  <footer class="w-full bg-slate-50 pt-10 pb-8 flex flex-col items-center justify-center shrink-0 rounded-t-3xl shadow-[0_-10px_20px_rgba(0,0,0,0.1)]">
     <img src="/images/logo.png" alt="Logo ACS Footer" class="w-12 h-12 object-contain mb-3 opacity-70 grayscale hover:grayscale-0 transition-all duration-300">
     <p class="text-xs font-black uppercase tracking-widest text-[#1e3a5f] mb-1">Aviando Collector System</p>
     <p class="text-[11px] text-slate-500 font-medium">Developed by <span class="font-bold text-[#ff6b35]">ADITYA WEB-DEV</span></p>
