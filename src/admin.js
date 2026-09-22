@@ -165,8 +165,8 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   const amount = document.getElementById('input_amount').value;
   const dueDate = document.getElementById('input_tgl').value;
 
+  // Hapus 'klien_asal' dari sini karena udah punya kolom sendiri
   const jsonbData = {
-    klien_asal: namaKlien,
     total_terutang: amount,
     jatuh_tempo: dueDate
   };
@@ -184,6 +184,7 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   try {
     const { error } = await supabase.from('manual_debitur').insert([{
       tanggal_upload: isoUploadDate,
+      client: namaKlien, // Kolom client sekarang berdiri sendiri secara gagah
       name: namaDebitur,
       nik: nikDebitur,
       contact_info: jsonbData
@@ -203,7 +204,6 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
         <input type="text" placeholder="6281234..." required class="json-val w-2/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
       </div>
     `;
-    // Set ulang tanggal biar gak kosong setelah di-reset formnya
     initManualDate();
     loadDebitur();
 
@@ -227,8 +227,9 @@ async function loadDebitur() {
     }
     
     container.innerHTML = data.map(d => {
-      const namaKlien = d.contact_info?.klien_asal || 'Klien Tidak Diketahui';
-      const ignoredKeys = ['klien_asal', 'total_terutang', 'jatuh_tempo'];
+      // Sekarang tarik namaKlien dari d.client asli database
+      const namaKlien = d.client || 'Klien Tidak Diketahui';
+      const ignoredKeys = ['total_terutang', 'jatuh_tempo'];
       const contactKeys = Object.keys(d.contact_info || {}).filter(k => !ignoredKeys.includes(k));
       const labels = contactKeys.map(key => `<span class="bg-slate-100 text-slate-500 text-[10px] px-2 py-1 rounded font-bold mr-1 mb-1 inline-block">${key}</span>`).join('');
       
