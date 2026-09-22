@@ -13,10 +13,11 @@
 </head>
 <body class="bg-slate-100 min-h-screen flex flex-col items-center relative font-sans text-slate-800">
   
-  <div class="w-full max-w-md md:max-w-2xl lg:max-w-5xl bg-slate-50 min-h-screen shadow-2xl relative pb-20 overflow-x-hidden transition-all duration-300">
+  <!-- Container utama diubah jadi flex flex-col untuk ngedorong footer ke paling bawah -->
+  <div class="w-full max-w-md md:max-w-2xl lg:max-w-5xl bg-slate-50 min-h-screen shadow-2xl relative flex flex-col overflow-x-hidden transition-all duration-300">
     
     <!-- HERO SECTION -->
-    <div class="bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] px-6 md:px-12 pt-14 pb-32 lg:pb-40 rounded-b-[2.5rem] shadow-xl text-white relative text-center lg:text-left">
+    <div class="bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] px-6 md:px-12 pt-14 pb-32 lg:pb-40 rounded-b-[2.5rem] shadow-xl text-white relative text-center lg:text-left shrink-0">
       
       <!-- FRAME LOGO -->
       <div class="relative z-10 mb-8 flex justify-center lg:justify-start">
@@ -26,7 +27,6 @@
       </div>
 
       <div class="relative z-10">
-        <!-- NAMA APLIKASI DI SINI BRAY -->
         <h1 class="text-[1.8rem] lg:text-[3.2rem] font-dynamic font-black tracking-tight leading-tight uppercase mb-2 drop-shadow-md">
           AVIANDO<br>COLLECTOR SYSTEM
         </h1>
@@ -40,7 +40,7 @@
     </div>
 
     <!-- FEATURES -->
-    <div class="px-6 md:px-12 -mt-16 relative z-20 mb-8">
+    <div class="px-6 md:px-12 -mt-16 relative z-20 mb-8 shrink-0">
       <div class="grid grid-cols-3 gap-2 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-slate-200">
         <div class="text-center flex flex-col items-center justify-center">
           <span class="text-2xl lg:text-3xl block mb-1">⚖️</span>
@@ -58,17 +58,21 @@
     </div>
 
     <!-- CALL TO ACTION (CTA) -->
-    <div class="px-6 md:px-12 flex flex-col gap-4 max-w-sm mx-auto w-full mt-6">
+    <div class="px-6 md:px-12 flex flex-col gap-4 max-w-sm mx-auto w-full mt-2 shrink-0">
       <a href="login.html" class="bg-[#ff6b35] hover:bg-[#e65c00] text-white py-4 px-6 rounded-2xl shadow-[0_8px_20px_rgba(255,107,53,0.3)] flex items-center justify-center gap-3 transition-all active:scale-95 group">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 group-hover:scale-110 transition-transform">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
         </svg>
         <span class="font-bold tracking-wide uppercase text-sm">Akses Login Portal</span>
       </a>
+    </div>
 
-      <a href="https://wa.me/628123456789" target="_blank" class="bg-white text-[#1e3a5f] border-2 border-[#1e3a5f]/10 py-4 px-6 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-50 transition-all active:scale-95">
-        <span class="font-bold text-sm tracking-wide">Pelajari Lebih Lanjut</span>
-      </a>
+    <!-- FOOTER / HEADER BAWAH -->
+    <div class="mt-auto pt-16 pb-8 flex flex-col items-center justify-center w-full bg-slate-50">
+      <img src="/images/logo.png" alt="Logo ACS Footer" class="w-12 h-12 object-contain mb-3 opacity-70 grayscale hover:grayscale-0 transition-all duration-300">
+      <p class="text-xs font-black uppercase tracking-widest text-[#1e3a5f] mb-1">Aviando Collector System</p>
+      <p class="text-[11px] text-slate-500 font-medium">Developed by <span class="font-bold text-[#ff6b35]">Aditya Web Developed</span></p>
+      <p class="text-[10px] text-slate-400 mt-2">&copy; 2026 All Rights Reserved.</p>
     </div>
 
   </div>
