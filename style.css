@@ -194,7 +194,6 @@ body {
   font-weight: 600;
 }
 
-
 /* =========================================
    STYLE TAMBAHAN KHUSUS HALAMAN LOGIN 
    ========================================= */
@@ -267,4 +266,34 @@ body {
 
 .btn-back:hover {
   color: #f97316;
+}
+
+/* =========================================
+   MEDIA QUERY: TAMPILAN DESKTOP / PC
+   Mengubah container menjadi "Floating App Card" ala HP Premium
+   ========================================= */
+@media (min-width: 768px) {
+  body {
+    background-color: #0b1e40;
+    /* Bikin background titik-titik elegan di luar HP */
+    background-image: radial-gradient(#1e3a5f 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+    padding: 40px 0; /* Kasih jarak atas bawah biar casing HP nggak nabrak atap monitor */
+  }
+
+  .app-container {
+    width: 390px; /* Kunci lebar pas ala HP standar */
+    min-height: 0 !important; /* Cabut efek tarikan layar memanjang dari versi mobile */
+    height: 800px; /* Kunci tinggi absolut HP */
+    max-height: calc(100vh - 80px); /* Kalau monitor PC-nya pendek, ukurannya otomatis menyesuaikan */
+    
+    border-radius: 40px; /* Bikin ujungnya melengkung halus ala casing HP */
+    overflow-y: auto; /* Kalau layarnya pendek, isinya tetap bisa di-scroll di dalam casing */
+    
+    /* Efek bayangan dan Casing Bezel Virtual */
+    box-shadow: 
+      0 30px 60px rgba(0,0,0,0.6),
+      0 0 0 12px #0f172a, /* Bezel casing layar bagian dalam */
+      0 0 0 14px rgba(255, 255, 255, 0.2); /* Frame metalik bagian luar */
+  }
 }
