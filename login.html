@@ -15,7 +15,7 @@
       background-color: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(4px);
       border-radius: 20px;
-      padding: 18px 20px; /* Diperkecil agar menghemat ruang vertical */
+      padding: 18px 20px;
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
       margin-top: 10px;
     }
@@ -24,7 +24,7 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
-      margin-bottom: 12px; /* Diperkecil sedikit */
+      margin-bottom: 12px;
       text-align: left;
     }
 
@@ -38,7 +38,7 @@
 
     .form-input {
       width: 100%;
-      padding: 10px 14px; /* Lebih ramping */
+      padding: 10px 14px;
       border: 1.5px solid #e5e7eb;
       border-radius: 10px;
       font-size: 13px;
@@ -128,7 +128,7 @@
       
     </div>
 
-    <!-- BAGIAN BAWAH: Menjamin posisi footer selalu terkunci rapi di bawah layar -->
+    <!-- BAGIAN BAWAH: Posisi footer terkunci rapi di bawah layar -->
     <div class="bottom-section">
       <div class="footer">
         <img src="/images/logo.png" alt="Logo Footer" class="footer-logo">
@@ -140,56 +140,7 @@
 
   </div>
 
-  <!-- Logika Autentikasi Sinkron dengan Struktur Tabel Database Barumu -->
-  <script type="module">
-    import { supabase } from '/src/supabase.js';
-
-    document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById('submitBtn');
-      const errorMsg = document.getElementById('errorMsg');
-      
-      btn.innerText = "Memeriksa...";
-      btn.disabled = true;
-      errorMsg.classList.add('hidden');
-
-      const usernameVal = document.getElementById('username').value.trim();
-      const passwordVal = document.getElementById('password').value;
-
-      try {
-        // Mencocokkan data langsung menggunakan parameter 'username' dan 'password' kustom KPI
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('username', usernameVal)
-          .eq('password', passwordVal)
-          .single();
-
-        if (error || !data) {
-          throw new Error("Kredensial tidak ditemukan atau tidak cocok.");
-        }
-
-        // Penyimpanan Data Sesi Akses Ke Memori Browser
-        localStorage.setItem('logged_in', 'true');
-        localStorage.setItem('user_id', data.id);
-        localStorage.setItem('user_name', data.name);
-        localStorage.setItem('user_role', data.role);
-
-        // Pengalihan Halaman Dashboard Secara Akurat Berdasarkan Tingkat Hak Akses (Role)
-        if (data.role === 'admin') window.location.href = 'admin.html';
-        else if (data.role === 'owner') window.location.href = 'owner.html';
-        else if (data.role === 'collector') window.location.href = 'collector.html';
-        else throw new Error("Role tidak dikenali.");
-
-      } catch (err) {
-        errorMsg.innerText = "Username atau password salah!";
-        errorMsg.classList.remove('hidden');
-        console.error("Login Error Details:", err);
-      } finally {
-        btn.innerText = "Login Sekarang";
-        btn.disabled = false;
-      }
-    });
-  </script>
+  <!-- Memanggil logika javascript eksternal menggunakan tipe modul khusus Vite -->
+  <script type="module" src="/src/login.js"></script>
 </body>
 </html>
