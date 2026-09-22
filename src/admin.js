@@ -27,7 +27,7 @@ window.switchTab = function(tabName) {
 }
 
 // =========================================
-// LOGIKA POP-UP UPLOAD EXCEL
+// LOGIKA POP-UP UPLOAD EXCEL (DENGAN DEBUGGER)
 // =========================================
 
 window.openExcelModal = function() {
@@ -59,13 +59,13 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
   if (fileInput.files.length > 0) {
     const fileName = fileInput.files[0].name;
     
-    // Ubah status tombol biar kelihatan lagi loading
     submitBtn.innerText = "Mengunggah ke Database...";
     submitBtn.disabled = true;
 
     try {
-      // BUNGKUSAN DATA DUMMY (Simulasi hasil baca Excel)
-      // Nanti ini diganti dengan hasil perulangan parsing baris Excel beneran
+      // DEBUG 1: Cek apakah tombol berfungsi dan data form tertangkap
+      alert(`[DEBUG 1 - PERSIAPAN]\nMulai memproses upload...\nKlien: ${clientName}\nFile: ${fileName}`);
+
       const dummyExcelData = {
         nama_file: fileName,
         tanggal_upload: document.getElementById('excel_date').value,
@@ -73,25 +73,37 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
         total_baris_terbaca: 100
       };
 
-      // EKSEKUSI INSERT KE TABEL excel_debitur
-      const { error } = await supabase.from('excel_debitur').insert([{
+      const payload = {
         client: clientName,
         debitur: dummyExcelData,
         status: 'Pending'
-      }]);
+      };
 
-      // Lempar error jika gagal (misal RLS masih kekunci)
-      if (error) throw error;
+      // DEBUG 2: Cek wujud data sebelum dikirim ke Supabase
+      alert(`[DEBUG 2 - PAYLOAD SIAP KIRIM]\nMemanggil Supabase dengan data:\n${JSON.stringify(payload, null, 2)}`);
 
-      // ALERT SUKSES MASUK DATABASE
-      alert(`✅ SUKSES MASUK DATABASE!\n\nData dari file "${fileName}" (Klien: ${clientName}) berhasil di-push ke tabel 'excel_debitur'.\n\nJalur RLS aman!`);
+      // EKSEKUSI INSERT (ditambah .select() agar Supabase membalas dengan data jika sukses)
+      const { data, error } = await supabase
+        .from('excel_debitur')
+        .insert([payload])
+        .select();
+
+      if (error) {
+        // DEBUG 3: Cek detail eror asli bawaan Supabase jika ditolak
+        alert(`[DEBUG 3 - DITOLAK SUPABASE]\nKode Error: ${error.code}\nPesan: ${error.message}\nDetail: ${error.details}\nHint: ${error.hint}`);
+        throw error;
+      }
+
+      // DEBUG 4: Sukses!
+      alert(`✅ [DEBUG 4 - SUKSES MASUK DB!]\n\nData berhasil di-insert!\nRespon Database:\n${JSON.stringify(data, null, 2)}`);
       closeExcelModal();
 
     } catch (err) {
-      // ALERT GAGAL TERTULIS
-      alert(`❌ GAGAL UPLOAD KE DATABASE!\n\nPesan Error: ${err.message}`);
+      // Menangkap eror sistem / jaringan
+      if (!err.code) { 
+        alert(`❌ [EROR JARINGAN / SISTEM]\n\nPesan Error: ${err.message}`);
+      }
     } finally {
-      // Kembalikan tombol ke kondisi semula
       submitBtn.innerText = "Mulai Proses Upload";
       submitBtn.disabled = false;
     }
