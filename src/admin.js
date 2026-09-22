@@ -8,13 +8,23 @@ if (localStorage.getItem('logged_in') !== 'true' || localStorage.getItem('user_r
   document.getElementById('welcomeAdmin').innerText = `Halo, ${adminName}!`;
 }
 
-// Fungsi Logout
+// Inisialisasi Tanggal Manual saat web dirender
+const initManualDate = () => {
+  const el = document.getElementById('manual_date');
+  if (el) {
+    const today = new Date();
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    el.value = today.toLocaleDateString('id-ID', options);
+    el.dataset.date = today.toISOString().split('T')[0]; // Format standard YYYY-MM-DD untuk DB
+  }
+};
+initManualDate();
+
 window.logout = function() {
   localStorage.clear();
   window.location.href = 'login.html';
 }
 
-// Navigasi Tab Utama
 window.switchTab = function(tabName) {
   document.getElementById('content-akun').classList.add('hidden');
   document.getElementById('content-debitur').classList.add('hidden');
@@ -27,7 +37,7 @@ window.switchTab = function(tabName) {
 }
 
 // =========================================
-// THE MAGIC: LOGIKA PARSING & UPLOAD EXCEL
+// LOGIKA POP-UP UPLOAD EXCEL 
 // =========================================
 
 window.openExcelModal = function() {
@@ -37,6 +47,7 @@ window.openExcelModal = function() {
   const today = new Date();
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   dateInput.value = today.toLocaleDateString('id-ID', options); 
+  dateInput.dataset.date = today.toISOString().split('T')[0];
   
   modal.classList.remove('hidden');
 }
@@ -47,61 +58,46 @@ window.closeExcelModal = function() {
   document.getElementById('formUploadExcel').reset(); 
 }
 
-// Menangani klik tombol submit dan membaca isi file Excel asli
+// Menangani klik tombol submit dan menyuntikkan tanggal_upload
 document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
   e.preventDefault();
   const clientName = document.getElementById('excel_client').value.trim();
   const fileInput = document.getElementById('excel_file');
   const submitBtn = e.target.querySelector('button');
+  const isoUploadDate = document.getElementById('excel_date').dataset.date;
   
   if (fileInput.files.length > 0) {
     const file = fileInput.files[0];
     submitBtn.innerText = "Membaca & Parsing File...";
     submitBtn.disabled = true;
 
-    // Gunakan FileReader untuk membaca file biner di browser
     const reader = new FileReader();
-
     reader.onload = async (event) => {
       try {
         const data = new Uint8Array(event.target.result);
-        
-        // Panggil objek XLSX (dari CDN SheetJS yang dipasang di HTML)
         const workbook = XLSX.read(data, { type: 'array' });
-        
-        // Ambil Sheet (Halaman) pertama dari file Excel
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
-        
-        // AJAIB: Ubah isi Excel menjadi deretan Array Object (JSON)
         const excelRows = XLSX.utils.sheet_to_json(worksheet);
 
-        if (excelRows.length === 0) {
-          throw new Error("File Excel/CSV terlihat kosong atau formatnya tidak bisa dibaca.");
-        }
-
+        if (excelRows.length === 0) throw new Error("File Excel/CSV kosong.");
         submitBtn.innerText = `Menyimpan ${excelRows.length} Baris...`;
 
-        // Proses Mapping JSON sesuai struktur tabel 'excel_debitur'
-        // Setiap baris dari Excel akan diubah jadi 1 row di Supabase
+        // Menyuntikkan tanggal_upload ke setiap row sebelum di-insert
         const payload = excelRows.map(row => {
           return {
+            tanggal_upload: isoUploadDate,
             client: clientName,
-            debitur: row,      // <- Ini kunci ajaibnya. Seluruh kolom Excel (Nama, ID, Nominal) lumer masuk ke sini otomatis!
+            debitur: row, 
             status: 'Pending'
           };
         });
 
-        // Tembak massal (Bulk Insert) ke Supabase dalam satu perintah!
-        const { error } = await supabase
-          .from('excel_debitur')
-          .insert(payload);
-
+        const { error } = await supabase.from('excel_debitur').insert(payload);
         if (error) throw error;
 
-        alert(`✅ SUCCESS MAGIC DONE!\n\nSebanyak ${excelRows.length} data debitur berhasil di-parsing dan masuk ke Database dengan mulus!`);
+        alert(`✅ SUCCESS MAGIC DONE!\n\nSebanyak ${excelRows.length} data berhasil terikat dengan Tanggal Upload: ${isoUploadDate} dan tersimpan di DB.`);
         closeExcelModal();
-
       } catch (err) {
         alert(`❌ GAGAL PARSING EXCEL!\n\nPesan Error: ${err.message}`);
       } finally {
@@ -109,8 +105,6 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
         submitBtn.disabled = false;
       }
     };
-    
-    // Trigger pembacaan file
     reader.readAsArrayBuffer(file);
   }
 });
@@ -131,7 +125,6 @@ window.addJsonField = function() {
   container.appendChild(newRow);
 }
 
-// Form Buat Akun Collector
 document.getElementById('formCollector')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = e.target.querySelector('button'); 
@@ -147,12 +140,10 @@ document.getElementById('formCollector')?.addEventListener('submit', async (e) =
     const { error } = await supabase.from('users').insert([{ 
       name: nameVal, username: usernameVal, password: passwordVal, phone: phoneVal || null, role: 'collector', created_by: adminId 
     }]);
-    
     if (error) {
       if (error.code === '23505') throw new Error("Username tersebut sudah digunakan.");
       throw error;
     }
-    
     alert(`✅ Akun Collector atas nama "${nameVal}" berhasil dibuat!`);
     e.target.reset(); 
   } catch (err) {
@@ -162,12 +153,12 @@ document.getElementById('formCollector')?.addEventListener('submit', async (e) =
   }
 });
 
-// Form Simpan Debitur Manual
 document.getElementById('formEditDebitur')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = e.target.querySelector('button');
   btn.innerText = "Menyimpan Data...";
 
+  const isoUploadDate = document.getElementById('manual_date').dataset.date;
   const namaKlien = document.getElementById('input_client').value.trim();
   const namaDebitur = document.getElementById('input_nama').value.trim();
   const nikDebitur = document.getElementById('input_nik').value.trim();
@@ -181,11 +172,9 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   };
 
   const jsonRows = document.querySelectorAll('.json-row');
-  
   jsonRows.forEach(row => {
     const keyInput = row.querySelector('.json-key') || row.querySelector('input[readonly]');
     const valInput = row.querySelector('.json-val');
-    
     if (keyInput && valInput && valInput.value.trim() !== '') {
       const keyStr = keyInput.value.trim().replace(/\s+/g, '_').toLowerCase(); 
       jsonbData[keyStr] = valInput.value.trim();
@@ -194,6 +183,7 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
 
   try {
     const { error } = await supabase.from('manual_debitur').insert([{
+      tanggal_upload: isoUploadDate,
       name: namaDebitur,
       nik: nikDebitur,
       contact_info: jsonbData
@@ -204,7 +194,7 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
       throw error;
     }
 
-    alert(`✅ Data Debitur ${namaDebitur} dari Klien ${namaKlien} berhasil disimpan!`);
+    alert(`✅ Data Debitur ${namaDebitur} berhasil disimpan dengan Tanggal Upload: ${isoUploadDate}`);
     e.target.reset();
     
     document.getElementById('jsonb-fields-container').innerHTML = `
@@ -213,6 +203,8 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
         <input type="text" placeholder="6281234..." required class="json-val w-2/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
       </div>
     `;
+    // Set ulang tanggal biar gak kosong setelah di-reset formnya
+    initManualDate();
     loadDebitur();
 
   } catch (err) {
@@ -222,7 +214,7 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   }
 });
 
-// Load Daftar Debitur Manual
+// Load Daftar Debitur
 async function loadDebitur() {
   const container = document.getElementById('admin-debitur-list');
   try {
@@ -243,7 +235,10 @@ async function loadDebitur() {
       return `
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
-            <p class="text-[11px] font-black text-orange-600 uppercase tracking-wider mb-1">🏢 ${namaKlien}</p>
+            <div class="flex justify-between items-start mb-2">
+               <p class="text-[11px] font-black text-orange-600 uppercase tracking-wider">🏢 ${namaKlien}</p>
+               <span class="bg-blue-50 text-blue-600 border border-blue-200 text-[9px] font-bold px-2 py-1 rounded shadow-sm">📅 ${d.tanggal_upload}</span>
+            </div>
             <h3 class="font-bold text-[#0B1B3D] text-[16px] uppercase mb-1">${d.name}</h3>
             <p class="text-[12px] text-slate-500 font-medium mb-3">ID Akun: <span class="font-bold text-slate-700">${d.nik}</span></p>
           </div>
