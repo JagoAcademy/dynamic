@@ -1,6 +1,10 @@
 import { supabase } from './supabase.js';
 
+// === STATE MANAGEMENT UNTUK PAGINATION ===
 let globalDebiturData = [];
+let currentFilteredData = [];
+let currentPage = 1;
+const itemsPerPage = 10;
 
 // Cek Sesi
 if (localStorage.getItem('logged_in') !== 'true' || localStorage.getItem('user_role') !== 'admin') {
@@ -17,7 +21,6 @@ const initManualDate = () => {
     const today = new Date();
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     el.value = today.toLocaleDateString('id-ID', options);
-    // Format YYYY-MM-DD standar DB
     el.dataset.date = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, '0') + "-" + String(today.getDate()).padStart(2, '0');
   }
 };
@@ -86,7 +89,6 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
         if (excelRows.length === 0) throw new Error("File Excel/CSV kosong.");
         submitBtn.innerText = `Menyimpan ${excelRows.length} Baris...`;
 
-        // Untuk excel, kita asumsikan alamat dibaca dalam JSON. Kolom alamat utama dibiarkan null dulu.
         const payload = excelRows.map(row => {
           return {
             tanggal_upload: isoUploadDate,
@@ -99,9 +101,10 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
         const { error } = await supabase.from('excel_debitur').insert(payload);
         if (error) throw error;
 
-        alert(`✅ UPLOAD MASSAL SUKSES!\n\n${excelRows.length} data masuk ke tabel excel_debitur dengan Tanggal Upload: ${isoUploadDate}.`);
+        alert(`✅ UPLOAD MASSAL SUKSES!\n\n${excelRows.length} data masuk ke DB.`);
         closeExcelModal();
-        // Load data lagi (kalau lu narik dari excel_debitur juga, tapi saat ini loadDebitur narik dr manual_debitur)
+        // Disini belum kita panggil loadDebitur() karena list tabel sementara ngambil dari manual_debitur.
+        // Jika perlu, gabungkan datanya nanti.
       } catch (err) {
         alert(`❌ GAGAL UPLOAD!\n\nPesan Error: ${err.message}`);
       } finally {
@@ -130,7 +133,6 @@ window.addJsonField = function() {
   container.appendChild(newRow);
 }
 
-// Simpan Akun Collector
 document.getElementById('formCollector')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = e.target.querySelector('button'); 
@@ -159,13 +161,11 @@ document.getElementById('formCollector')?.addEventListener('submit', async (e) =
   }
 });
 
-// Simpan Data Debitur Manual -> Masuk ke manual_debitur
 document.getElementById('formEditDebitur')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = e.target.querySelector('button');
   btn.innerText = "Menyimpan Data...";
 
-  // 1. Ambil Info Dasar
   const isoUploadDate = document.getElementById('manual_date').dataset.date;
   const namaKlien = document.getElementById('input_client').value.trim();
   const namaDebitur = document.getElementById('input_nama').value.trim();
@@ -173,7 +173,6 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   const amount = document.getElementById('input_amount').value;
   const dueDate = document.getElementById('input_tgl').value;
 
-  // 2. Ambil 6 Data Lokasi Baru
   const alamatLengkap = document.getElementById('input_alamat').value.trim();
   const kelurahan = document.getElementById('input_kelurahan').value.trim();
   const kecamatan = document.getElementById('input_kecamatan').value.trim();
@@ -181,7 +180,6 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   const kodepos = document.getElementById('input_kodepos').value.trim();
   const provinsi = document.getElementById('input_provinsi').value.trim();
 
-  // 3. Gabungkan JSON (Hanya data ekstra, tidak ada nama klien lagi)
   const jsonbData = {
     total_terutang: amount,
     jatuh_tempo: dueDate
@@ -198,7 +196,6 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   });
 
   try {
-    // 4. Eksekusi Insert dengan semua kolom baru
     const { error } = await supabase.from('manual_debitur').insert([{
       tanggal_upload: isoUploadDate,
       client: namaKlien,
@@ -221,7 +218,6 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
     alert(`✅ Data Debitur ${namaDebitur} berhasil disimpan manual!`);
     e.target.reset();
     
-    // Kembalikan form JSON ke state awal
     document.getElementById('jsonb-fields-container').innerHTML = `
       <div class="flex gap-2 json-row">
         <input type="text" value="No WhatsApp" readonly class="w-1/3 bg-slate-100 border border-slate-200 text-slate-500 rounded-lg px-3 py-2 text-xs font-semibold">
@@ -229,7 +225,7 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
       </div>
     `;
     initManualDate();
-    loadDebitur(); // Refresh tabel bawah
+    loadDebitur(); 
 
   } catch (err) {
     alert("Gagal simpan debitur: " + err.message);
@@ -240,20 +236,21 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
 
 
 // =========================================
-// LOGIKA FILTER LIST & RENDER (LIMIT 10)
+// LOGIKA TAMPILAN DAFTAR DEBITUR & PAGINATION
 // =========================================
 
 async function loadDebitur() {
   const container = document.getElementById('admin-debitur-list');
   try {
-    // Ingat: ini narik dari manual_debitur. Kalau ngetes data massal excel, ubah dari 'manual_debitur' ke 'excel_debitur' sesuai kebutuhan lu
     const { data, error } = await supabase.from('manual_debitur').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     
     globalDebiturData = data || []; 
+    currentFilteredData = [...globalDebiturData];
+    currentPage = 1;
     
     populateFilterDropdown(); 
-    renderList(globalDebiturData); 
+    renderPage(); 
     
   } catch (err) {
     container.innerHTML = `<p class="text-sm text-red-500 w-full text-center py-4 bg-white rounded-2xl">Error: ${err.message}</p>`;
@@ -265,7 +262,6 @@ function populateFilterDropdown() {
   if(!filterSelect) return;
   
   const uniqueClients = [...new Set(globalDebiturData.map(d => d.client))].filter(Boolean);
-  
   filterSelect.innerHTML = `<option value="ALL">Semua Klien</option>`; 
   uniqueClients.forEach(client => {
     filterSelect.innerHTML += `<option value="${client}">${client}</option>`;
@@ -275,35 +271,70 @@ function populateFilterDropdown() {
 window.filterList = function() {
   const selectedClient = document.getElementById('filter_client').value;
   if(selectedClient === 'ALL') {
-      renderList(globalDebiturData); 
+      currentFilteredData = [...globalDebiturData]; 
   } else {
-      const filteredData = globalDebiturData.filter(d => d.client === selectedClient);
-      renderList(filteredData);
+      currentFilteredData = globalDebiturData.filter(d => d.client === selectedClient);
+  }
+  currentPage = 1; // Kembali ke halaman pertama tiap ganti filter
+  renderPage();
+}
+
+// Fungsi Navigasi Pagination
+window.prevPage = function() {
+  if (currentPage > 1) {
+    currentPage--;
+    renderPage();
   }
 }
 
-// Nampilin MAX 10 Baris Saja
-function renderList(dataArray) {
+window.nextPage = function() {
+  const maxPage = Math.ceil(currentFilteredData.length / itemsPerPage);
+  if (currentPage < maxPage) {
+    currentPage++;
+    renderPage();
+  }
+}
+
+// Render data sesuai Halaman (Pagination)
+function renderPage() {
   const container = document.getElementById('admin-debitur-list');
   const counterBadge = document.getElementById('total-pending');
+  const pagControls = document.getElementById('pagination-controls');
+  const pageInfo = document.getElementById('page-info');
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
   
-  if (dataArray.length === 0) {
-    if(counterBadge) counterBadge.innerText = `0 Pending (Max 10)`;
+  const totalItems = currentFilteredData.length;
+  
+  // Jika Kosong
+  if (totalItems === 0) {
+    if(counterBadge) counterBadge.innerText = `0 Pending`;
     container.innerHTML = `<p class="text-sm text-slate-500 py-4 text-center bg-white rounded-2xl border border-slate-200">Tidak ada kasus ditemukan.</p>`;
+    pagControls.classList.add('hidden'); // Sembunyikan tombol next/prev
     return;
   }
   
-  // Batasi array cuma 10 data aja
-  const limitedData = dataArray.slice(0, 10);
+  // Hitung Data Halaman Ini
+  const maxPage = Math.ceil(totalItems / itemsPerPage);
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const endIdx = Math.min(startIdx + itemsPerPage, totalItems);
   
-  // Update badge ungu di atas
-  if(counterBadge) counterBadge.innerText = `${dataArray.length} PENDING DITEMUKAN (TAMPIL 10)`;
+  const paginatedData = currentFilteredData.slice(startIdx, endIdx);
   
-  container.innerHTML = limitedData.map(d => {
+  // Update Teks Counter & Pagination
+  if(counterBadge) counterBadge.innerText = `${totalItems} PENDING KASUS`;
+  pagControls.classList.remove('hidden');
+  pageInfo.innerText = `Menampilkan ${startIdx + 1} - ${endIdx} dari total ${totalItems} data`;
+  
+  // Atur Tombol Mati/Nyala
+  btnPrev.disabled = currentPage === 1;
+  btnNext.disabled = currentPage === maxPage;
+  
+  // Render Baris Data
+  container.innerHTML = paginatedData.map(d => {
     const namaKlien = d.client || 'Tanpa Klien';
-    const kota = d.kota_kabupaten ? `📍 ${d.kota_kabupaten}` : ''; // Tanda kalau ada alamat kota
+    const kota = d.kota_kabupaten ? `📍 ${d.kota_kabupaten}` : ''; 
     
-    // Ambil isi metadata JSON
     const ignoredKeys = ['total_terutang', 'jatuh_tempo'];
     const contactKeys = Object.keys(d.contact_info || {}).filter(k => !ignoredKeys.includes(k));
     const labels = contactKeys.map(key => `<span class="text-slate-400 bg-slate-50 border border-slate-100 text-[10px] px-2 py-0.5 rounded-full font-bold mr-1 mb-1 inline-block capitalize">${key.replace(/_/g, ' ')}</span>`).join('');
@@ -311,7 +342,6 @@ function renderList(dataArray) {
     return `
       <!-- LIST MEMANJANG -->
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-3 hover:border-orange-300 transition-colors">
-        
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
              <span class="text-[10px] font-black text-orange-600 uppercase tracking-wider bg-orange-50 px-2 py-0.5 rounded-full">🏢 ${namaKlien}</span>
@@ -321,11 +351,9 @@ function renderList(dataArray) {
           <h3 class="font-black text-[#0B1B3D] text-[15px] uppercase leading-tight mb-0.5">${d.name}</h3>
           <p class="text-[11px] text-slate-500 font-bold">ID Akun: <span class="text-slate-700">${d.nik}</span></p>
         </div>
-        
         <div class="w-full md:w-[40%] flex flex-wrap md:justify-end gap-1 mt-2 md:mt-0">
           ${labels || '<span class="text-[10px] text-slate-400">Tidak ada detail ekstra</span>'}
         </div>
-        
       </div>
     `;
   }).join('');
