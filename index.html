@@ -1,99 +1,93 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AVIANDO COLLECTOR SYSTEM</title>
-
-  <!-- Primary Meta Tags -->
-  <meta name="title" content="AVIANDO COLLECTOR SYSTEM" />
-  <meta name="description" content="Sistem penagihan terpadu (Debt Collection System) profesional. Pantau aktivitas lapangan dan tingkatkan recovery rate secara real-time." />
-
-  <!-- Open Graph / Facebook / WhatsApp -->
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://aviando.vercel.app/" />
-  <meta property="og:title" content="AVIANDO COLLECTOR SYSTEM" />
-  <meta property="og:description" content="Sistem penagihan terpadu (Debt Collection System) profesional. Pantau aktivitas lapangan dan tingkatkan recovery rate secara real-time." />
-  <meta property="og:image" content="https://aviando.vercel.app/images/meta.jpg" />
-  <meta property="og:site_name" content="Aviando Collector System" />
-
-  <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:url" content="https://aviando.vercel.app/" />
-  <meta property="twitter:title" content="AVIANDO COLLECTOR SYSTEM" />
-  <meta property="twitter:description" content="Sistem penagihan terpadu (Debt Collection System) profesional. Pantau aktivitas lapangan dan tingkatkan recovery rate secara real-time." />
-  <meta property="twitter:image" content="https://aviando.vercel.app/images/meta.jpg" />
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Inter', sans-serif; }
-    .font-dynamic { font-family: 'Montserrat', sans-serif; }
-  </style>
-</head>
-<body class="bg-slate-100 min-h-screen flex flex-col items-center relative font-sans text-slate-800">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Aviando Collector System</title>
   
-  <div class="w-full max-w-md md:max-w-2xl lg:max-w-5xl bg-slate-50 min-h-screen shadow-2xl relative flex flex-col overflow-x-hidden transition-all duration-300">
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://tailwindcss.com"></script>
+  
+  <!-- Manifest Link untuk Fitur Install PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f2b5c">
+</head>
+<!-- Mengunci tinggi body pas 100dvh agar tidak ada scrollbar bawaan browser -->
+<body class="bg-[#0f2b5c] h-[100dvh] w-full overflow-hidden flex items-center justify-center font-sans">
+
+  <!-- KONTAINER UTAMA: Membatasi lebar di desktop (max-w-md), pas layar penuh di mobile -->
+  <div class="w-full max-w-md h-full mx-auto flex flex-col justify-between p-6 bg-gradient-to-b from-[#0f2b5c] via-[#133773] to-white shadow-2xl">
     
-    <!-- HERO SECTION -->
-    <div class="bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] px-6 md:px-12 pt-14 pb-32 lg:pb-40 rounded-b-[2.5rem] shadow-xl text-white relative text-center lg:text-left shrink-0">
+    <!-- BAGIAN ATAS: Logo, Judul & Grid Fitur (Menggunakan flex-1 agar fleksibel mengisi sisa ruang) -->
+    <div class="flex flex-col items-center text-center justify-center flex-1 space-y-4 md:space-y-6">
       
-      <!-- FRAME LOGO -->
-      <div class="relative z-10 mb-8 flex justify-center lg:justify-start">
-        <div class="bg-white p-3 rounded-full shadow-[0_0_30px_rgba(255,255,255,0.15)] inline-block">
-          <img src="/images/logo.png" alt="Logo ACS" class="w-24 h-24 lg:w-32 lg:h-32 object-contain">
-        </div>
+      <!-- Lingkaran Logo ACS -->
+      <div class="w-28 h-28 bg-white rounded-full flex items-center justify-center p-2 shadow-xl">
+        <!-- Gantilah src="logo.png" dengan path gambar logo kamu -->
+        <img src="logo.png" alt="Logo ACS" class="w-full h-full object-contain rounded-full">
       </div>
-
-      <div class="relative z-10">
-        <h1 class="text-[1.8rem] lg:text-[3.2rem] font-dynamic font-black tracking-tight leading-tight uppercase mb-2 drop-shadow-md">
-          AVIANDO<br>COLLECTOR SYSTEM
+      
+      <!-- Judul & Deskripsi Aplikasi -->
+      <div class="space-y-1">
+        <h1 class="text-white font-extrabold text-2xl md:text-3xl tracking-wide uppercase leading-tight">
+          Aviando<br>Collector System
         </h1>
-        <h2 class="text-base lg:text-2xl font-bold text-[#ff6b35] mb-4">
-          Sistem Penagihan Terpadu
-        </h2>
-        <p class="text-sm lg:text-base text-slate-300 font-medium max-w-xl mx-auto lg:mx-0 leading-relaxed">
-          Platform manajemen tugas penagihan. Pantau aktivitas lapangan dan tingkatkan <span class="text-white font-bold">recovery rate</span> secara real-time.
-        </p>
+        <p class="text-orange-500 font-semibold text-sm tracking-wider uppercase">Sistem Penagihan Terpadu</p>
       </div>
-    </div>
-
-    <!-- FEATURES -->
-    <div class="px-6 md:px-12 -mt-16 relative z-20 mb-8 shrink-0">
-      <div class="grid grid-cols-3 gap-2 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-slate-200">
-        <div class="text-center flex flex-col items-center justify-center">
-          <span class="text-2xl lg:text-3xl block mb-1">⚖️</span>
-          <h3 class="text-[10px] lg:text-xs font-bold text-[#1e3a5f] uppercase">Task Assign</h3>
+      
+      <p class="text-gray-200 text-xs md:text-sm px-4 leading-relaxed opacity-90 max-w-xs">
+        Platform manajemen tugas penagihan. Pantau aktivitas lapangan dan tingkatkan <span class="font-bold text-orange-400">recovery rate</span> secara real-time.
+      </p>
+      
+      <!-- Grid 3 Fitur -->
+      <div class="grid grid-cols-3 gap-2 bg-white/95 backdrop-blur-sm rounded-2xl p-4 shadow-lg w-full mt-2">
+        <div class="flex flex-col items-center text-center p-1">
+          <div class="text-blue-900 text-xl mb-1">⚖</div>
+          <span class="font-black text-[10px] text-blue-950 tracking-wider">TASK ASSIGN</span>
         </div>
-        <div class="text-center flex flex-col items-center justify-center border-l border-r border-slate-200">
-          <span class="text-2xl lg:text-3xl block mb-1">⚡</span>
-          <h3 class="text-[10px] lg:text-xs font-bold text-[#1e3a5f] uppercase">Fast Update</h3>
+        <div class="flex flex-col items-center text-center p-1 border-x border-gray-100">
+          <div class="text-orange-500 text-xl mb-1">⚡</div>
+          <span class="font-black text-[10px] text-blue-950 tracking-wider">FAST UPDATE</span>
         </div>
-        <div class="text-center flex flex-col items-center justify-center">
-          <span class="text-2xl lg:text-3xl block mb-1">📊</span>
-          <h3 class="text-[10px] lg:text-xs font-bold text-[#1e3a5f] uppercase">Real-Time</h3>
+        <div class="flex flex-col items-center text-center p-1">
+          <div class="text-green-600 text-xl mb-1">📊</div>
+          <span class="font-black text-[10px] text-blue-950 tracking-wider">REAL-TIME</span>
         </div>
       </div>
+      
     </div>
 
-    <!-- CALL TO ACTION (CTA) -->
-    <div class="px-6 md:px-12 flex flex-col gap-4 max-w-sm mx-auto w-full mt-2 shrink-0">
-      <a href="login.html" class="bg-[#ff6b35] hover:bg-[#e65c00] text-white py-4 px-6 rounded-2xl shadow-[0_8px_20px_rgba(255,107,53,0.3)] flex items-center justify-center gap-3 transition-all active:scale-95 group">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 group-hover:scale-110 transition-transform">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-        </svg>
-        <span class="font-bold tracking-wide uppercase text-sm">Akses Login Portal</span>
-      </a>
-    </div>
-
-    <!-- FOOTER / HEADER BAWAH -->
-    <div class="mt-auto pt-16 pb-8 flex flex-col items-center justify-center w-full bg-slate-50">
-      <img src="/images/logo.png" alt="Logo ACS Footer" class="w-12 h-12 object-contain mb-3 opacity-70 grayscale hover:grayscale-0 transition-all duration-300">
-      <p class="text-xs font-black uppercase tracking-widest text-[#1e3a5f] mb-1">Aviando Collector System</p>
-      <p class="text-[11px] text-slate-500 font-medium">Developed by <span class="font-bold text-[#ff6b35]">ADITYA WEB-DEV</span></p>
-      <p class="text-[10px] text-slate-400 mt-2">&copy; 2026 All Rights Reserved.</p>
+    <!-- BAGIAN BAWAH: Tombol Akses Portal & Footer (Otomatis menempel di paling bawah layar) -->
+    <div class="w-full space-y-5 pt-2 pb-1">
+      
+      <!-- Tombol Akses Login Portal -->
+      <button class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-md flex items-center justify-center space-x-2 active:scale-[0.98] transition-all duration-150 tracking-wide text-sm">
+        <span class="text-base">👤</span>
+        <span>AKSES LOGIN PORTAL</span>
+      </button>
+      
+      <!-- Footer Copyright -->
+      <div class="text-center text-[10px] text-gray-500 flex flex-col items-center space-y-1">
+        <!-- Mini Logo Footer -->
+        <img src="logo.png" alt="Logo Footer" class="w-7 h-7 object-contain opacity-60 mb-0.5">
+        <p class="font-bold text-blue-950 tracking-wider text-[11px]">AVIANDO COLLECTOR SYSTEM</p>
+        <p class="text-gray-400">Developed by <span class="text-orange-500 font-semibold">ADITYA WEB-DEV</span></p>
+        <p class="text-gray-400/80">© 2026 All Rights Reserved.</p>
+      </div>
+      
     </div>
 
   </div>
+
+  <!-- Script Otomatis Daftar Service Worker (PWA) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('✅ PWA: Service Worker terdaftar beres!', reg))
+          .catch(err => console.error('❌ PWA: Gagal daftar Service Worker:', err));
+      });
+    }
+  </script>
 </body>
 </html>
