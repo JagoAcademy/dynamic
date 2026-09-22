@@ -103,8 +103,9 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
 
         alert(`✅ UPLOAD MASSAL SUKSES!\n\n${excelRows.length} data masuk ke DB.`);
         closeExcelModal();
-        // Disini belum kita panggil loadDebitur() karena list tabel sementara ngambil dari manual_debitur.
-        // Jika perlu, gabungkan datanya nanti.
+        
+        // Panggil ini biar tabel otomatis me-refresh dan memunculkan Klien baru di Dropdown!
+        loadDebitur();
       } catch (err) {
         alert(`❌ GAGAL UPLOAD!\n\nPesan Error: ${err.message}`);
       } finally {
@@ -236,16 +237,50 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
 
 
 // =========================================
-// LOGIKA TAMPILAN DAFTAR DEBITUR & PAGINATION
+// LOGIKA GABUNGAN DATA & PAGINATION (MASTER)
 // =========================================
 
 async function loadDebitur() {
   const container = document.getElementById('admin-debitur-list');
   try {
-    const { data, error } = await supabase.from('manual_debitur').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
+    // 1. Tarik Data Manual
+    const { data: manualData, error: manualError } = await supabase.from('manual_debitur').select('*');
+    if (manualError) throw manualError;
     
-    globalDebiturData = data || []; 
+    // 2. Tarik Data Excel
+    const { data: excelData, error: excelError } = await supabase.from('excel_debitur').select('*');
+    if (excelError) throw excelError;
+
+    // 3. Normalisasi Data Excel (Supaya Namanya & ID ketemu dan formatnya sama kayak Manual)
+    const normalizedExcelData = (excelData || []).map(e => {
+       const rawData = e.debitur || {};
+       
+       // Deteksi nama kolom cerdas (Kadang di excel nulisnya 'Nama', kadang 'Name', dll)
+       const nameKey = Object.keys(rawData).find(k => k.toLowerCase().includes('nama') || k.toLowerCase().includes('name'));
+       const idKey = Object.keys(rawData).find(k => k.toLowerCase().includes('id') || k.toLowerCase().includes('nik') || k.toLowerCase().includes('no_akun'));
+       
+       const extractedName = nameKey ? rawData[nameKey] : 'Tanpa Nama';
+       const extractedNik = idKey ? rawData[idKey] : '-';
+       
+       // Sisanya masukin ke contact_info sebagai badge
+       const contactInfo = { ...rawData };
+       if (nameKey) delete contactInfo[nameKey];
+       if (idKey) delete contactInfo[idKey];
+       
+       return {
+         ...e,
+         name: extractedName,
+         nik: extractedNik,
+         contact_info: contactInfo
+       };
+    });
+
+    // 4. Gabungin Semua Data & Sortir Berdasarkan Tanggal Masuk Terkini
+    let mergedData = [...(manualData || []), ...normalizedExcelData];
+    mergedData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    // 5. Lempar ke State
+    globalDebiturData = mergedData; 
     currentFilteredData = [...globalDebiturData];
     currentPage = 1;
     
@@ -335,6 +370,7 @@ function renderPage() {
     const namaKlien = d.client || 'Tanpa Klien';
     const kota = d.kota_kabupaten ? `📍 ${d.kota_kabupaten}` : ''; 
     
+    // Sembunyikan kolom sistem saat ngerender json
     const ignoredKeys = ['total_terutang', 'jatuh_tempo'];
     const contactKeys = Object.keys(d.contact_info || {}).filter(k => !ignoredKeys.includes(k));
     const labels = contactKeys.map(key => `<span class="text-slate-400 bg-slate-50 border border-slate-100 text-[10px] px-2 py-0.5 rounded-full font-bold mr-1 mb-1 inline-block capitalize">${key.replace(/_/g, ' ')}</span>`).join('');
