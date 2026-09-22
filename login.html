@@ -5,125 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Login Portal - AVIANDO</title>
   
-  <!-- Memanggil style.css yang berada di root -->
+  <!-- Cukup panggil style eksternalnya -->
   <link rel="stylesheet" href="/style.css">
-  
-  <style>
-    /* Modifikasi gaya khusus agar form pas dan tidak memotong footer di HP */
-    .form-box {
-      width: 100%;
-      background-color: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(4px);
-      border-radius: 20px;
-      padding: 18px 20px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
-      margin-top: 10px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 12px;
-      text-align: left;
-    }
-
-    .form-group label {
-      font-size: 11px;
-      font-weight: 700;
-      color: #172554;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-
-    .form-input {
-      width: 100%;
-      padding: 10px 14px;
-      border: 1.5px solid #e5e7eb;
-      border-radius: 10px;
-      font-size: 13px;
-      color: #1f2937;
-      background-color: #f9fafb;
-      outline: none;
-      transition: all 0.2s ease;
-    }
-
-    .form-input:focus {
-      border-color: #f97316;
-      background-color: #ffffff;
-      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
-    }
-
-    .alert-error {
-      color: #dc2626;
-      font-size: 11px;
-      font-weight: 600;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .btn-back {
-      display: inline-block;
-      margin-top: 12px;
-      color: #172554;
-      font-size: 12px;
-      text-decoration: none;
-      font-weight: 600;
-      transition: color 0.15s ease;
-    }
-
-    .btn-back:hover {
-      color: #f97316;
-    }
-  </style>
 </head>
 <body>
 
-  <!-- Menggunakan struktur kontainer utama dari style.css -->
   <div class="app-container">
     
     <!-- BAGIAN ATAS: Identitas & Form Input -->
     <div class="top-section">
       
-      <!-- Lingkaran Logo ACS -->
       <div class="logo-wrapper">
         <img src="/images/logo.png" alt="Logo AVIANDO" class="logo-img">
       </div>
       
-      <!-- Judul Identitas Halaman -->
       <h1 class="title-main" style="font-size: 22px;">LOGIN PORTAL</h1>
       <p class="title-sub" style="margin-bottom: 2px;">Portal Log In: Collector, Admin, & Owner AVIANDO</p>
       
-      <!-- Box Form Utama -->
       <div class="form-box">
-        <!-- Notifikasi Pesan Error -->
         <div id="errorMsg" class="alert-error hidden">Username atau password salah!</div>
 
         <form id="loginForm">
-          <!-- Input Username -->
           <div class="form-group">
             <label for="username">Username</label>
             <input type="text" id="username" class="form-input" placeholder="Masukkan username" required autocomplete="username">
           </div>
           
-          <!-- Input Password -->
           <div class="form-group">
             <label for="password">Password</label>
             <input type="password" id="password" class="form-input" placeholder="Masukkan password" required autocomplete="current-password">
           </div>
           
-          <!-- Tombol Akses Login -->
           <button type="submit" id="submitBtn" class="btn-login" style="margin-bottom: 0; padding: 12px 16px;">
             Login Sekarang
           </button>
         </form>
       </div>
 
-      <!-- Navigasi Kembali Ke Beranda Depan -->
       <a href="/index.html" class="btn-back">← Kembali ke Beranda</a>
       
     </div>
@@ -140,7 +58,6 @@
 
   </div>
 
-  <!-- Memanggil logika javascript eksternal menggunakan tipe modul khusus Vite -->
   <script type="module" src="/src/login.js"></script>
 </body>
 </html>

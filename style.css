@@ -5,21 +5,24 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* FIX PULL TO REFRESH: height jadi min-height, overflow-y dibuka */
 body {
   background-color: #0f2b5c;
-  height: 100dvh;
+  min-height: 100dvh;
   width: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Kontainer Utama: Mengunci ukuran HP di desktop & pas layar penuh di mobile */
+/* Kontainer Utama */
 .app-container {
   width: 100%;
   max-width: 448px; 
-  height: 100%;
+  min-height: 100dvh; 
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -189,4 +192,79 @@ body {
 .developer-text span {
   color: #f97316;
   font-weight: 600;
+}
+
+
+/* =========================================
+   STYLE TAMBAHAN KHUSUS HALAMAN LOGIN 
+   ========================================= */
+
+.form-box {
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  border-radius: 20px;
+  padding: 18px 20px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+  margin-top: 10px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.form-group label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #172554;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #1f2937;
+  background-color: #f9fafb;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  border-color: #f97316;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+}
+
+.alert-error {
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.btn-back {
+  display: inline-block;
+  margin-top: 12px;
+  color: #172554;
+  font-size: 12px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+
+.btn-back:hover {
+  color: #f97316;
 }
