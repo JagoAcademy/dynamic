@@ -5,59 +5,71 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Login Portal - AVIANDO</title>
   
-  <!-- Cukup panggil style eksternalnya -->
+  <meta name="theme-color" content="#0f2b5c">
+  
+  <!-- Cukup panggil style eksternalnya dari root -->
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
+  <!-- Kontainer Utama -->
   <div class="app-container">
     
     <!-- BAGIAN ATAS: Identitas & Form Input -->
     <div class="top-section">
       
+      <!-- Lingkaran Logo ACS -->
       <div class="logo-wrapper">
         <img src="/images/logo.png" alt="Logo AVIANDO" class="logo-img">
       </div>
       
+      <!-- Judul Identitas Halaman -->
       <h1 class="title-main" style="font-size: 22px;">LOGIN PORTAL</h1>
       <p class="title-sub" style="margin-bottom: 2px;">Portal Log In: Collector, Admin, & Owner AVIANDO</p>
       
+      <!-- Box Form Utama -->
       <div class="form-box">
+        <!-- Notifikasi Pesan Error (Disembunyikan secara default) -->
         <div id="errorMsg" class="alert-error hidden">Username atau password salah!</div>
 
         <form id="loginForm">
+          <!-- Input Username -->
           <div class="form-group">
             <label for="username">Username</label>
             <input type="text" id="username" class="form-input" placeholder="Masukkan username" required autocomplete="username">
           </div>
           
+          <!-- Input Password -->
           <div class="form-group">
             <label for="password">Password</label>
             <input type="password" id="password" class="form-input" placeholder="Masukkan password" required autocomplete="current-password">
           </div>
           
+          <!-- Tombol Akses Login -->
           <button type="submit" id="submitBtn" class="btn-login" style="margin-bottom: 0; padding: 12px 16px;">
             Login Sekarang
           </button>
         </form>
       </div>
 
+      <!-- Navigasi Kembali Ke Beranda Depan -->
       <a href="/index.html" class="btn-back">← Kembali ke Beranda</a>
       
     </div>
 
-    <!-- BAGIAN BAWAH: Posisi footer terkunci rapi di bawah layar -->
+    <!-- BAGIAN BAWAH: Footer -->
     <div class="bottom-section">
       <div class="footer">
         <img src="/images/logo.png" alt="Logo Footer" class="footer-logo">
         <p class="footer-title">AVIANDO COLLECTOR SYSTEM</p>
         <p class="developer-text">Developed by <span>ADITYA WEB-DEV</span></p>
-        <p>© 2026 All Rights Reserved.</p>
+        <p>&copy; 2026 All Rights Reserved.</p>
       </div>
     </div>
 
   </div>
 
+  <!-- Memanggil logika javascript untuk proses autentikasi -->
   <script type="module" src="/src/login.js"></script>
 </body>
 </html>
