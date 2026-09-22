@@ -26,48 +26,17 @@ window.switchTab = function(tabName) {
   if(tabName === 'debitur') loadDebitur();
 }
 
-// Navigasi Mode Input (Manual / Excel)
-window.switchInputMode = function(mode) {
-  const btnManual = document.getElementById('btn-mode-manual');
-  const btnExcel = document.getElementById('btn-mode-excel');
-  const containerManual = document.getElementById('form-manual-container');
-  const containerExcel = document.getElementById('form-excel-container');
-
-  if (mode === 'manual') {
-    // Style aktif ke Manual
-    btnManual.className = "bg-[#0B1B3D] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all";
-    btnExcel.className = "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 px-5 py-2.5 rounded-xl text-sm font-bold transition-all";
-    containerManual.classList.remove('hidden');
-    containerExcel.classList.add('hidden');
-  } else {
-    // Style aktif ke Excel
-    btnExcel.className = "bg-green-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all";
-    btnManual.className = "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 px-5 py-2.5 rounded-xl text-sm font-bold transition-all";
-    containerExcel.classList.remove('hidden');
-    containerManual.classList.add('hidden');
-  }
-}
-
 // Tambah Field Detail Ekstra JSONB Secara Dinamis
 window.addJsonField = function() {
   const container = document.getElementById('jsonb-fields-container');
   const newRow = document.createElement('div');
   newRow.className = "flex gap-2 json-row mt-2";
   newRow.innerHTML = `
-    <input type="text" placeholder="Nama Label (Cth: Alamat)" required class="json-key w-1/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-orange-500">
+    <input type="text" placeholder="Label (Cth: Alamat)" required class="json-key w-1/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-orange-500">
     <input type="text" placeholder="Isi Data..." required class="json-val w-2/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
-    <button type="button" onclick="this.parentElement.remove()" class="bg-red-100 text-red-500 px-3 rounded-lg font-bold hover:bg-red-200">X</button>
+    <button type="button" onclick="this.parentElement.remove()" class="bg-red-100 text-red-500 px-3 rounded-lg font-bold hover:bg-red-200 transition-colors">X</button>
   `;
   container.appendChild(newRow);
-}
-
-// Simulasi Upload Excel
-window.handleExcelUpload = function(event) {
-  const file = event.target.files[0];
-  if (file) {
-    alert(`File "${file.name}" terdeteksi!\n\n(Catatan Sistem: Modul parsing Excel seperti 'xlsx' akan diintegrasikan di tahap selanjutnya untuk membaca baris menjadi JSON secara otomatis).`);
-    event.target.value = ''; // Reset input file
-  }
 }
 
 // Form Buat Akun Collector
@@ -107,31 +76,36 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   const btn = e.target.querySelector('button');
   btn.innerText = "Menyimpan Data...";
 
-  // 1. Kumpulkan Data Standar
-  const namaDebitur = document.getElementById('input_nama').value;
-  const nikDebitur = document.getElementById('input_nik').value;
+  // 1. Tangkap Data Inti Wajib
+  const namaKlien = document.getElementById('input_client').value.trim();
+  const namaDebitur = document.getElementById('input_nama').value.trim();
+  const nikDebitur = document.getElementById('input_nik').value.trim();
   const amount = document.getElementById('input_amount').value;
   const dueDate = document.getElementById('input_tgl').value;
-  // Note: input_client belum di-insert ke DB pada demo ini krn relasi ke tabel clients & debts terpisah,
-  // di real system, ini akan trigger insert berantai ke debtors -> debts.
 
-  // 2. Rangkai Data JSONB Elastis
-  const jsonbData = {};
+  // 2. Rangkai Data JSONB Elastis (Memasukkan Klien, Amount, dan Due Date ke dalam JSONB)
+  const jsonbData = {
+    klien_asal: namaKlien,
+    total_terutang: amount,
+    jatuh_tempo: dueDate
+  };
+
   const jsonRows = document.querySelectorAll('.json-row');
   
   jsonRows.forEach(row => {
-    // Row pertama (WA) punya input readonly tanpa class json-key, jadi kita tangani terpisah
+    // Membaca field "No WhatsApp" yang di-lock atau field custom yang diketik
     const keyInput = row.querySelector('.json-key') || row.querySelector('input[readonly]');
     const valInput = row.querySelector('.json-val');
     
     if (keyInput && valInput && valInput.value.trim() !== '') {
-      const keyStr = keyInput.value.trim().replace(/\s+/g, '_').toLowerCase(); // Ubah "No WhatsApp" jadi "no_whatsapp"
+      // Mengubah spasi menjadi underscore otomatis, misal "Alamat Kantor" -> "alamat_kantor"
+      const keyStr = keyInput.value.trim().replace(/\s+/g, '_').toLowerCase(); 
       jsonbData[keyStr] = valInput.value.trim();
     }
   });
 
   try {
-    // Eksekusi insert ke tabel debtors
+    // Eksekusi insert murni ke tabel debtors
     const { error } = await supabase.from('debtors').insert([{
       name: namaDebitur,
       nik: nikDebitur,
@@ -143,10 +117,10 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
       throw error;
     }
 
-    alert(`✅ Data Debitur ${namaDebitur} berhasil disimpan!\nData JSON: ${JSON.stringify(jsonbData)}`);
+    alert(`✅ Data Debitur ${namaDebitur} dari Klien ${namaKlien} berhasil disimpan!`);
     e.target.reset();
     
-    // Hapus sisa field json tambahan
+    // Hapus sisa field json tambahan, balik ke default state
     document.getElementById('jsonb-fields-container').innerHTML = `
       <div class="flex gap-2 json-row">
         <input type="text" value="No WhatsApp" readonly class="w-1/3 bg-slate-100 border border-slate-200 text-slate-500 rounded-lg px-3 py-2 text-xs font-semibold">
@@ -158,7 +132,7 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   } catch (err) {
     alert("Gagal simpan debitur: " + err.message);
   } finally {
-    btn.innerText = "Simpan Data Debitur";
+    btn.innerText = "Simpan Data Debitur ke Database";
   }
 });
 
@@ -175,18 +149,23 @@ async function loadDebitur() {
     }
     
     container.innerHTML = data.map(d => {
-      // Menarik data JSON (mengakomodir key no_whatsapp atau format apapun yg ada)
-      const contactKeys = Object.keys(d.contact_info || {});
-      const labels = contactKeys.map(key => `<span class="bg-slate-100 text-slate-500 text-[10px] px-2 py-1 rounded font-bold mr-1">${key}</span>`).join('');
+      // Menarik data Klien Asal dari JSONB
+      const namaKlien = d.contact_info?.klien_asal || 'Klien Tidak Diketahui';
+      
+      // Filter key json agar tidak menampilkan data mentah di badge
+      const ignoredKeys = ['klien_asal', 'total_terutang', 'jatuh_tempo'];
+      const contactKeys = Object.keys(d.contact_info || {}).filter(k => !ignoredKeys.includes(k));
+      const labels = contactKeys.map(key => `<span class="bg-slate-100 text-slate-500 text-[10px] px-2 py-1 rounded font-bold mr-1 mb-1 inline-block">${key}</span>`).join('');
       
       return `
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-2">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
-            <h3 class="font-bold text-[#0B1B3D] text-[15px] uppercase">${d.name}</h3>
-            <p class="text-[12px] text-slate-500 font-medium">ID Akun: ${d.nik}</p>
+            <p class="text-[11px] font-black text-orange-600 uppercase tracking-wider mb-1">🏢 ${namaKlien}</p>
+            <h3 class="font-bold text-[#0B1B3D] text-[16px] uppercase mb-1">${d.name}</h3>
+            <p class="text-[12px] text-slate-500 font-medium mb-3">ID Akun: <span class="font-bold text-slate-700">${d.nik}</span></p>
           </div>
           <div class="mt-2 pt-3 border-t border-slate-100">
-            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Data Tersedia:</p>
+            <p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Detail Metadata JSON Tersedia:</p>
             <div class="flex flex-wrap">${labels || '-'}</div>
           </div>
         </div>

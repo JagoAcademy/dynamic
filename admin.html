@@ -54,31 +54,22 @@
       </div>
     </div>
 
-    <!-- TAB 2: MANAJEMEN DEBITUR -->
+    <!-- TAB 2: MANAJEMEN DEBITUR (FULL MANUAL) -->
     <div id="content-debitur" class="hidden">
       
-      <!-- TOGGLE INPUT MODE -->
-      <div class="flex gap-3 mb-6">
-        <button id="btn-mode-manual" onclick="switchInputMode('manual')" class="bg-[#0B1B3D] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transition-all">✍️ Input Manual</button>
-        <button id="btn-mode-excel" onclick="switchInputMode('excel')" class="bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 px-5 py-2.5 rounded-xl text-sm font-bold transition-all">📊 Upload Excel</button>
-      </div>
-
       <!-- FORM: INPUT MANUAL -->
-      <div id="form-manual-container" class="bg-white p-6 lg:p-8 rounded-2xl border border-slate-200 shadow-sm mb-8 transition-all">
+      <div class="bg-white p-6 lg:p-8 rounded-2xl border border-slate-200 shadow-sm mb-8 transition-all">
         <div class="flex items-center gap-3 mb-6">
-            <h2 class="text-sm font-black text-[#0B1B3D] uppercase">Data Kasus Debitur Baru</h2>
+            <h2 class="text-sm font-black text-[#0B1B3D] uppercase">Input Data Kasus Baru</h2>
         </div>
         <form id="formEditDebitur" class="space-y-4">
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Data Wajib -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Data Inti Wajib -->
             <div class="space-y-4">
-              <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Informasi Dasar</h3>
-              <select id="input_client" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-                <option value="">-- Pilih Perusahaan Klien --</option>
-                <option value="klien_a">Bank ABC (KTA)</option>
-                <option value="klien_b">Fintech XYZ (Paylater)</option>
-              </select>
+              <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">Informasi Dasar</h3>
+              <!-- Input Klien Full Manual -->
+              <input type="text" id="input_client" required placeholder="Nama Perusahaan Klien (Cth: Bank BNI)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
               <input type="text" id="input_nama" required placeholder="Nama Lengkap Debitur" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
               <input type="text" id="input_nik" required placeholder="Nomor ID Akun / NIK" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
               <input type="number" id="input_amount" required placeholder="Total Terutang (Rp)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
@@ -87,9 +78,9 @@
 
             <!-- Data Elastis JSONB -->
             <div class="space-y-4">
-              <div class="flex justify-between items-center">
+              <div class="flex justify-between items-center border-b border-slate-100 pb-2">
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Detail Ekstra (JSON)</h3>
-                <button type="button" onclick="addJsonField()" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100">+ Tambah Detail</button>
+                <button type="button" onclick="addJsonField()" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">+ Tambah Detail</button>
               </div>
               
               <div id="jsonb-fields-container" class="space-y-3">
@@ -102,24 +93,12 @@
             </div>
           </div>
 
-          <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-4 active:scale-95 transition-all hover:bg-orange-600 shadow-md">Simpan Data Debitur</button>
+          <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-6 active:scale-95 transition-all hover:bg-orange-600 shadow-md">Simpan Data Debitur ke Database</button>
         </form>
       </div>
 
-      <!-- FORM: UPLOAD EXCEL -->
-      <div id="form-excel-container" class="hidden bg-white p-10 rounded-2xl border-2 border-dashed border-slate-300 shadow-sm mb-8 text-center transition-all">
-         <span class="text-5xl mb-4 block">📊</span>
-         <h3 class="font-bold text-slate-800 text-lg mb-2">Upload Data Massal (Excel / CSV)</h3>
-         <p class="text-sm text-slate-500 mb-6 max-w-md mx-auto">Sistem akan otomatis memetakan kolom dari file Excel Anda menjadi format JSON yang elastis.</p>
-         
-         <label class="bg-[#0B1B3D] text-white px-6 py-3 rounded-xl text-sm font-bold shadow-md cursor-pointer hover:bg-blue-900 transition-colors inline-block">
-            Pilih File Excel
-            <input type="file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelUpload(event)">
-         </label>
-      </div>
-
       <!-- DAFTAR KASUS -->
-      <div class="flex justify-between items-center mb-4 mt-10">
+      <div class="flex justify-between items-center mb-4">
         <h2 class="text-sm font-black text-slate-800 uppercase">Daftar Kasus Debitur Aktif</h2>
       </div>
       <div id="admin-debitur-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
