@@ -34,19 +34,17 @@ window.openExcelModal = function() {
   const modal = document.getElementById('modal-excel');
   const dateInput = document.getElementById('excel_date');
   
-  // Ambil tanggal hari ini (Otomatis menyesuaikan sistem HP/PC admin)
   const today = new Date();
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  dateInput.value = today.toLocaleDateString('id-ID', options); // Cth output: "Rabu, 23 September 2026"
+  dateInput.value = today.toLocaleDateString('id-ID', options); 
   
-  // Tampilkan Pop-up
   modal.classList.remove('hidden');
 }
 
 window.closeExcelModal = function() {
   const modal = document.getElementById('modal-excel');
   modal.classList.add('hidden');
-  document.getElementById('formUploadExcel').reset(); // Kosongkan isian
+  document.getElementById('formUploadExcel').reset(); 
 }
 
 // Menangani klik tombol submit di Pop-up Excel
@@ -57,7 +55,7 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
   
   if (fileInput.files.length > 0) {
     const fileName = fileInput.files[0].name;
-    alert(`✅ BERHASIL DITERIMA!\n\nFile Excel: "${fileName}"\nKlien: "${clientName}"\nTanggal: ${document.getElementById('excel_date').value}\n\n(Catatan: Mesin pembaca Excel (parsing .xlsx to JSON) akan diintegrasikan di tahap instalasi Node/Modul selanjutnya).`);
+    alert(`✅ BERHASIL DITERIMA!\n\nFile Excel: "${fileName}"\nKlien: "${clientName}"\nTanggal: ${document.getElementById('excel_date').value}\n\n(Catatan: Integrasi parsing tabel Excel akan diarahkan ke tabel "excel_debitur" di tahap berikutnya).`);
     closeExcelModal();
   }
 });
@@ -66,7 +64,6 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
 // LOGIKA INPUT MANUAL DEBITUR & AKUN
 // =========================================
 
-// Tambah Field Detail Ekstra JSONB Secara Dinamis
 window.addJsonField = function() {
   const container = document.getElementById('jsonb-fields-container');
   const newRow = document.createElement('div');
@@ -110,7 +107,7 @@ document.getElementById('formCollector')?.addEventListener('submit', async (e) =
   }
 });
 
-// Form Simpan Debitur & JSONB
+// Form Simpan Debitur Manual & JSONB
 document.getElementById('formEditDebitur')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = e.target.querySelector('button');
@@ -141,7 +138,8 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   });
 
   try {
-    const { error } = await supabase.from('debtors').insert([{
+    // Arahkan insert ke tabel baru: manual_debitur
+    const { error } = await supabase.from('manual_debitur').insert([{
       name: namaDebitur,
       nik: nikDebitur,
       contact_info: jsonbData
@@ -170,11 +168,12 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   }
 });
 
-// Load Daftar Debitur
+// Load Daftar Debitur dari tabel manual_debitur
 async function loadDebitur() {
   const container = document.getElementById('admin-debitur-list');
   try {
-    const { data, error } = await supabase.from('debtors').select('*').order('created_at', { ascending: false });
+    // Arahkan tarikan data dari tabel baru: manual_debitur
+    const { data, error } = await supabase.from('manual_debitur').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     
     if (data.length === 0) {
