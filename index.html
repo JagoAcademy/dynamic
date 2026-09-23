@@ -25,32 +25,47 @@
   <!-- Memanggil File CSS Terpisah di Root -->
   <link rel="stylesheet" href="/style.css">
   
-  <!-- Manifest Link untuk Fitur Install PWA (Diambil dari folder public saat build) -->
+  <!-- MAGIC CSS: PENGHILANG SCROLLBAR PC -->
+  <style>
+    /* Kunci layar belakang biar gak ikutan ketarik/scroll */
+    body {
+      overflow: hidden !important; 
+    }
+
+    /* Aturan untuk menghilangkan scrollbar bawaan PC */
+    .app-container {
+      overflow-y: auto;
+      -ms-overflow-style: none;  /* Untuk Internet Explorer dan Edge */
+      scrollbar-width: none;  /* Untuk Mozilla Firefox */
+    }
+
+    /* Khusus untuk Google Chrome, Safari, dan Opera */
+    .app-container::-webkit-scrollbar {
+      display: none !important; 
+    }
+  </style>
+
+  <!-- Manifest Link untuk Fitur Install PWA -->
   <link rel="manifest" href="/manifest.json">
 </head>
 <body>
 
-  <!-- Kontainer Utama (Akan jadi layar penuh di HP, dan Floating Card di PC) -->
+  <!-- Kontainer Utama -->
   <div class="app-container">
     
-    <!-- BAGIAN ATAS: Logo, Judul & Indikator Fitur -->
+    <!-- BAGIAN ATAS -->
     <div class="top-section">
-      
-      <!-- Lingkaran Logo ACS -->
       <div class="logo-wrapper">
         <img src="/images/logo.png" alt="Logo ACS" class="logo-img">
       </div>
       
-      <!-- Judul Aplikasi -->
       <h1 class="title-main">Aviando<br>Collector System</h1>
       <p class="title-sub">Sistem Penagihan Terpadu</p>
       
-      <!-- Deskripsi Singkat -->
       <p class="description">
         Platform manajemen tugas penagihan. Pantau aktivitas lapangan dan tingkatkan <span class="highlight">recovery rate</span> secara real-time.
       </p>
       
-      <!-- Grid 3 Fitur Utama -->
       <div class="features-grid">
         <div class="feature-item">
           <div class="feature-icon">⚖️</div>
@@ -65,26 +80,21 @@
           <span class="feature-text">REAL-TIME</span>
         </div>
       </div>
-      
     </div>
 
-    <!-- BAGIAN BAWAH: Tombol Navigasi & Hak Cipta -->
+    <!-- BAGIAN BAWAH -->
     <div class="bottom-section">
-      
-      <!-- Tombol Akses Menuju Halaman Login Portal -->
       <button class="btn-login" onclick="location.href='/login.html'">
         <span>👤</span>
         <span>AKSES LOGIN PORTAL</span>
       </button>
       
-      <!-- Catatan Kaki / Footer -->
       <div class="footer">
         <img src="/images/logo.png" alt="Logo Footer" class="footer-logo">
         <p class="footer-title">AVIANDO COLLECTOR SYSTEM</p>
         <p class="developer-text">Developed by <span>ADITYA WEB-DEV</span></p>
         <p>&copy; 2026 All Rights Reserved.</p>
       </div>
-      
     </div>
 
   </div>
@@ -93,7 +103,6 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        // Karena Vite melempar file public ke root dist, panggil langsung '/sw.js'
         navigator.serviceWorker.register('/sw.js')
           .then(reg => console.log('✅ PWA: Service Worker terdaftar beres!', reg))
           .catch(err => console.error('❌ PWA: Gagal daftar Service Worker:', err));
