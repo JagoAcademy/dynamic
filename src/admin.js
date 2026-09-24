@@ -24,8 +24,8 @@ const initApp = async () => {
     el.dataset.date = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, '0') + "-" + String(today.getDate()).padStart(2, '0');
   }
   
-  await loadCollectors(); // Tarik 5 Akun Kolektor
-  await loadDebitur();    // Tarik Semua Data Debitur
+  await loadCollectors(); 
+  await loadDebitur();    
 };
 
 initApp();
@@ -50,9 +50,33 @@ window.switchTab = function(tabName) {
   if(tabName === 'debitur') {
     renderPage();
   } else if (tabName === 'penugasan') {
-    runAssignFilter(); // Render list saat buka tab penugasan
+    runAssignFilter(); 
   }
 }
+
+// =========================================
+// JURUS KUNCI: FUNGSI PEMISAH ALAMAT OTOMATIS
+// =========================================
+function parseAlamat(alamatStr) {
+  if (!alamatStr) return {};
+  const str = String(alamatStr);
+
+  // Fungsi internal nyari kata setelah "Kec", "Kel", "Kota" sampai ketemu Koma atau ujung kalimat
+  const extract = (prefix) => {
+    const rgx = new RegExp(`(?:${prefix})\\s*([a-zA-Z\\s]+?)(?:,|\\b(?:kec|kel|desa|kota|kab|prov)\\b|\\d{5}|$)`, 'i');
+    const match = str.match(rgx);
+    return match ? match[1].trim() : null;
+  };
+
+  return {
+    kodepos: str.match(/\b\d{5}\b/)?.[0] || null, // Cari 5 digit angka berturut-turut
+    kelurahan: extract('kelurahan|kel\\.?|desa'),
+    kecamatan: extract('kecamatan|kec\\.?'),
+    kota_kabupaten: extract('kota|kabupaten|kab\\.?'),
+    provinsi: extract('provinsi|prov\\.?')
+  };
+}
+
 
 // =========================================
 // LOGIKA MODAL EXCEL & UPLOAD
@@ -83,7 +107,7 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
   
   if (fileInput.files.length > 0) {
     const file = fileInput.files[0];
-    submitBtn.innerText = "Membaca & Parsing...";
+    submitBtn.innerText = "Membaca & Memecah Data...";
     submitBtn.disabled = true;
 
     const reader = new FileReader();
@@ -93,15 +117,36 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
+        
+        // 1. Ubah SEMUA baris & kolom Excel jadi JSON Dinamis (Termasuk Agama, Status Kawin, dll)
         const excelRows = XLSX.utils.sheet_to_json(worksheet);
 
         if (excelRows.length === 0) throw new Error("File Excel/CSV kosong.");
         submitBtn.innerText = `Menyimpan ${excelRows.length} Baris...`;
 
+        // 2. Petakan Datanya
         const payload = excelRows.map(row => {
+          
+          // Cari adakah kolom yang namanya ngandung kata "alamat"
+          const alamatKey = Object.keys(row).find(k => k.toLowerCase().includes('alamat'));
+          const alamatStr = alamatKey ? String(row[alamatKey]) : null;
+          
+          // Panggil Jurus Ekstraksi Alamat kita!
+          const locInfo = parseAlamat(alamatStr);
+
           return {
             tanggal_upload: isoUploadDate,
             client: clientName,
+            
+            // Kolom lokasi terisi secara otomatis jika terdeteksi Regex
+            alamat_lengkap: alamatStr,
+            kelurahan: locInfo.kelurahan,
+            kecamatan: locInfo.kecamatan,
+            kota_kabupaten: locInfo.kota_kabupaten,
+            kodepos: locInfo.kodepos,
+            provinsi: locInfo.provinsi,
+            
+            // Semua sisa data Excel (Agama, Kawin, Nama Bapak) lumer otomatis ke sini
             debitur: row, 
             status: 'Pending'
           };
@@ -110,9 +155,9 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
         const { error } = await supabase.from('excel_debitur').insert(payload);
         if (error) throw error;
 
-        alert(`✅ UPLOAD MASSAL SUKSES!\n\n${excelRows.length} data masuk ke DB.`);
+        alert(`✅ UPLOAD & PARSING SUKSES!\n\n${excelRows.length} data dengan kolom fleksibel dan pemecahan alamat otomatis telah berhasil disimpan.`);
         closeExcelModal();
-        await loadDebitur(); // Tarik ulang data gabungan terbaru
+        await loadDebitur(); 
       } catch (err) {
         alert(`❌ GAGAL UPLOAD!\n\nPesan Error: ${err.message}`);
       } finally {
@@ -126,7 +171,7 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
 
 
 // =========================================
-// LOGIKA INPUT FORM MANUAL + 6 KOLOM LOKASI
+// LOGIKA INPUT FORM MANUAL
 // =========================================
 
 window.addJsonField = function() {
@@ -134,9 +179,9 @@ window.addJsonField = function() {
   const newRow = document.createElement('div');
   newRow.className = "flex gap-2 json-row mt-2";
   newRow.innerHTML = `
-    <input type="text" placeholder="Label" required class="json-key w-1/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-orange-500">
+    <input type="text" placeholder="Label (Cth: Agama)" required class="json-key w-1/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-orange-500">
     <input type="text" placeholder="Isi Data..." required class="json-val w-2/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
-    <button type="button" onclick="this.parentElement.remove()" class="bg-red-100 text-red-500 px-3 rounded-lg font-bold">X</button>
+    <button type="button" onclick="this.parentElement.remove()" class="bg-red-100 text-red-500 px-3 rounded-lg font-bold hover:bg-red-200">X</button>
   `;
   container.appendChild(newRow);
 }
@@ -159,7 +204,7 @@ document.getElementById('formCollector')?.addEventListener('submit', async (e) =
     if (error) throw error;
     alert(`✅ Akun Collector atas nama "${nameVal}" berhasil dibuat!`);
     e.target.reset(); 
-    loadCollectors(); // Perbarui dropdown
+    loadCollectors(); 
   } catch (err) {
     alert("Gagal membuat akun: " + err.message);
   } finally {
@@ -234,7 +279,7 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
 
 
 // =========================================
-// GABUNG DATA UNTUK TAB MANAJEMEN DEBITUR
+// GABUNG DATA & TAMPILKAN DAFTAR KASUS
 // =========================================
 
 async function loadDebitur() {
@@ -246,7 +291,6 @@ async function loadDebitur() {
     const { data: excelData, error: excelError } = await supabase.from('excel_debitur').select('*');
     if (excelError) throw excelError;
 
-    // Normalisasi Data (Sekaligus nyelipin label 'sumber_tabel' buat kebutuhan penugasan nanti)
     const normalizedManual = (manualData || []).map(d => ({ ...d, sumber_tabel: 'manual_debitur' }));
     
     const normalizedExcelData = (excelData || []).map(e => {
@@ -259,11 +303,11 @@ async function loadDebitur() {
        if (idKey) delete contactInfo[idKey];
        
        return {
-         ...e,
+         ...e, 
          name: nameKey ? rawData[nameKey] : 'Tanpa Nama',
          nik: idKey ? rawData[idKey] : '-',
          contact_info: contactInfo,
-         sumber_tabel: 'excel_debitur' // Penanda identitas tabel
+         sumber_tabel: 'excel_debitur'
        };
     });
 
@@ -276,14 +320,13 @@ async function loadDebitur() {
     
     populateFilterDropdowns(); 
     renderPage(); 
-    runAssignFilter(); // Refresh tab penugasan juga
+    runAssignFilter(); 
     
   } catch (err) {
     container.innerHTML = `<p class="text-red-500 py-4 text-center">Error: ${err.message}</p>`;
   }
 }
 
-// Bikin dropdown buat Tab 2 (Manajemen) dan Tab 3 (Penugasan)
 function populateFilterDropdowns() {
   const uniqueClients = [...new Set(globalDebiturData.map(d => d.client))].filter(Boolean);
   
@@ -346,12 +389,13 @@ function renderPage() {
   
   container.innerHTML = paginatedData.map(d => {
     const namaKlien = d.client || 'Tanpa Klien';
-    // Ambil info alamat dari field langsung, atau dari dalam JSON contact_info jika dari excel
-    const getKec = d.kecamatan || d.contact_info?.kecamatan || d.contact_info?.Kecamatan || '';
+    
+    // Lokasi sekarang udah terpisah otomatis berkat parsing kita!
+    const getKec = d.kecamatan || '';
     const infoLokasi = getKec ? `📍 Kec. ${getKec}` : ''; 
     
-    const ignoredKeys = ['total_terutang', 'jatuh_tempo'];
-    const contactKeys = Object.keys(d.contact_info || {}).filter(k => !ignoredKeys.includes(k));
+    const ignoredKeys = ['total_terutang', 'jatuh_tempo', 'alamat_lengkap'];
+    const contactKeys = Object.keys(d.contact_info || {}).filter(k => !ignoredKeys.includes(k.toLowerCase()) && !k.toLowerCase().includes('alamat'));
     const labels = contactKeys.map(key => `<span class="text-slate-400 bg-slate-50 border border-slate-100 text-[10px] px-2 py-0.5 rounded-full font-bold mr-1 mb-1 inline-block capitalize">${key.replace(/_/g, ' ')}</span>`).join('');
     
     return `
@@ -375,10 +419,9 @@ function renderPage() {
 
 
 // =========================================
-// JURUS BARU: TAB PENUGASAN KOLEKTOR
+// TAB PENUGASAN KOLEKTOR
 // =========================================
 
-// Tarik data 5 Kolektor dari Database untuk Dropdown
 async function loadCollectors() {
   try {
     const { data, error } = await supabase.from('users').select('*').eq('role', 'collector');
@@ -387,7 +430,6 @@ async function loadCollectors() {
     const selectKol = document.getElementById('select_kolektor');
     if(!selectKol) return;
     
-    // Reset isi dropdown biar ga numpuk
     selectKol.innerHTML = '<option value="">-- Pilih Kolektor --</option>';
     data.forEach(kol => {
        selectKol.innerHTML += `<option value="${kol.id}">${kol.name}</option>`;
@@ -397,7 +439,6 @@ async function loadCollectors() {
   }
 }
 
-// Logika Menyaring Area Penugasan
 window.runAssignFilter = function() {
   const client = document.getElementById('filter_assign_client').value;
   const kec = document.getElementById('filter_assign_kecamatan').value.toLowerCase();
@@ -405,8 +446,8 @@ window.runAssignFilter = function() {
   const pos = document.getElementById('filter_assign_kodepos').value.toLowerCase();
   
   const filtered = globalDebiturData.filter(d => {
-    // Fungsi cerdas: Ngecek kolom luar, atau nyari ke dalam JSON kalau file dari excel
-    const cekLokasi = (key) => (d[key] || d.contact_info?.[key] || d.contact_info?.[key.charAt(0).toUpperCase() + key.slice(1)] || '').toLowerCase();
+    // Mengecek dari kolom lokasi yang sekarang sudah valid
+    const cekLokasi = (key) => (d[key] || '').toLowerCase();
     
     const matchClient = (client === 'ALL' || d.client === client);
     const matchKec = !kec || cekLokasi('kecamatan').includes(kec);
@@ -419,21 +460,18 @@ window.runAssignFilter = function() {
   renderAssignList(filtered);
 }
 
-// Update hitungan Checkbox kalau ada yang dicentang
 window.updateSelectedCount = function() {
   const checkedBoxes = document.querySelectorAll('.assign-checkbox:checked');
   const badge = document.getElementById('assign-selected-count');
   if(badge) badge.innerText = `${checkedBoxes.length} Dipilih`;
 }
 
-// Centang Semua
 window.toggleAllAssign = function(sourceCheckbox) {
   const checkboxes = document.querySelectorAll('.assign-checkbox');
   checkboxes.forEach(cb => cb.checked = sourceCheckbox.checked);
   updateSelectedCount();
 }
 
-// Tampilkan List Checklist Penugasan
 function renderAssignList(dataArray) {
   const container = document.getElementById('assign-debitur-list');
   
@@ -442,19 +480,23 @@ function renderAssignList(dataArray) {
     return;
   }
   
-  // Karena penugasan butuh presisi, kita tampilkan semua hasil filter (tanpa limit pagination) 
-  // agar admin bisa "Pilih Semua" dalam satu kecamatan
   container.innerHTML = `
     <div class="bg-blue-50 px-4 py-3 rounded-xl border border-blue-200 flex gap-3 items-center mb-2">
        <input type="checkbox" onclick="toggleAllAssign(this)" class="w-5 h-5 cursor-pointer accent-blue-600 rounded">
        <span class="text-xs font-black text-blue-900 uppercase">Pilih Semua (${dataArray.length} Debitur)</span>
     </div>
   ` + dataArray.map(d => {
-    // Siapkan detail alamat untuk memudahkan admin milih rute
-    const cekLokasi = (key) => (d[key] || d.contact_info?.[key] || d.contact_info?.[key.charAt(0).toUpperCase() + key.slice(1)] || '-');
-    const fullAlamat = `${cekLokasi('alamat_lengkap')} | Kel. ${cekLokasi('kelurahan')} | Kec. ${cekLokasi('kecamatan')} | ${cekLokasi('kodepos')}`;
     
-    // Value checkbox digabung sama sumber_tabel buat modal ke database
+    // Gabungan full alamat yang udah dipecah mesin Regex kita tadi
+    const cekLokasi = (val, label) => val ? `${label} ${val}` : '';
+    const arrLokasi = [
+        d.alamat_lengkap || '-',
+        cekLokasi(d.kelurahan, 'Kel.'),
+        cekLokasi(d.kecamatan, 'Kec.'),
+        d.kodepos || ''
+    ].filter(Boolean);
+    
+    const fullAlamat = arrLokasi.join(' | ');
     const checkboxVal = `${d.id}|${d.sumber_tabel}`;
     
     return `
@@ -472,10 +514,9 @@ function renderAssignList(dataArray) {
     `;
   }).join('');
   
-  updateSelectedCount(); // Reset badge ke 0
+  updateSelectedCount(); 
 }
 
-// EKSEKUSI TUGAS KE DATABASE (Tabel penugasan_kolektor)
 window.submitPenugasan = async function() {
   const selectedKolektor = document.getElementById('select_kolektor').value;
   const checkedBoxes = document.querySelectorAll('.assign-checkbox:checked');
@@ -487,7 +528,6 @@ window.submitPenugasan = async function() {
       alert("❌ Belum ada debitur yang dicentang!"); return;
   }
   
-  // Rangkai Data Massal
   const payload = Array.from(checkedBoxes).map(cb => {
       const [debitur_id, sumber_tabel] = cb.value.split('|');
       return {
@@ -503,9 +543,8 @@ window.submitPenugasan = async function() {
       if (error) throw error;
       
       const kolName = document.getElementById('select_kolektor').options[document.getElementById('select_kolektor').selectedIndex].text;
-      alert(`🚀 MANTAP!\n\nSebanyak ${payload.length} Debitur berhasil ditugaskan ke "${kolName}".\nOtomatis masuk ke HP kolektor tersebut!`);
+      alert(`🚀 MANTAP!\n\nSebanyak ${payload.length} Debitur berhasil ditugaskan ke "${kolName}".`);
       
-      // Uncheck semua setelah sukses
       checkedBoxes.forEach(cb => cb.checked = false);
       updateSelectedCount();
       
