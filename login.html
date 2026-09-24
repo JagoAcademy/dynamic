@@ -2,7 +2,6 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <!-- Viewport strict untuk mencegah zooming di HP -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Login - AVIANDO COLLECTOR SYSTEM</title>
   
@@ -15,38 +14,34 @@
       font-family: 'Inter', sans-serif;
       margin: 0;
       padding: 0;
-      background-color: #0B1B3D; /* Warna background luar jika dibuka di PC */
+      background-color: #0B1B3D;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      overflow: hidden !important; /* Kunci layar belakang */
+      overflow: hidden !important;
     }
 
-    /* Container utama (Wujud HP) */
     .app-container {
       width: 100%;
-      max-width: 480px; /* Batas maksimal lebar HP */
+      max-width: 480px; 
       height: 100vh;
       background: linear-gradient(180deg, #0B1B3D 0%, #163063 100%);
       position: relative;
       display: flex;
       flex-direction: column;
       
-      /* NUKE SCROLLBAR */
       overflow-y: auto;
-      -ms-overflow-style: none !important;  /* IE & Edge */
-      scrollbar-width: none !important;  /* Firefox */
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important; 
     }
 
-    /* NUKE SCROLLBAR CHROME & SAFARI */
     .app-container::-webkit-scrollbar {
       display: none !important;
       width: 0px !important;
       background: transparent !important;
     }
 
-    /* Bikin wujud HP-nya nyata kalau dibuka di PC/Laptop */
     @media (min-width: 481px) {
       .app-container {
         height: 90vh;
@@ -78,7 +73,11 @@
     <div class="px-6 flex-1 w-full flex flex-col justify-center">
       <div class="bg-white/95 backdrop-blur-md rounded-[24px] p-6 shadow-2xl border border-white/20">
         
-        <form id="formLogin" class="space-y-4">
+        <!-- ELEMENT PESAN ERROR (Wajib ada buat nyambung ke login.js) -->
+        <div id="errorMsg" class="hidden mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-xs font-bold text-center"></div>
+
+        <!-- FORM ID HARUS "loginForm" BUKAN "formLogin" -->
+        <form id="loginForm" class="space-y-4">
           <div>
             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Username</label>
             <input type="text" id="username" required placeholder="Masukkan username" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all placeholder:text-slate-300 font-medium">
@@ -89,7 +88,8 @@
             <input type="password" id="password" required placeholder="Masukkan password" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all placeholder:text-slate-300 font-medium">
           </div>
 
-          <button type="submit" class="w-full bg-gradient-to-r from-[#E65C00] to-orange-500 text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all shadow-[0_8px_20px_rgba(230,92,0,0.3)] hover:shadow-[0_8px_20px_rgba(230,92,0,0.5)]">
+          <!-- BUTTON ID HARUS ADA "submitBtn" -->
+          <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-[#E65C00] to-orange-500 text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all shadow-[0_8px_20px_rgba(230,92,0,0.3)] hover:shadow-[0_8px_20px_rgba(230,92,0,0.5)]">
             Login Sekarang
           </button>
         </form>
@@ -112,7 +112,6 @@
 
   </div>
 
-  <!-- Panggil logic Javascript Login -->
   <script type="module" src="/src/login.js"></script>
 </body>
 </html>
