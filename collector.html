@@ -2,61 +2,102 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Collector Portal - AVIANDO</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Collector Panel | ACS</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
 </head>
-<body class="bg-slate-100 min-h-screen flex flex-col items-center">
-  <div class="w-full max-w-md bg-white min-h-screen shadow-2xl relative pb-20">
+<body class="bg-slate-100 min-h-screen text-slate-800 pb-24">
+
+  <!-- TOP NAV COLLECTOR -->
+  <nav class="bg-gradient-to-r from-[#0B1B3D] to-[#163063] px-5 py-4 sticky top-0 z-50 flex justify-between items-center shadow-lg">
+      <div class="flex items-center gap-3">
+          <div class="bg-white/20 p-1.5 rounded-lg border border-white/30">
+              <span class="text-xl">🏃‍♂️</span>
+          </div>
+          <div>
+              <h1 class="text-[13px] md:text-sm font-black text-orange-400 tracking-widest uppercase">ACS Mobile App</h1>
+              <p class="text-[10px] text-slate-300 font-medium" id="welcomeCollector">Memuat Akun...</p>
+          </div>
+      </div>
+      <button onclick="logout()" class="px-3 py-1.5 bg-red-500/20 hover:bg-red-500 text-red-200 hover:text-white border border-red-400/30 rounded-lg text-[10px] font-bold transition-colors shadow-sm">
+          LOGOUT
+      </button>
+  </nav>
+
+  <div class="max-w-4xl mx-auto px-4 mt-6 space-y-6">
     
-    <div class="bg-gradient-to-br from-[#0B1B3D] to-[#163063] px-6 pt-10 pb-6 rounded-b-[2rem] shadow-lg text-white">
-      <div class="flex justify-between items-center mb-2">
-        <h1 class="text-xl font-black tracking-tight text-orange-400">COLLECTOR PORTAL</h1>
-        <button onclick="logout()" class="bg-red-500/20 text-red-100 text-xs font-bold px-3 py-1.5 rounded-full border border-red-400/30">LOGOUT</button>
-      </div>
-      <p class="text-slate-300 text-sm font-medium" id="welcomeCollector">Halo, Collector!</p>
+    <!-- STATS CARDS & LAPORKAN TARGET -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+            <div>
+                <h2 class="text-sm font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-wide">
+                    <span>📝</span> Form Eksekusi Laporan
+                </h2>
+                <p class="text-[10px] text-slate-500 mt-0.5">Catat hasil kunjungan atau telpon di sini.</p>
+            </div>
+        </div>
+        <div class="p-4 space-y-3">
+             <select id="select_debitur" required class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50">
+                 <option value="">Memuat Daftar Tugas...</option>
+             </select>
+             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                 <select id="hasil_tindak_lanjut" required class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50">
+                     <option value="Tersambung & Janji Bayar">Tersambung & Janji Bayar</option>
+                     <option value="Nomor Tidak Aktif">Nomor Tidak Aktif</option>
+                     <option value="Rumah Kosong">Rumah Kosong / Tidak Bertemu</option>
+                     <option value="Menolak Bayar">Menolak Membayar</option>
+                 </select>
+                 <input type="date" id="tgl_janji" title="Tanggal Janji Bayar (Jika Ada)" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50">
+             </div>
+             <textarea id="catatan" required placeholder="Ketik hasil kunjungan lapangan atau inti obrolan telepon di sini..." class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 h-20"></textarea>
+             
+             <button type="submit" form="formLogAktivitas" id="btnSubmitLog" class="w-full bg-[#E65C00] hover:bg-orange-600 text-white font-black tracking-widest uppercase text-sm py-3.5 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2">
+                <span>🚀</span> Simpan Hasil Penagihan
+             </button>
+        </div>
     </div>
 
-    <div class="p-6 space-y-6">
-      <!-- Target Progress -->
-      <div>
-         <h2 class="text-xs font-black text-slate-800 uppercase mb-2">Target Anda Bulan Ini</h2>
-         <div class="w-full bg-slate-200 rounded-full h-4 mb-1">
-            <div class="bg-orange-500 h-4 rounded-full" style="width: 0%" id="progress-bar"></div>
-         </div>
-         <p class="text-xs text-slate-500 font-semibold text-right" id="progress-text">Menghitung...</p>
-      </div>
+    <!-- LIST TUGAS (LAZY LOAD 10) ALA F1 SWIMMING -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+            <div>
+                <h2 class="text-sm font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-wide">
+                    <span>🎯</span> Rute Tugas Anda
+                </h2>
+                <p class="text-[10px] text-slate-500 mt-0.5">Prioritaskan yang mendekati batas waktu.</p>
+            </div>
+            <span id="badgeTugasCount" class="bg-blue-100 text-blue-700 font-black px-3 py-1 rounded-full text-[10px] uppercase tracking-widest shadow-sm">0 Aktif</span>
+        </div>
+        
+        <!-- Form Pemicu JS ada di luar, tapi JS tetep baca ini -->
+        <form id="formLogAktivitas" class="hidden"></form>
 
-      <!-- Daftar Tugas Dinamis -->
-      <div>
-         <h2 class="text-xs font-black text-slate-800 uppercase mb-3">Daftar Tugas Penagihan</h2>
-         <div id="task-list">
-             <p class="text-xs text-slate-500 text-center py-4">Memuat data tugas dari server...</p>
-         </div>
-      </div>
+        <div id="task-list" class="divide-y divide-slate-100">
+            <div class="p-8 text-center text-slate-400 font-bold text-xs">Memuat tugas dari server... ⏳</div>
+        </div>
 
-      <!-- Form Log Aktivitas -->
-      <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm">
-         <h2 class="text-sm font-black text-[#0B1B3D] uppercase mb-3">Log Aktivitas</h2>
-         <form id="formLogAktivitas" class="space-y-3">
-             <select id="select_debitur" required class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-                 <option value="">Memuat Debitur...</option>
-             </select>
-             <select id="hasil_tindak_lanjut" required class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-                 <option value="Tersambung & Janji Bayar">Tersambung & Janji Bayar</option>
-                 <option value="Nomor Tidak Aktif">Nomor Tidak Aktif</option>
-                 <option value="Rumah Kosong">Rumah Kosong / Tidak Bertemu</option>
-                 <option value="Menolak Bayar">Menolak Membayar</option>
-             </select>
-             <input type="date" id="tgl_janji" title="Tanggal Janji Bayar (Opsional)" class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-             <textarea id="catatan" required placeholder="Catatan hasil telepon / kunjungan lapangan..." class="w-full border border-slate-200 rounded-lg px-3 py-3 text-sm focus:ring-2 focus:ring-orange-500 h-24"></textarea>
-             <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-3 rounded-xl mt-2 active:scale-95 transition-transform">Simpan Laporan</button>
-         </form>
-      </div>
-
+        <!-- FOOTER INFO LIMIT & PAGINATION -->
+        <div class="p-4 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p id="pageInfoTugas" class="text-[10px] text-slate-500 font-black uppercase tracking-widest">Page 1 of 1</p>
+            <div class="flex items-center gap-2 w-full md:w-auto">
+                <button id="btnPrevTugas" onclick="prevTaskPage()" class="flex-1 md:flex-none px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
+                    &laquo; Prev
+                </button>
+                <button id="btnNextTugas" onclick="nextTaskPage()" class="flex-1 md:flex-none px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
+                    Next &raquo;
+                </button>
+            </div>
+        </div>
     </div>
+
   </div>
+
   <script type="module" src="/src/collector.js"></script>
 </body>
 </html>
