@@ -14,19 +14,22 @@
       font-family: 'Inter', sans-serif;
       margin: 0;
       padding: 0;
-      background-color: #0B1B3D;
+      background-color: #E2E8F0; /* Latar belakang PC jadi abu-abu elegan */
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      overflow: hidden !important;
+      overflow: hidden !important; 
     }
 
     .app-container {
       width: 100%;
       max-width: 480px; 
       height: 100vh;
-      background: linear-gradient(180deg, #0B1B3D 0%, #163063 100%);
+      
+      /* GRADASI MEWAH: Biru Dongker -> Biru Soft -> Putih Cerah */
+      background: linear-gradient(180deg, #0B1B3D 0%, #1E40AF 35%, #F8FAFC 70%, #F8FAFC 100%);
+      
       position: relative;
       display: flex;
       flex-direction: column;
@@ -36,19 +39,21 @@
       scrollbar-width: none !important; 
     }
 
+    /* Hilangkan scrollbar bawaan PC/Chrome */
     .app-container::-webkit-scrollbar {
       display: none !important;
       width: 0px !important;
       background: transparent !important;
     }
 
+    /* Bikin wujud HP-nya nyata kalau dibuka di PC/Laptop */
     @media (min-width: 481px) {
       .app-container {
         height: 90vh;
         max-height: 850px;
-        border-radius: 36px;
-        border: 12px solid #000000;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        border-radius: 40px;
+        border: 14px solid #0F172A; /* Bezel hitam pekat kayak HP beneran */
+        box-shadow: 0 25px 50px -12px rgba(11, 27, 61, 0.4);
       }
     }
   </style>
@@ -58,38 +63,36 @@
   <!-- BINGKAI LAYAR HP -->
   <div class="app-container">
     
-    <!-- BAGIAN ATAS: Logo & Judul -->
+    <!-- BAGIAN ATAS: Logo & Judul (Background Biru Gelap) -->
     <div class="flex flex-col items-center justify-center pt-16 pb-6 px-6 text-center">
-      <div class="bg-white p-3 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.2)] mb-5">
-        <img src="/images/logo.png" alt="Logo ACS" class="w-20 h-20 object-contain">
+      <div class="bg-white p-3 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.15)] mb-4">
+        <img src="/images/logo.png" alt="Logo ACS" class="w-16 h-16 object-contain">
       </div>
-      <h1 class="text-2xl font-black text-white uppercase tracking-wider mb-2">Login Portal</h1>
-      <p class="text-[10px] font-bold text-orange-400 uppercase tracking-widest px-4 leading-relaxed">
-        Portal Log In: Collector, Admin, & Owner Aviando
+      <h1 class="text-2xl font-black text-white uppercase tracking-widest mb-1.5">Login Portal</h1>
+      <p class="text-[10px] font-bold text-blue-200 uppercase tracking-widest px-4 leading-relaxed">
+        Collector, Admin, & Owner
       </p>
     </div>
 
-    <!-- BAGIAN TENGAH: Form Login -->
-    <div class="px-6 flex-1 w-full flex flex-col justify-center">
-      <div class="bg-white/95 backdrop-blur-md rounded-[24px] p-6 shadow-2xl border border-white/20">
+    <!-- BAGIAN TENGAH: Form Login (Melayang di atas gradasi) -->
+    <div class="px-6 flex-1 w-full flex flex-col mt-2 relative z-10">
+      <div class="bg-white rounded-[24px] p-7 shadow-[0_20px_40px_-15px_rgba(11,27,61,0.15)] border border-slate-100">
         
-        <!-- ELEMENT PESAN ERROR (Wajib ada buat nyambung ke login.js) -->
+        <!-- ELEMENT PESAN ERROR -->
         <div id="errorMsg" class="hidden mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-xs font-bold text-center"></div>
 
-        <!-- FORM ID HARUS "loginForm" BUKAN "formLogin" -->
         <form id="loginForm" class="space-y-4">
           <div>
             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Username</label>
-            <input type="text" id="username" required placeholder="Masukkan username" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all placeholder:text-slate-300 font-medium">
+            <input type="text" id="username" required placeholder="Masukkan username" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all placeholder:text-slate-300 font-semibold">
           </div>
           
           <div>
             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Password</label>
-            <input type="password" id="password" required placeholder="Masukkan password" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all placeholder:text-slate-300 font-medium">
+            <input type="password" id="password" required placeholder="Masukkan password" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all placeholder:text-slate-300 font-semibold">
           </div>
 
-          <!-- BUTTON ID HARUS ADA "submitBtn" -->
-          <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-[#E65C00] to-orange-500 text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all shadow-[0_8px_20px_rgba(230,92,0,0.3)] hover:shadow-[0_8px_20px_rgba(230,92,0,0.5)]">
+          <button type="submit" id="submitBtn" class="w-full bg-[#E65C00] hover:bg-orange-600 text-white font-bold text-sm py-4 rounded-xl mt-4 active:scale-95 transition-all shadow-[0_8px_20px_rgba(230,92,0,0.25)]">
             Login Sekarang
           </button>
         </form>
@@ -103,11 +106,11 @@
       </div>
     </div>
 
-    <!-- BAGIAN BAWAH: Footer -->
-    <div class="py-6 flex flex-col items-center justify-center opacity-50 mt-auto">
-      <img src="/images/logo.png" alt="Footer Logo" class="w-6 h-6 grayscale mb-2 opacity-70">
-      <p class="text-[9px] font-black text-white uppercase tracking-[0.2em] mb-1">Aviando Collector System</p>
-      <p class="text-[8px] font-medium text-slate-300 tracking-wider">Developed by ADITYA WEB-DEV</p>
+    <!-- BAGIAN BAWAH: Footer (Background Cerah, Tulisan Gelap) -->
+    <div class="py-8 flex flex-col items-center justify-center mt-auto relative z-0">
+      <img src="/images/logo.png" alt="Footer Logo" class="w-6 h-6 grayscale mb-2 opacity-30 mix-blend-multiply">
+      <p class="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] mb-1">Aviando Collector System</p>
+      <p class="text-[8px] font-bold text-slate-400 tracking-wider">Developed by ADITYA WEB-DEV</p>
     </div>
 
   </div>
