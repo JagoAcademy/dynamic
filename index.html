@@ -2,286 +2,28 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <!-- Penyesuaian viewport khusus agar pas dan mencegah zoom yang tidak disengaja -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>AVIANDO COLLECTOR SYSTEM</title>
   
-  <!-- Meta Tags & OG untuk Preview Link -->
   <meta name="title" content="AVIANDO COLLECTOR SYSTEM" />
   <meta name="description" content="Sistem penagihan terpadu (Debt Collection System) profesional. Pantau aktivitas lapangan dan tingkatkan recovery rate secara real-time." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://aviando.vercel.app/" />
   <meta property="og:title" content="AVIANDO COLLECTOR SYSTEM" />
-  <meta property="og:description" content="Sistem penagihan terpadu (Debt Collection System) profesional. Pantau aktivitas lapangan dan tingkatkan recovery rate secara real-time." />
+  <meta property="og:description" content="Sistem penagihan terpadu profesional." />
   <meta property="og:image" content="https://aviando.vercel.app/images/meta.jpg" />
-  <meta property="og:site_name" content="Aviando Collector System" />
-  <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:url" content="https://aviando.vercel.app/" />
-  <meta property="twitter:title" content="AVIANDO COLLECTOR SYSTEM" />
-  <meta property="twitter:description" content="Sistem penagihan terpadu profesional." />
-  <meta property="twitter:image" content="https://aviando.vercel.app/images/meta.jpg" />
-  
   <meta name="theme-color" content="#0f2b5c">
 
-  <!-- Manifest Link untuk Fitur Install PWA -->
+  <!-- Terhubung langsung ke style.css eksternalmu -->
+  <link rel="stylesheet" href="/style.css">
   <link rel="manifest" href="/manifest.json">
-
-  <!-- FULL STYLING -->
-  <style>
-    /* Reset & Global */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    }
-
-    body {
-      background-color: #f4f6f9;
-      width: 100vw;
-      /* Memastikan body setinggi layar (mendukung tinggi dinamis browser HP) */
-      height: 100dvh; 
-      overflow: hidden; /* Mencegah scroll default */
-    }
-
-    /* Container Utama */
-    .app-container {
-      display: flex;
-      width: 100%;
-      height: 100dvh;
-      /* Menghilangkan Scrollbar */
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-    
-    .app-container::-webkit-scrollbar {
-      display: none !important;
-    }
-
-    /* --- LAYOUT DESKTOP (FULL SCREEN SPLIT) --- */
-    @media (min-width: 768px) {
-      .app-container {
-        flex-direction: row;
-      }
-      
-      .top-section {
-        flex: 1.2;
-        background: linear-gradient(135deg, #0f2b5c, #1a4a9c);
-        color: white;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        padding: 10%;
-      }
-
-      .bottom-section {
-        flex: 1;
-        background: white;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        padding: 5%;
-        box-shadow: -10px 0 30px rgba(0,0,0,0.05);
-      }
-
-      .features-grid {
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 15px;
-      }
-      
-      .description {
-        font-size: 1.1rem;
-        margin-bottom: 40px;
-      }
-    }
-
-    /* --- LAYOUT MOBILE (OPTIMASI LAYAR 5.5" - 6.7" TANPA SCROLL) --- */
-    @media (max-width: 767px) {
-      .app-container {
-        flex-direction: column;
-        background: #0f2b5c;
-      }
-
-      .top-section {
-        flex: 6; /* Porsi area biru lebih besar (60-65%) */
-        background: linear-gradient(135deg, #0f2b5c, #1a4a9c);
-        color: white;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        padding: 2vh 5vw; /* Padding dinamis berdasarkan tinggi/lebar layar */
-        text-align: center;
-        position: relative;
-        z-index: 1;
-      }
-
-      .bottom-section {
-        flex: 4; /* Porsi area putih (35-40%) */
-        background: white;
-        border-radius: 25px 25px 0 0;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between; /* Menyebar tombol login (atas) & footer (bawah) */
-        align-items: center;
-        padding: 4vh 5vw 2vh 5vw;
-        box-shadow: 0 -8px 20px rgba(0,0,0,0.15);
-        position: relative;
-        z-index: 2;
-        margin-top: -20px; /* Sedikit overlap agar seamless */
-      }
-      
-      /* Optimasi khusus untuk tinggi layar pendek (HP 5.5") agar tidak terpotong */
-      @media (max-height: 700px) {
-        .logo-img { width: 60px !important; }
-        .title-main { font-size: 1.8rem !important; margin-bottom: 5px !important; }
-        .description { display: none; } /* Sembunyikan deskripsi di HP kecil agar muat */
-        .features-grid { gap: 8px !important; margin-bottom: 10px !important; }
-        .feature-item { padding: 6px 10px !important; }
-        .btn-login { padding: 12px 20px !important; margin-bottom: 15px !important; }
-        .footer { margin-top: 10px !important; }
-      }
-    }
-
-    /* --- ELEMEN DESAIN SPESIFIK --- */
-    .logo-wrapper {
-      margin-bottom: 2vh;
-    }
-    
-    .logo-img {
-      width: clamp(70px, 15vw, 90px);
-      height: auto;
-      border-radius: 12px;
-      background: white;
-      padding: 5px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    }
-
-    .title-main {
-      font-size: clamp(2rem, 7vw, 3.5rem);
-      font-weight: 800;
-      line-height: 1.1;
-      margin-bottom: 1vh;
-      letter-spacing: -0.5px;
-    }
-
-    .title-sub {
-      font-size: clamp(1rem, 4vw, 1.3rem);
-      opacity: 0.9;
-      margin-bottom: 2vh;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .description {
-      font-size: 0.95rem;
-      line-height: 1.5;
-      opacity: 0.85;
-      margin-bottom: 3vh;
-      max-width: 90%;
-    }
-
-    .highlight {
-      font-weight: bold;
-      color: #ffc107;
-    }
-
-    .features-grid {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      width: 100%;
-    }
-
-    .feature-item {
-      background: rgba(255, 255, 255, 0.15);
-      padding: 8px 14px;
-      border-radius: 50px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      backdrop-filter: blur(5px);
-      border: 1px solid rgba(255,255,255,0.2);
-    }
-
-    .feature-icon {
-      font-size: 1.1rem;
-    }
-
-    .feature-text {
-      font-size: 0.8rem;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      white-space: nowrap;
-    }
-
-    /* Tombol Login (Ramah Lansia: Gede, Jelas) */
-    .btn-login {
-      background: #0f2b5c;
-      color: white;
-      border: none;
-      padding: 16px 20px;
-      font-size: clamp(1.1rem, 4.5vw, 1.3rem);
-      border-radius: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      width: 100%;
-      max-width: 380px;
-      font-weight: 800;
-      box-shadow: 0 8px 20px rgba(15, 43, 92, 0.25);
-      margin-top: 10px;
-    }
-
-    .btn-login:hover, .btn-login:active {
-      background: #1a4a9c;
-      transform: translateY(-2px);
-      box-shadow: 0 12px 25px rgba(15, 43, 92, 0.35);
-    }
-
-    /* Footer */
-    .footer {
-      text-align: center;
-      color: #888;
-      font-size: clamp(0.7rem, 2.5vw, 0.85rem);
-      width: 100%;
-    }
-
-    .footer-logo {
-      width: 35px;
-      opacity: 0.4;
-      margin-bottom: 5px;
-      filter: grayscale(100%);
-    }
-
-    .footer-title {
-      font-weight: 800;
-      margin-bottom: 2px;
-      color: #444;
-      letter-spacing: 0.5px;
-    }
-
-    .developer-text span {
-      font-weight: bold;
-      color: #0f2b5c;
-    }
-  </style>
 </head>
 <body>
 
   <div class="app-container">
-    
-    <!-- AREA ATAS (BIRU) -->
     <div class="top-section">
       <div class="logo-wrapper">
-        <img src="/images/logo.png" alt="Logo ACS" class="logo-img" onerror="this.src='https://via.placeholder.com/90?text=ACS'">
+        <img src="/images/logo.png" alt="Logo ACS" class="logo-img" onerror="this.src='https://via.placeholder.com/112?text=ACS'">
       </div>
       
       <h1 class="title-main">Aviando<br>Collector System</h1>
@@ -291,4 +33,44 @@
         Platform manajemen tugas penagihan. Pantau aktivitas lapangan dan tingkatkan <span class="highlight">recovery rate</span> secara real-time.
       </p>
       
-      <div
+      <div class="features-grid">
+        <div class="feature-item">
+          <div class="feature-icon">⚖️</div>
+          <span class="feature-text">TASK ASSIGN</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">⚡</div>
+          <span class="feature-text">FAST UPDATE</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">📊</div>
+          <span class="feature-text">REAL-TIME</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-section">
+      <button class="btn-login" onclick="location.href='/login.html'">
+        <span>👤</span>
+        <span>AKSES LOGIN PORTAL</span>
+      </button>
+      
+      <div class="footer">
+        <img src="/images/logo.png" alt="Logo Footer" class="footer-logo" onerror="this.style.display='none'">
+        <p class="footer-title">AVIANDO COLLECTOR SYSTEM</p>
+        <p class="developer-text">Developed by <span>PT. TPI</span></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('✅ PWA: Service Worker terdaftar!', reg))
+          .catch(err => console.error('❌ PWA: Gagal daftar:', err));
+      });
+    }
+  </script>
+</body>
+</html>
