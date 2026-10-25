@@ -1,5 +1,11 @@
 import { supabase } from './supabase.js';
 
+// === INISIALISASI PDF.js WORKER UNTUK BACA PDF ===
+if (window['pdfjs-dist/build/pdf']) {
+    window.pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+}
+
 // === STATE MANAGEMENT ===
 let globalDebiturData = [];
 let currentFilteredData = [];
@@ -37,7 +43,7 @@ window.logout = function() {
 
 
 // =========================================
-// SISTEM NAVIGASI SIDEBAR / TAB BARU
+// SISTEM NAVIGASI SIDEBAR / TAB 
 // =========================================
 const navItems = document.querySelectorAll('.nav-item');
 const sectionTabs = document.querySelectorAll('.section-tab');
@@ -47,29 +53,24 @@ const sidebarOverlay = document.getElementById('sidebarOverlay');
 
 navItems.forEach(item => {
   item.addEventListener('click', (e) => {
-    // 1. Ganti State Active di Sidebar Menu
     navItems.forEach(nav => nav.classList.remove('active'));
     e.currentTarget.classList.add('active');
 
-    // 2. Ubah Judul Topbar (bersihin emoji)
     const rawText = e.currentTarget.innerText;
     pageTitle.innerText = rawText.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]/g, '').trim();
 
-    // 3. Pindah Konten Tab Utama
     const targetId = e.currentTarget.getAttribute('data-target');
     sectionTabs.forEach(tab => {
       tab.classList.remove('active');
       if (tab.id === targetId) tab.classList.add('active');
     });
     
-    // 4. Trigger logic load data kalau pindah tab
     if(targetId === 'debitur') {
       renderPage();
     } else if (targetId === 'penugasan') {
       runAssignFilter(); 
     }
 
-    // 5. Otomatis Tutup Sidebar klo di HP
     closeMobileSidebar();
   });
 });
@@ -86,7 +87,7 @@ window.closeMobileSidebar = function() {
 
 
 // =========================================
-// JURUS KUNCI: FUNGSI PEMISAH ALAMAT OTOMATIS
+// JURUS KUNCI 1: FUNGSI PEMISAH ALAMAT OTOMATIS
 // =========================================
 function parseAlamat(alamatStr) {
   if (!alamatStr) return {};
@@ -107,7 +108,71 @@ function parseAlamat(alamatStr) {
 
 
 // =========================================
-// LOGIKA MODAL EXCEL & UPLOAD
+// JURUS KUNCI 2: PDF TEXT EXTRACTOR & TRANSLATOR
+// =========================================
+// Menerjemahkan isi teks PDF yang berantakan menjadi Format JSON Rapi
+async function parsePDFToJSON(file) {
+    if (!window.pdfjsLib) throw new Error("Library PDF.js belum termuat.");
+    
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    
+    let extractedRows = [];
+
+    // Baca Per Halaman
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        
+        // Gabungkan semua teks dalam 1 halaman menjadi satu string panjang
+        // (Bisa juga diurutkan berdasarkan Y axis kalau bentuknya tabel, tapi untuk teks form ini cukup)
+        const pageText = textContent.items.map(item => item.str).join(' ');
+
+        // Polisi Regex: Berburu Kata Kunci
+        let rowData = { "_sumber": `PDF Halaman ${i}` };
+
+        // 1. Cari Nama (Asumsi: "Nama : Budi Santoso")
+        const matchNama = pageText.match(/(?:Nama Debitur|Nama|Name)\s*[:\-]?\s*([A-Z][A-Za-z\s]{2,40})/i);
+        if (matchNama) rowData["Nama"] = matchNama[1].trim();
+
+        // 2. Cari NIK/No Akun (Asumsi: "NIK : 357128919102")
+        const matchNIK = pageText.match(/(?:NIK|No Akun|ID|KTP)\s*[:\-]?\s*(\d{10,16})/i);
+        if (matchNIK) rowData["NIK"] = matchNIK[1].trim();
+
+        // 3. Cari Total Uang (Asumsi: "Total Terutang : Rp 1.500.000")
+        const matchUang = pageText.match(/(?:Tagihan|Terutang|Saldo|Amount)\s*[:\-]?\s*(?:Rp\.?\s*)?([\d\.,]+)/i);
+        if (matchUang) rowData["Total Terutang"] = matchUang[1].trim().replace(/[^\d]/g, '');
+
+        // 4. Cari Alamat (Agak panjang)
+        const matchAlamat = pageText.match(/(?:Alamat|Address|Domisili)\s*[:\-]?\s*([^0-9][A-Za-z0-9\s,\.]+?(?:Kec|Kota|Kab|Kel|Desa)[A-Za-z0-9\s,\.]+)/i);
+        if (matchAlamat) {
+            rowData["Alamat Lengkap"] = matchAlamat[1].trim();
+        } else {
+            // Fallback klo gaada RT RW Kec, ambil string panjang setelah kata Alamat
+            const fallbackAlamat = pageText.match(/(?:Alamat)\s*[:\-]?\s*([A-Za-z0-9\s\.\,\-\/]{15,100})/i);
+            if(fallbackAlamat) rowData["Alamat Lengkap"] = fallbackAlamat[1].trim();
+        }
+
+        // 5. Cari No WA/Telp
+        const matchTelp = pageText.match(/(?:Telp|WA|WhatsApp|No HP|Handphone)\s*[:\-]?\s*(\+?62\d{8,13}|08\d{8,11})/i);
+        if (matchTelp) rowData["No WhatsApp"] = matchTelp[1].trim();
+
+        // VALIDASI: Hanya simpan halaman jika ketemu NAMA atau NIK (Biar cover halaman kosong gak masuk)
+        if (rowData["Nama"] || rowData["NIK"]) {
+            extractedRows.push(rowData);
+        }
+    }
+
+    if (extractedRows.length === 0) {
+        throw new Error("Gagal menemukan data Debitur (Nama/NIK) di dalam PDF ini. Pastikan format teksnya bisa diblok/copy (bukan hasil scan gambar).");
+    }
+
+    return extractedRows;
+}
+
+
+// =========================================
+// LOGIKA MODAL UPLOAD (EXCEL & PDF)
 // =========================================
 window.openExcelModal = function() {
   const modal = document.getElementById('modal-excel');
@@ -125,34 +190,46 @@ window.closeExcelModal = function() {
   document.getElementById('formUploadExcel').reset(); 
 }
 
-document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
+document.getElementById('formUploadExcel')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const clientName = document.getElementById('excel_client').value.trim();
   const fileInput = document.getElementById('excel_file');
-  const submitBtn = e.target.querySelector('button');
+  const submitBtn = document.getElementById('btnUploadProcess');
   const isoUploadDate = document.getElementById('excel_date').dataset.date;
   
   if (fileInput.files.length > 0) {
     const file = fileInput.files[0];
-    submitBtn.innerText = "Membaca & Memecah Data...";
+    const isPDF = file.name.toLowerCase().endsWith('.pdf');
+    
+    submitBtn.innerText = isPDF ? "Sedang Menerjemahkan Teks PDF..." : "Membaca Data Excel...";
     submitBtn.disabled = true;
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const data = new Uint8Array(event.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
+    try {
+        let extractedRows = [];
+
+        // CABANG LOGIKA: JIKA PDF vs JIKA EXCEL
+        if (isPDF) {
+            extractedRows = await parsePDFToJSON(file);
+        } else {
+            // Logika Excel (Lama)
+            const arrayBuffer = await file.arrayBuffer();
+            const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            extractedRows = XLSX.utils.sheet_to_json(worksheet);
+        }
+
+        if (!extractedRows || extractedRows.length === 0) throw new Error("File kosong atau tidak dapat diuraikan.");
         
-        const excelRows = XLSX.utils.sheet_to_json(worksheet);
+        submitBtn.innerText = `Menyimpan ${extractedRows.length} Data ke Database...`;
 
-        if (excelRows.length === 0) throw new Error("File Excel/CSV kosong.");
-        submitBtn.innerText = `Menyimpan ${excelRows.length} Baris...`;
-
-        const payload = excelRows.map(row => {
+        // NORMALISASI: Petakan data yang udah diekstrak ke dalam Payload Supabase
+        const payload = extractedRows.map(row => {
+          // Cari adakah kolom yang namanya ngandung kata "alamat"
           const alamatKey = Object.keys(row).find(k => k.toLowerCase().includes('alamat'));
           const alamatStr = alamatKey ? String(row[alamatKey]) : null;
+          
+          // Pecah alamat otomatis pakai jurus kita
           const locInfo = parseAlamat(alamatStr);
 
           return {
@@ -164,25 +241,25 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
             kota_kabupaten: locInfo.kota_kabupaten,
             kodepos: locInfo.kodepos,
             provinsi: locInfo.provinsi,
-            debitur: row, 
+            debitur: row, // Seluruh data sisa (Nama, NIK, Uang) ngumpul di sini layaknya excel
             status: 'Pending'
           };
         });
 
+        // Insert ke Supabase
         const { error } = await supabase.from('excel_debitur').insert(payload);
         if (error) throw error;
 
-        alert(`✅ UPLOAD & PARSING SUKSES!\n\n${excelRows.length} data dengan kolom fleksibel dan pemecahan alamat otomatis telah berhasil disimpan.`);
+        alert(`✅ UPLOAD & TRANSLATE SUKSES!\n\n${extractedRows.length} data dari file ${isPDF ? 'PDF' : 'Excel/CSV'} berhasil diproses dan disimpan.`);
         closeExcelModal();
         await loadDebitur(); 
-      } catch (err) {
+
+    } catch (err) {
         alert(`❌ GAGAL UPLOAD!\n\nPesan Error: ${err.message}`);
-      } finally {
-        submitBtn.innerText = "Mulai Proses Parsing & Upload";
+    } finally {
+        submitBtn.innerText = "Mulai Proses & Upload Data";
         submitBtn.disabled = false;
-      }
-    };
-    reader.readAsArrayBuffer(file);
+    }
   }
 });
 
