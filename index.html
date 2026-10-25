@@ -5,25 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>AVIANDO COLLECTOR SYSTEM</title>
   
-  <meta name="title" content="AVIANDO COLLECTOR SYSTEM" />
-  <meta name="description" content="Sistem penagihan terpadu (Debt Collection System) profesional. Pantau aktivitas lapangan dan tingkatkan recovery rate secara real-time." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://aviando.vercel.app/" />
-  <meta property="og:title" content="AVIANDO COLLECTOR SYSTEM" />
-  <meta property="og:description" content="Sistem penagihan terpadu profesional." />
-  <meta property="og:image" content="https://aviando.vercel.app/images/meta.jpg" />
-  <meta name="theme-color" content="#0f2b5c">
-
-  <!-- Terhubung langsung ke style.css eksternalmu -->
-  <link rel="stylesheet" href="/style.css">
+  <meta name="theme-color" content="#0B1B3D">
   <link rel="manifest" href="/manifest.json">
+  
+  <!-- MEMANGGIL CSS YANG BARU -->
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
   <div class="app-container">
+    
+    <!-- KIRI (PC) / ATAS (HP) -->
     <div class="top-section">
       <div class="logo-wrapper">
-        <img src="/images/logo.png" alt="Logo ACS" class="logo-img" onerror="this.src='https://via.placeholder.com/112?text=ACS'">
+        <img src="/images/logo.png" alt="Logo ACS" class="logo-img" onerror="this.src='https://via.placeholder.com/90?text=ACS'">
       </div>
       
       <h1 class="title-main">Aviando<br>Collector System</h1>
@@ -35,20 +30,21 @@
       
       <div class="features-grid">
         <div class="feature-item">
-          <div class="feature-icon">⚖️</div>
+          <span class="feature-icon">⚖️</span>
           <span class="feature-text">TASK ASSIGN</span>
         </div>
         <div class="feature-item">
-          <div class="feature-icon">⚡</div>
+          <span class="feature-icon">⚡</span>
           <span class="feature-text">FAST UPDATE</span>
         </div>
         <div class="feature-item">
-          <div class="feature-icon">📊</div>
+          <span class="feature-icon">📊</span>
           <span class="feature-text">REAL-TIME</span>
         </div>
       </div>
     </div>
 
+    <!-- KANAN (PC) / BAWAH (HP) -->
     <div class="bottom-section">
       <button class="btn-login" onclick="location.href='/login.html'">
         <span>👤</span>
@@ -58,17 +54,16 @@
       <div class="footer">
         <img src="/images/logo.png" alt="Logo Footer" class="footer-logo" onerror="this.style.display='none'">
         <p class="footer-title">AVIANDO COLLECTOR SYSTEM</p>
-        <p class="developer-text">Developed by <span>PT. TPI</span></p>
+        <p class="developer-text">Developed by PT. TPI</p>
       </div>
     </div>
+
   </div>
 
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('✅ PWA: Service Worker terdaftar!', reg))
-          .catch(err => console.error('❌ PWA: Gagal daftar:', err));
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
       });
     }
   </script>

@@ -5,23 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Login - AVIANDO COLLECTOR SYSTEM</title>
   
-  <link rel="stylesheet" href="/style.css">
+  <meta name="theme-color" content="#0B1B3D">
   <link rel="manifest" href="/manifest.json">
+
+  <!-- MEMANGGIL CSS YANG BARU -->
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
   <div class="app-container">
     
-    <div class="top-section" style="flex: 0.8; justify-content: flex-end;">
-      <div class="logo-wrapper" style="width: 80px; height: 80px; margin-bottom: 10px;">
-        <img src="/images/logo.png" alt="Logo ACS" class="logo-img">
+    <!-- KIRI (PC) / ATAS (HP) -->
+    <div class="top-section">
+      <div class="logo-wrapper">
+        <img src="/images/logo.png" alt="Logo ACS" class="logo-img" onerror="this.src='https://via.placeholder.com/90?text=ACS'">
       </div>
-      <h1 class="title-main" style="font-size: 20px;">Portal Login</h1>
-      <p class="title-sub" style="font-size: 11px;">Collector, Admin, & Owner</p>
+      <h1 class="title-main" style="font-size: clamp(1.8rem, 4vw, 2.5rem);">Portal Login</h1>
+      <p class="title-sub" style="margin-bottom: 0;">Collector, Admin, & Owner</p>
     </div>
 
-    <div class="bottom-section" style="flex: 1.2;">
+    <!-- KANAN (PC) / BAWAH (HP) -->
+    <div class="bottom-section">
+      
+      <!-- FORM BUNGKUS -->
       <div class="form-box">
+        <!-- Notifikasi Error -->
         <div id="errorMsg" class="alert-error hidden"></div>
 
         <form id="loginForm">
@@ -35,21 +43,25 @@
             <input type="password" id="password" required placeholder="Masukkan password" class="form-input">
           </div>
 
-          <button type="submit" id="submitBtn" class="btn-login" style="margin-top: 16px; margin-bottom: 8px;">
+          <button type="submit" id="submitBtn" class="submit-btn">
             Login Sekarang
           </button>
         </form>
 
-        <div style="text-align: center;">
-          <a href="/index.html" class="btn-back">&larr; Kembali ke Beranda</a>
+        <div style="text-align: center; margin-top: 20px;">
+          <a href="/index.html" style="color: #64748b; font-size: 12px; font-weight: 700; text-decoration: none;">
+            &larr; Kembali ke Beranda
+          </a>
         </div>
       </div>
-    </div>
+      
+      <!-- FOOTER -->
+      <div class="footer">
+        <img src="/images/logo.png" alt="Footer Logo" class="footer-logo" onerror="this.style.display='none'">
+        <p class="footer-title">AVIANDO COLLECTOR SYSTEM</p>
+        <p class="developer-text">Developed by PT. TPI</p>
+      </div>
 
-    <div class="footer" style="margin-top: auto; padding-bottom: 20px;">
-      <img src="/images/logo.png" alt="Footer Logo" class="footer-logo">
-      <p class="footer-title">AVIANDO COLLECTOR SYSTEM</p>
-      <p class="developer-text">Developed by <span>PT. TPI</span></p>
     </div>
 
   </div>
