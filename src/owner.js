@@ -22,18 +22,14 @@ const sidebar = document.getElementById('sidebar');
 const mobileMenuBtn = document.getElementById('mobileMenuBtn');
 const sidebarOverlay = document.getElementById('sidebarOverlay');
 
-// Logic ganti tab menu
 navItems.forEach(item => {
   item.addEventListener('click', (e) => {
-    // 1. Hapus class 'active' dari semua menu, tambahkan ke yg diklik
     navItems.forEach(nav => nav.classList.remove('active'));
     e.currentTarget.classList.add('active');
 
-    // 2. Ubah Judul Halaman di Topbar berdasarkan teks menu (buang emojinya)
     const rawText = e.currentTarget.innerText;
     pageTitle.innerText = rawText.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]/g, '').trim();
 
-    // 3. Sembunyikan semua konten tab, tampilkan yg targetnya cocok
     const targetId = e.currentTarget.getAttribute('data-target');
     sectionTabs.forEach(tab => {
       tab.classList.remove('active');
@@ -42,12 +38,10 @@ navItems.forEach(item => {
       }
     });
 
-    // 4. Otomatis tutup sidebar di Mobile jika menu diklik
     closeMobileSidebar();
   });
 });
 
-// Logic Toggle Sidebar di Mobile
 mobileMenuBtn?.addEventListener('click', () => {
   sidebar.classList.remove('-translate-x-full');
   sidebarOverlay.classList.remove('hidden');
@@ -64,54 +58,67 @@ function closeMobileSidebar() {
 // --- PENGAMBILAN DATA (FULL DATA DASHBOARD) ---
 async function loadDashboardData() {
   try {
-    // 1. TOTAL DEBITUR (Semua data di tabel debts)[span_0](start_span)[span_0](end_span)
-    const { count: totalDebts, error: errTotal } = await supabase
-      .from('debts')
-      .select('*', { count: 'exact', head: true });
-    if (errTotal) throw errTotal;
-
-    // 2. PENAGIHAN AKTIF 
-    // Catatan: Ganti 'Active' dengan value status di databasemu (misal 'Berjalan', 'Open', dll)
-    const { count: totalAktif, error: errAktif } = await supabase
-      .from('debts')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'Active'); 
-
-    // 3. PENAGIHAN SELESAI / NON-AKTIF
-    // Catatan: Ganti 'Inactive' dengan value databasemu (misal 'Lunas', 'Closed', dll)
-    const { count: totalNonAktif, error: errNonAktif } = await supabase
-      .from('debts')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'Inactive'); 
-
-    // 4. REALISASI RECOVERY (Total uang dari tabel payments)[span_1](start_span)[span_1](end_span)
-    const { data: payments, error: errPay } = await supabase
-      .from('payments')
-      .select('amount')
-      .eq('status', 'Verified'); // Sesuaikan dengan status valid di sistemmu[span_2](start_span)[span_2](end_span)
-    if (errPay) throw errPay;
-
-    // Kalkulasi Total Uang Masuk[span_3](start_span)[span_3](end_span)
-    const totalRecovery = payments.reduce((sum, row) => sum + Number(row.amount), 0);
+    // 1. TOTAL DEBITUR (Gabungan excel_debitur & manual_debitur)
+    const { count: countManual, error: errMan } = await supabase.from('manual_debitur').select('*', { count: 'exact', head: true });
+    if (errMan) throw errMan;
     
-    // Format mata uang Rupiah[span_4](start_span)[span_4](end_span)
+    const { count: countExcel, error: errExc } = await supabase.from('excel_debitur').select('*', { count: 'exact', head: true });
+    if (errExc) throw errExc;
+    
+    const totalDebitur = (countManual || 0) + (countExcel || 0);
+
+    // 2. PENAGIHAN AKTIF VS SELESAI
+    const { data: penugasan, error: errTugas } = await supabase.from('penugasan_kolektor').select('*');
+    if (errTugas) throw errTugas;
+
+    let totalAktif = 0;
+    let totalNonAktif = 0;
+    let totalRecovery = 0;
+    let lunasTasks = [];
+
+    if (penugasan) {
+        penugasan.forEach(t => {
+            const stat = (t.status || '').toLowerCase();
+            // Asumsi: Jika kolektor set status mengandung kata LUNAS / SELESAI
+            if (stat.includes('lunas') || stat.includes('selesai')) {
+                totalNonAktif++;
+                lunasTasks.push(t);
+            } else {
+                totalAktif++;
+            }
+        });
+    }
+
+    // 3. REALISASI RECOVERY (Ekstrak otomatis uang dari JSONB Debitur Lunas)
+    for (const task of lunasTasks) {
+        const { data: dbData } = await supabase.from(task.sumber_tabel).select('*').eq('id', task.debitur_id).single();
+        if (dbData) {
+            const info = task.sumber_tabel === 'excel_debitur' ? dbData.debitur : dbData.contact_info;
+            // Deteksi kunci kolom yang berbau tagihan/uang
+            const moneyKey = Object.keys(info || {}).find(k => k.toLowerCase().includes('terutang') || k.toLowerCase().includes('amount') || k.toLowerCase().includes('tagihan'));
+            if (moneyKey) {
+                const rawAmount = String(info[moneyKey]).replace(/[^\d]/g, ''); 
+                totalRecovery += Number(rawAmount || 0);
+            }
+        }
+    }
+
+    // Format Rupiah
     const formattedRecovery = new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0
     }).format(totalRecovery);
 
-    // 5. UPDATE UI (Tampilkan Angka ke Layar)
-    document.getElementById('stat-total-debitur').innerText = totalDebts || 0;
-    
-    // Gunakan try-catch per elemen jaga-jaga kalau error databasenya beda status
-    document.getElementById('stat-aktif').innerText = totalAktif !== null ? totalAktif : '-';
-    document.getElementById('stat-non-aktif').innerText = totalNonAktif !== null ? totalNonAktif : '-';
-    
+    // 4. UPDATE UI HTML
+    document.getElementById('stat-total-debitur').innerText = totalDebitur;
+    document.getElementById('stat-aktif').innerText = totalAktif;
+    document.getElementById('stat-non-aktif').innerText = totalNonAktif;
     document.getElementById('stat-realisasi').innerText = formattedRecovery;
 
   } catch (err) {
-    console.error("Gagal memuat data dashboard Owner:", err);
+    console.error("Gagal memuat data dashboard Owner:", err.message);
+    document.getElementById('welcomeOwner').innerText = `Error: Gagal memuat data.`;
   }
 }
 
