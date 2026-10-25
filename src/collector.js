@@ -2,7 +2,7 @@ import { supabase } from './supabase.js';
 
 // === STATE MANAGEMENT PAGINATION ===
 let globalTasks = [];
-let filteredTasks = []; // Untuk fitur search lokal
+let filteredTasks = []; 
 let currentTaskPage = 1;
 const tasksPerPage = 10;
 
@@ -29,7 +29,6 @@ async function loadCollectorTasks() {
   const pagWrapper = document.getElementById('pagination-wrapper');
 
   try {
-    // Tarik daftar kasus dengan status 'Ditugaskan' dari Supabase
     const { data: assignments, error: assignError } = await supabase
       .from('penugasan_kolektor')
       .select('*')
@@ -45,7 +44,6 @@ async function loadCollectorTasks() {
       return;
     }
 
-    // Tarik detail masing-masing debitur (Relasi Manual)
     let finalTasks = [];
     for (const task of assignments) {
        const { data: debiturDetail, error: detailError } = await supabase
@@ -55,7 +53,6 @@ async function loadCollectorTasks() {
          .single();
          
        if (!detailError && debiturDetail) {
-          // Ambil nama debitur untuk gampang disearching lokal
           let dName = debiturDetail.name || '';
           if(task.sumber_tabel === 'excel_debitur' && debiturDetail.debitur) {
              const keyName = Object.keys(debiturDetail.debitur).find(k => k.toLowerCase().includes('nama'));
@@ -65,7 +62,6 @@ async function loadCollectorTasks() {
        }
     }
 
-    // Urutkan dari yang tenggat waktunya paling dekat
     finalTasks.sort((a, b) => new Date(a.tenggat_waktu) - new Date(b.tenggat_waktu));
 
     globalTasks = finalTasks;
@@ -133,7 +129,6 @@ function renderTaskPage() {
     container.innerHTML = paginatedData.map((task) => {
         const db = task.detail_debitur;
         
-        // Format Nama & Uang (Logic Sama)
         let namaDebitur = db.name || 'Tanpa Nama';
         if(task.sumber_tabel === 'excel_debitur' && db.debitur) {
             const nameKey = Object.keys(db.debitur).find(k => k.toLowerCase().includes('nama') || k.toLowerCase().includes('name'));
@@ -149,11 +144,9 @@ function renderTaskPage() {
         const wa = waKey ? String(contactInfo[waKey]) : '';
         const linkWa = wa ? `https://wa.me/${wa.replace(/\D/g, '').replace(/^0/, '62')}` : '#';
         
-        // Alamat Singkat
         const arrLokasi = [db.kelurahan, db.kecamatan].filter(Boolean);
         const alamatSingkat = arrLokasi.length > 0 ? arrLokasi.join(', ') : 'Cek Detail Alamat';
 
-        // Tampilan Card F1 (Rapat & Rapi)
         return `
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
                 <div class="flex justify-between items-start mb-2">
@@ -188,7 +181,6 @@ function renderTaskPage() {
                         </button>
                     </div>
                     
-                    <!-- TOMBOL KUNCI: BUKA MODAL EKSEKUSI (Kirim Parameter ID dan Nama) -->
                     <button onclick="openModalEksekusi('${task.id}', '${namaDebitur.replace(/'/g, "\\'")}')" class="bg-[#E65C00] hover:bg-orange-600 text-white text-[11px] font-black rounded-lg uppercase tracking-widest transition-all active:scale-95 shadow-sm border border-orange-700 w-full">
                         Eksekusi ⚡
                     </button>
@@ -202,31 +194,27 @@ function renderTaskPage() {
 // ==========================================
 // 3. LOGIKA MODAL & UPLOAD BUKTI FOTO
 // ==========================================
-
-// Fungsi Buka Tutup Form di Bawah (Modal Bottom Sheet)
 window.openModalEksekusi = function(penugasanId, nama) {
     document.getElementById('hidden_penugasan_id').value = penugasanId;
     document.getElementById('modalDebiturName').innerText = nama;
     document.getElementById('modalEksekusi').classList.remove('hidden');
-    document.body.style.overflow = 'hidden'; // Kunci scroll latar belakang
+    document.body.style.overflow = 'hidden'; 
 }
 
 window.closeModalEksekusi = function() {
     document.getElementById('modalEksekusi').classList.add('hidden');
-    document.getElementById('formLogAktivitas').reset(); // Bersihkan isi
+    document.getElementById('formLogAktivitas').reset(); 
     document.getElementById('labelFoto').innerText = 'Ketuk untuk Ambil Foto (Kamera)';
-    document.getElementById('wrapper_janji_bayar').style.display = 'block'; // Reset toggle
-    document.body.style.overflow = 'auto'; // Buka scroll lagi
+    document.getElementById('wrapper_janji_bayar').style.display = 'block'; 
+    document.body.style.overflow = 'auto'; 
 }
 
-// Ubah Teks saat file foto udah ke-capture
 window.previewFileName = function(input) {
     if(input.files && input.files[0]) {
         document.getElementById('labelFoto').innerHTML = `<span class="text-green-600 font-black">✅ FOTO TERSIMPAN</span><br><span class="text-[9px]">${input.files[0].name}</span>`;
     }
 }
 
-// Sembunyikan form tanggal kalau kasusnya buntu
 window.toggleJanjiBayar = function() {
     const val = document.getElementById('hasil_tindak_lanjut').value;
     const wrapDate = document.getElementById('wrapper_janji_bayar');
@@ -234,11 +222,11 @@ window.toggleJanjiBayar = function() {
         wrapDate.style.display = 'block';
     } else {
         wrapDate.style.display = 'none';
-        document.getElementById('tgl_janji').value = ''; // Kosongkan nilainya
+        document.getElementById('tgl_janji').value = ''; 
     }
 }
 
-// PROSES SUBMIT: UPLOAD GAMBAR KE BUCKET -> UPDATE DATABASE
+// === UPLOAD KE STORAGE & UPDATE 1 TABEL ===
 document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btnSubmitLog');
@@ -247,7 +235,7 @@ document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e
     const statusVal = document.getElementById('hasil_tindak_lanjut').value;
     const tglJanjiVal = document.getElementById('tgl_janji').value;
     const catatanVal = document.getElementById('catatan').value;
-    const fileBukti = document.getElementById('foto_bukti').files[0]; // File Foto
+    const fileBukti = document.getElementById('foto_bukti').files[0]; 
 
     if(!fileBukti) {
         alert("❌ WAJIB MENGAMBIL FOTO BUKTI LOKASI!");
@@ -258,12 +246,9 @@ document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e
     btn.disabled = true;
 
     try {
-        // 1. UPLOAD FOTO KE SUPABASE STORAGE
-        // Buat nama file unik (kombinasi Waktu + ID Penugasan)
         const fileExt = fileBukti.name.split('.').pop();
         const fileName = `bukti_${penugasanId}_${Date.now()}.${fileExt}`;
         
-        // PENTING: Kamu harus punya Supabase Storage Bucket bernama 'bukti_kunjungan' dan di set ke 'Public'
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from('bukti_kunjungan')
             .upload(fileName, fileBukti, {
@@ -273,25 +258,20 @@ document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e
 
         if (uploadError) throw new Error("Gagal upload foto: " + uploadError.message);
 
-        // Ambil URL Publik Fotonya
         const { data: { publicUrl } } = supabase.storage
             .from('bukti_kunjungan')
             .getPublicUrl(fileName);
 
         btn.innerHTML = "⏳ MEMPROSES DATABASE...";
 
-        // 2. FORMAT CATATAN + LINK BUKTI
-        const buktiLinkText = `[BUKTI FOTO LOKASI: ${publicUrl} ]`;
-        const janjiText = tglJanjiVal ? `\n[JANJI BAYAR: ${tglJanjiVal}]` : '';
-        const catatanAkhir = `${catatanVal}\n\n${buktiLinkText}${janjiText}`;
-
-        // 3. UPDATE STATUS DI TABEL PENUGASAN (Penyelesaian Tugas)
+        // Update SEMUA data ke dalam 1 Tabel (penugasan_kolektor)
         const { error: updateError } = await supabase
             .from('penugasan_kolektor')
             .update({ 
                 status: statusVal, 
-                // Opsional kalau kamu buat kolom khusus 'keterangan_lapangan' atau 'foto_bukti', bisa dimasukkan ke sini juga. 
-                // Untuk sementara saya sisipkan di catatanAkhir (bisa dilihat Admin nanti).
+                foto_url: publicUrl,
+                catatan_lapangan: catatanVal,
+                tanggal_janji_bayar: tglJanjiVal || null
             })
             .eq('id', penugasanId);
 
@@ -299,7 +279,7 @@ document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e
         
         alert(`✅ MANTAP! Kasus terselesaikan (Status: ${statusVal}).`);
         closeModalEksekusi();
-        loadCollectorTasks(); // Refresh rute otomatis
+        loadCollectorTasks(); 
         
     } catch (err) {
         alert("❌ Gagal menyelesaikan tugas: " + err.message);
