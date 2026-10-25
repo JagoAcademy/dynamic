@@ -2,7 +2,8 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- Penyesuaian viewport khusus agar pas dan mencegah zoom yang tidak disengaja -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>AVIANDO COLLECTOR SYSTEM</title>
   
   <!-- Meta Tags & OG untuk Preview Link -->
@@ -25,7 +26,7 @@
   <!-- Manifest Link untuk Fitur Install PWA -->
   <link rel="manifest" href="/manifest.json">
 
-  <!-- FULL STYLING (Desktop Full Screen & Mobile Responsive) -->
+  <!-- FULL STYLING -->
   <style>
     /* Reset & Global */
     * {
@@ -37,23 +38,24 @@
 
     body {
       background-color: #f4f6f9;
-      /* Menghilangkan scrollbar pada body */
-      overflow: hidden !important; 
       width: 100vw;
-      height: 100vh;
+      /* Memastikan body setinggi layar (mendukung tinggi dinamis browser HP) */
+      height: 100dvh; 
+      overflow: hidden; /* Mencegah scroll default */
     }
 
     /* Container Utama */
     .app-container {
       display: flex;
       width: 100%;
-      height: 100vh;
-      -ms-overflow-style: none;  /* Internet Explorer dan Edge */
-      scrollbar-width: none;  /* Mozilla Firefox */
+      height: 100dvh;
+      /* Menghilangkan Scrollbar */
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
     
     .app-container::-webkit-scrollbar {
-      display: none !important; /* Chrome, Safari, Opera */
+      display: none !important;
     }
 
     /* --- LAYOUT DESKTOP (FULL SCREEN SPLIT) --- */
@@ -86,88 +88,100 @@
       .features-grid {
         flex-direction: row;
         flex-wrap: wrap;
-      }
-    }
-
-    /* --- LAYOUT MOBILE (STACKED) --- */
-    @media (max-width: 767px) {
-      body {
-        overflow-y: auto !important; /* Izinkan scroll di mobile jika konten panjang */
-      }
-      
-      .app-container {
-        flex-direction: column;
-        height: auto;
-        min-height: 100vh;
-        background: #0f2b5c; /* Warna background atas */
-      }
-
-      .top-section {
-        background: linear-gradient(135deg, #0f2b5c, #1a4a9c);
-        color: white;
-        padding: 40px 20px 60px 20px;
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
-
-      .bottom-section {
-        background: white;
-        flex: 1;
-        border-radius: 30px 30px 0 0;
-        padding: 40px 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin-top: -30px; /* Efek numpuk ke atas */
-        box-shadow: 0 -10px 20px rgba(0,0,0,0.1);
-      }
-
-      .features-grid {
-        justify-content: center;
+        gap: 15px;
       }
       
       .description {
+        font-size: 1.1rem;
+        margin-bottom: 40px;
+      }
+    }
+
+    /* --- LAYOUT MOBILE (OPTIMASI LAYAR 5.5" - 6.7" TANPA SCROLL) --- */
+    @media (max-width: 767px) {
+      .app-container {
+        flex-direction: column;
+        background: #0f2b5c;
+      }
+
+      .top-section {
+        flex: 6; /* Porsi area biru lebih besar (60-65%) */
+        background: linear-gradient(135deg, #0f2b5c, #1a4a9c);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 2vh 5vw; /* Padding dinamis berdasarkan tinggi/lebar layar */
         text-align: center;
+        position: relative;
+        z-index: 1;
+      }
+
+      .bottom-section {
+        flex: 4; /* Porsi area putih (35-40%) */
+        background: white;
+        border-radius: 25px 25px 0 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between; /* Menyebar tombol login (atas) & footer (bawah) */
+        align-items: center;
+        padding: 4vh 5vw 2vh 5vw;
+        box-shadow: 0 -8px 20px rgba(0,0,0,0.15);
+        position: relative;
+        z-index: 2;
+        margin-top: -20px; /* Sedikit overlap agar seamless */
+      }
+      
+      /* Optimasi khusus untuk tinggi layar pendek (HP 5.5") agar tidak terpotong */
+      @media (max-height: 700px) {
+        .logo-img { width: 60px !important; }
+        .title-main { font-size: 1.8rem !important; margin-bottom: 5px !important; }
+        .description { display: none; } /* Sembunyikan deskripsi di HP kecil agar muat */
+        .features-grid { gap: 8px !important; margin-bottom: 10px !important; }
+        .feature-item { padding: 6px 10px !important; }
+        .btn-login { padding: 12px 20px !important; margin-bottom: 15px !important; }
+        .footer { margin-top: 10px !important; }
       }
     }
 
     /* --- ELEMEN DESAIN SPESIFIK --- */
     .logo-wrapper {
-      margin-bottom: 20px;
+      margin-bottom: 2vh;
     }
     
     .logo-img {
-      width: 80px;
+      width: clamp(70px, 15vw, 90px);
       height: auto;
       border-radius: 12px;
-      background: rgba(255, 255, 255, 1); /* Beri background putih jika logo gelap, sesuaikan jika perlu */
+      background: white;
       padding: 5px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
 
     .title-main {
-      font-size: clamp(2rem, 5vw, 3rem);
+      font-size: clamp(2rem, 7vw, 3.5rem);
       font-weight: 800;
       line-height: 1.1;
-      margin-bottom: 10px;
+      margin-bottom: 1vh;
       letter-spacing: -0.5px;
     }
 
     .title-sub {
-      font-size: clamp(1rem, 2.5vw, 1.3rem);
+      font-size: clamp(1rem, 4vw, 1.3rem);
       opacity: 0.9;
-      margin-bottom: 25px;
+      margin-bottom: 2vh;
       font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
     .description {
-      font-size: 1rem;
-      line-height: 1.6;
+      font-size: 0.95rem;
+      line-height: 1.5;
       opacity: 0.85;
-      margin-bottom: 35px;
-      max-width: 450px;
+      margin-bottom: 3vh;
+      max-width: 90%;
     }
 
     .highlight {
@@ -177,38 +191,41 @@
 
     .features-grid {
       display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      width: 100%;
     }
 
     .feature-item {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 10px 16px;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 8px 14px;
       border-radius: 50px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       backdrop-filter: blur(5px);
       border: 1px solid rgba(255,255,255,0.2);
     }
 
     .feature-icon {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
     }
 
     .feature-text {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 700;
       letter-spacing: 0.5px;
+      white-space: nowrap;
     }
 
-    /* Tombol Login */
+    /* Tombol Login (Ramah Lansia: Gede, Jelas) */
     .btn-login {
       background: #0f2b5c;
       color: white;
       border: none;
-      padding: 16px 32px;
-      font-size: 1.1rem;
+      padding: 16px 20px;
+      font-size: clamp(1.1rem, 4.5vw, 1.3rem);
       border-radius: 50px;
       display: flex;
       align-items: center;
@@ -217,41 +234,36 @@
       cursor: pointer;
       transition: all 0.3s ease;
       width: 100%;
-      max-width: 350px;
-      font-weight: 700;
+      max-width: 380px;
+      font-weight: 800;
       box-shadow: 0 8px 20px rgba(15, 43, 92, 0.25);
-      margin-bottom: 40px;
+      margin-top: 10px;
     }
 
-    .btn-login:hover {
+    .btn-login:hover, .btn-login:active {
       background: #1a4a9c;
-      transform: translateY(-3px);
+      transform: translateY(-2px);
       box-shadow: 0 12px 25px rgba(15, 43, 92, 0.35);
-    }
-
-    .btn-login:active {
-      transform: translateY(0);
     }
 
     /* Footer */
     .footer {
       text-align: center;
       color: #888;
-      font-size: 0.85rem;
-      margin-top: auto;
+      font-size: clamp(0.7rem, 2.5vw, 0.85rem);
       width: 100%;
     }
 
     .footer-logo {
-      width: 40px;
+      width: 35px;
       opacity: 0.4;
-      margin-bottom: 10px;
+      margin-bottom: 5px;
       filter: grayscale(100%);
     }
 
     .footer-title {
       font-weight: 800;
-      margin-bottom: 5px;
+      margin-bottom: 2px;
       color: #444;
       letter-spacing: 0.5px;
     }
@@ -264,13 +276,12 @@
 </head>
 <body>
 
-  <!-- Kontainer Utama -->
   <div class="app-container">
     
-    <!-- BAGIAN ATAS (Kiri di Desktop, Atas di Mobile) -->
+    <!-- AREA ATAS (BIRU) -->
     <div class="top-section">
       <div class="logo-wrapper">
-        <img src="/images/logo.png" alt="Logo ACS" class="logo-img" onerror="this.src='https://via.placeholder.com/80?text=ACS'">
+        <img src="/images/logo.png" alt="Logo ACS" class="logo-img" onerror="this.src='https://via.placeholder.com/90?text=ACS'">
       </div>
       
       <h1 class="title-main">Aviando<br>Collector System</h1>
@@ -280,48 +291,4 @@
         Platform manajemen tugas penagihan. Pantau aktivitas lapangan dan tingkatkan <span class="highlight">recovery rate</span> secara real-time.
       </p>
       
-      <div class="features-grid">
-        <div class="feature-item">
-          <div class="feature-icon">⚖️</div>
-          <span class="feature-text">TASK ASSIGN</span>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon">⚡</div>
-          <span class="feature-text">FAST UPDATE</span>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon">📊</div>
-          <span class="feature-text">REAL-TIME</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- BAGIAN BAWAH (Kanan di Desktop, Bawah di Mobile) -->
-    <div class="bottom-section">
-      <button class="btn-login" onclick="location.href='/login.html'">
-        <span>👤</span>
-        <span>AKSES LOGIN PORTAL</span>
-      </button>
-      
-      <div class="footer">
-        <img src="/images/logo.png" alt="Logo Footer" class="footer-logo" onerror="this.style.display='none'">
-        <p class="footer-title">AVIANDO COLLECTOR SYSTEM</p>
-        <p class="developer-text">Developed by <span>PT. TPI</span></p>
-        <p>&copy; 2026 All Rights Reserved.</p>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Script Otomatis Registrasi Service Worker (PWA) -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('✅ PWA: Service Worker terdaftar beres!', reg))
-          .catch(err => console.error('❌ PWA: Gagal daftar Service Worker:', err));
-      });
-    }
-  </script>
-</body>
-</html>
+      <div
