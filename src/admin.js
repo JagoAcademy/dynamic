@@ -35,24 +35,55 @@ window.logout = function() {
   window.location.href = 'login.html';
 }
 
-window.switchTab = function(tabName) {
-  document.getElementById('content-akun').classList.add('hidden');
-  document.getElementById('content-debitur').classList.add('hidden');
-  document.getElementById('content-penugasan').classList.add('hidden');
-  
-  document.getElementById('tab-akun').classList.remove('tab-active');
-  document.getElementById('tab-debitur').classList.remove('tab-active');
-  document.getElementById('tab-penugasan').classList.remove('tab-active');
-  
-  document.getElementById(`content-${tabName}`).classList.remove('hidden');
-  document.getElementById(`tab-${tabName}`).classList.add('tab-active');
-  
-  if(tabName === 'debitur') {
-    renderPage();
-  } else if (tabName === 'penugasan') {
-    runAssignFilter(); 
-  }
+
+// =========================================
+// SISTEM NAVIGASI SIDEBAR / TAB BARU
+// =========================================
+const navItems = document.querySelectorAll('.nav-item');
+const sectionTabs = document.querySelectorAll('.section-tab');
+const pageTitle = document.getElementById('pageTitle');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+navItems.forEach(item => {
+  item.addEventListener('click', (e) => {
+    // 1. Ganti State Active di Sidebar Menu
+    navItems.forEach(nav => nav.classList.remove('active'));
+    e.currentTarget.classList.add('active');
+
+    // 2. Ubah Judul Topbar (bersihin emoji)
+    const rawText = e.currentTarget.innerText;
+    pageTitle.innerText = rawText.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]/g, '').trim();
+
+    // 3. Pindah Konten Tab Utama
+    const targetId = e.currentTarget.getAttribute('data-target');
+    sectionTabs.forEach(tab => {
+      tab.classList.remove('active');
+      if (tab.id === targetId) tab.classList.add('active');
+    });
+    
+    // 4. Trigger logic load data kalau pindah tab
+    if(targetId === 'debitur') {
+      renderPage();
+    } else if (targetId === 'penugasan') {
+      runAssignFilter(); 
+    }
+
+    // 5. Otomatis Tutup Sidebar klo di HP
+    closeMobileSidebar();
+  });
+});
+
+window.openMobileSidebar = function() {
+  sidebar.classList.remove('-translate-x-full');
+  sidebarOverlay.classList.remove('hidden');
 }
+
+window.closeMobileSidebar = function() {
+  sidebar.classList.add('-translate-x-full');
+  sidebarOverlay.classList.add('hidden');
+}
+
 
 // =========================================
 // JURUS KUNCI: FUNGSI PEMISAH ALAMAT OTOMATIS
@@ -60,16 +91,13 @@ window.switchTab = function(tabName) {
 function parseAlamat(alamatStr) {
   if (!alamatStr) return {};
   const str = String(alamatStr);
-
-  // Fungsi internal nyari kata setelah "Kec", "Kel", "Kota" sampai ketemu Koma atau ujung kalimat
   const extract = (prefix) => {
     const rgx = new RegExp(`(?:${prefix})\\s*([a-zA-Z\\s]+?)(?:,|\\b(?:kec|kel|desa|kota|kab|prov)\\b|\\d{5}|$)`, 'i');
     const match = str.match(rgx);
     return match ? match[1].trim() : null;
   };
-
   return {
-    kodepos: str.match(/\b\d{5}\b/)?.[0] || null, // Cari 5 digit angka berturut-turut
+    kodepos: str.match(/\b\d{5}\b/)?.[0] || null,
     kelurahan: extract('kelurahan|kel\\.?|desa'),
     kecamatan: extract('kecamatan|kec\\.?'),
     kota_kabupaten: extract('kota|kabupaten|kab\\.?'),
@@ -81,7 +109,6 @@ function parseAlamat(alamatStr) {
 // =========================================
 // LOGIKA MODAL EXCEL & UPLOAD
 // =========================================
-
 window.openExcelModal = function() {
   const modal = document.getElementById('modal-excel');
   const dateInput = document.getElementById('excel_date');
@@ -118,35 +145,25 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // 1. Ubah SEMUA baris & kolom Excel jadi JSON Dinamis (Termasuk Agama, Status Kawin, dll)
         const excelRows = XLSX.utils.sheet_to_json(worksheet);
 
         if (excelRows.length === 0) throw new Error("File Excel/CSV kosong.");
         submitBtn.innerText = `Menyimpan ${excelRows.length} Baris...`;
 
-        // 2. Petakan Datanya
         const payload = excelRows.map(row => {
-          
-          // Cari adakah kolom yang namanya ngandung kata "alamat"
           const alamatKey = Object.keys(row).find(k => k.toLowerCase().includes('alamat'));
           const alamatStr = alamatKey ? String(row[alamatKey]) : null;
-          
-          // Panggil Jurus Ekstraksi Alamat kita!
           const locInfo = parseAlamat(alamatStr);
 
           return {
             tanggal_upload: isoUploadDate,
             client: clientName,
-            
-            // Kolom lokasi terisi secara otomatis jika terdeteksi Regex
             alamat_lengkap: alamatStr,
             kelurahan: locInfo.kelurahan,
             kecamatan: locInfo.kecamatan,
             kota_kabupaten: locInfo.kota_kabupaten,
             kodepos: locInfo.kodepos,
             provinsi: locInfo.provinsi,
-            
-            // Semua sisa data Excel (Agama, Kawin, Nama Bapak) lumer otomatis ke sini
             debitur: row, 
             status: 'Pending'
           };
@@ -173,7 +190,6 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', (e) => {
 // =========================================
 // LOGIKA INPUT FORM MANUAL
 // =========================================
-
 window.addJsonField = function() {
   const container = document.getElementById('jsonb-fields-container');
   const newRow = document.createElement('div');
@@ -281,7 +297,6 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
 // =========================================
 // GABUNG DATA & TAMPILKAN DAFTAR KASUS
 // =========================================
-
 async function loadDebitur() {
   const container = document.getElementById('admin-debitur-list');
   try {
@@ -389,8 +404,6 @@ function renderPage() {
   
   container.innerHTML = paginatedData.map(d => {
     const namaKlien = d.client || 'Tanpa Klien';
-    
-    // Lokasi sekarang udah terpisah otomatis berkat parsing kita!
     const getKec = d.kecamatan || '';
     const infoLokasi = getKec ? `📍 Kec. ${getKec}` : ''; 
     
@@ -421,7 +434,6 @@ function renderPage() {
 // =========================================
 // TAB PENUGASAN KOLEKTOR
 // =========================================
-
 async function loadCollectors() {
   try {
     const { data, error } = await supabase.from('users').select('*').eq('role', 'collector');
@@ -446,7 +458,6 @@ window.runAssignFilter = function() {
   const pos = document.getElementById('filter_assign_kodepos').value.toLowerCase();
   
   const filtered = globalDebiturData.filter(d => {
-    // Mengecek dari kolom lokasi yang sekarang sudah valid
     const cekLokasi = (key) => (d[key] || '').toLowerCase();
     
     const matchClient = (client === 'ALL' || d.client === client);
@@ -486,8 +497,6 @@ function renderAssignList(dataArray) {
        <span class="text-xs font-black text-blue-900 uppercase">Pilih Semua (${dataArray.length} Debitur)</span>
     </div>
   ` + dataArray.map(d => {
-    
-    // Gabungan full alamat yang udah dipecah mesin Regex kita tadi
     const cekLokasi = (val, label) => val ? `${label} ${val}` : '';
     const arrLokasi = [
         d.alamat_lengkap || '-',
