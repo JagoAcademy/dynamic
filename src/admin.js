@@ -110,7 +110,6 @@ function parseAlamat(alamatStr) {
 // =========================================
 // JURUS KUNCI 2: PDF TEXT EXTRACTOR & TRANSLATOR
 // =========================================
-// Menerjemahkan isi teks PDF yang berantakan menjadi Format JSON Rapi
 async function parsePDFToJSON(file) {
     if (!window.pdfjsLib) throw new Error("Library PDF.js belum termuat.");
     
@@ -119,45 +118,34 @@ async function parsePDFToJSON(file) {
     
     let extractedRows = [];
 
-    // Baca Per Halaman
     for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         
-        // Gabungkan semua teks dalam 1 halaman menjadi satu string panjang
-        // (Bisa juga diurutkan berdasarkan Y axis kalau bentuknya tabel, tapi untuk teks form ini cukup)
         const pageText = textContent.items.map(item => item.str).join(' ');
 
-        // Polisi Regex: Berburu Kata Kunci
         let rowData = { "_sumber": `PDF Halaman ${i}` };
 
-        // 1. Cari Nama (Asumsi: "Nama : Budi Santoso")
         const matchNama = pageText.match(/(?:Nama Debitur|Nama|Name)\s*[:\-]?\s*([A-Z][A-Za-z\s]{2,40})/i);
         if (matchNama) rowData["Nama"] = matchNama[1].trim();
 
-        // 2. Cari NIK/No Akun (Asumsi: "NIK : 357128919102")
         const matchNIK = pageText.match(/(?:NIK|No Akun|ID|KTP)\s*[:\-]?\s*(\d{10,16})/i);
         if (matchNIK) rowData["NIK"] = matchNIK[1].trim();
 
-        // 3. Cari Total Uang (Asumsi: "Total Terutang : Rp 1.500.000")
         const matchUang = pageText.match(/(?:Tagihan|Terutang|Saldo|Amount)\s*[:\-]?\s*(?:Rp\.?\s*)?([\d\.,]+)/i);
         if (matchUang) rowData["Total Terutang"] = matchUang[1].trim().replace(/[^\d]/g, '');
 
-        // 4. Cari Alamat (Agak panjang)
         const matchAlamat = pageText.match(/(?:Alamat|Address|Domisili)\s*[:\-]?\s*([^0-9][A-Za-z0-9\s,\.]+?(?:Kec|Kota|Kab|Kel|Desa)[A-Za-z0-9\s,\.]+)/i);
         if (matchAlamat) {
             rowData["Alamat Lengkap"] = matchAlamat[1].trim();
         } else {
-            // Fallback klo gaada RT RW Kec, ambil string panjang setelah kata Alamat
             const fallbackAlamat = pageText.match(/(?:Alamat)\s*[:\-]?\s*([A-Za-z0-9\s\.\,\-\/]{15,100})/i);
             if(fallbackAlamat) rowData["Alamat Lengkap"] = fallbackAlamat[1].trim();
         }
 
-        // 5. Cari No WA/Telp
         const matchTelp = pageText.match(/(?:Telp|WA|WhatsApp|No HP|Handphone)\s*[:\-]?\s*(\+?62\d{8,13}|08\d{8,11})/i);
         if (matchTelp) rowData["No WhatsApp"] = matchTelp[1].trim();
 
-        // VALIDASI: Hanya simpan halaman jika ketemu NAMA atau NIK (Biar cover halaman kosong gak masuk)
         if (rowData["Nama"] || rowData["NIK"]) {
             extractedRows.push(rowData);
         }
@@ -207,11 +195,9 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
     try {
         let extractedRows = [];
 
-        // CABANG LOGIKA: JIKA PDF vs JIKA EXCEL
         if (isPDF) {
             extractedRows = await parsePDFToJSON(file);
         } else {
-            // Logika Excel (Lama)
             const arrayBuffer = await file.arrayBuffer();
             const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
             const firstSheetName = workbook.SheetNames[0];
@@ -223,13 +209,9 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
         
         submitBtn.innerText = `Menyimpan ${extractedRows.length} Data ke Database...`;
 
-        // NORMALISASI: Petakan data yang udah diekstrak ke dalam Payload Supabase
         const payload = extractedRows.map(row => {
-          // Cari adakah kolom yang namanya ngandung kata "alamat"
           const alamatKey = Object.keys(row).find(k => k.toLowerCase().includes('alamat'));
           const alamatStr = alamatKey ? String(row[alamatKey]) : null;
-          
-          // Pecah alamat otomatis pakai jurus kita
           const locInfo = parseAlamat(alamatStr);
 
           return {
@@ -241,12 +223,11 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
             kota_kabupaten: locInfo.kota_kabupaten,
             kodepos: locInfo.kodepos,
             provinsi: locInfo.provinsi,
-            debitur: row, // Seluruh data sisa (Nama, NIK, Uang) ngumpul di sini layaknya excel
+            debitur: row, 
             status: 'Pending'
           };
         });
 
-        // Insert ke Supabase
         const { error } = await supabase.from('excel_debitur').insert(payload);
         if (error) throw error;
 
@@ -265,7 +246,7 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
 
 
 // =========================================
-// LOGIKA INPUT FORM MANUAL
+// LOGIKA INPUT FORM MANUAL & KELOLA AKUN KOLEKTOR
 // =========================================
 window.addJsonField = function() {
   const container = document.getElementById('jsonb-fields-container');
@@ -297,13 +278,61 @@ document.getElementById('formCollector')?.addEventListener('submit', async (e) =
     if (error) throw error;
     alert(`✅ Akun Collector atas nama "${nameVal}" berhasil dibuat!`);
     e.target.reset(); 
-    loadCollectors(); 
+    loadCollectors(); // Refresh list dropdown dan table
   } catch (err) {
     alert("Gagal membuat akun: " + err.message);
   } finally {
     btn.innerText = "Simpan Akun Collector";
   }
 });
+
+
+// -----------------------------------------
+// FITUR BARU: MODAL EDIT & RESET KOLEKTOR
+// -----------------------------------------
+window.openEditKolektor = function(id, name, username, phone) {
+    document.getElementById('edit_col_id').value = id;
+    document.getElementById('edit_col_name').value = name;
+    document.getElementById('edit_col_user').value = username;
+    document.getElementById('edit_col_phone').value = phone || '';
+    document.getElementById('edit_col_pass').value = ''; 
+    document.getElementById('modal-edit-kolektor').classList.remove('hidden');
+}
+
+window.closeEditKolektor = function() {
+    document.getElementById('modal-edit-kolektor').classList.add('hidden');
+    document.getElementById('formEditKolektor').reset();
+}
+
+document.getElementById('formEditKolektor')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    btn.innerText = "Menyimpan Perubahan...";
+
+    const id = document.getElementById('edit_col_id').value;
+    const name = document.getElementById('edit_col_name').value.trim();
+    const phone = document.getElementById('edit_col_phone').value.trim();
+    const newPass = document.getElementById('edit_col_pass').value; // Opsional
+
+    let payload = { name: name, phone: phone || null };
+    if(newPass.length > 0) {
+        payload.password = newPass; // Update password hanya jika kolom diisi
+    }
+
+    try {
+        const { error } = await supabase.from('users').update(payload).eq('id', id);
+        if (error) throw error;
+        
+        alert(`✅ Profil kolektor "${name}" sukses diperbarui!${newPass ? '\nPassword juga telah di-reset.' : ''}`);
+        closeEditKolektor();
+        loadCollectors(); // Tarik ulang data ke tabel
+    } catch (err) {
+        alert("Gagal update profil: " + err.message);
+    } finally {
+        btn.innerText = "Simpan Perubahan";
+    }
+});
+
 
 document.getElementById('formEditDebitur')?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -509,20 +538,41 @@ function renderPage() {
 
 
 // =========================================
-// TAB PENUGASAN KOLEKTOR
+// TAB PENUGASAN KOLEKTOR & RENDER TABEL KOLEKTOR
 // =========================================
 async function loadCollectors() {
   try {
-    const { data, error } = await supabase.from('users').select('*').eq('role', 'collector');
+    // 1. Tarik dari database diurutkan dari yang terbaru
+    const { data, error } = await supabase.from('users').select('*').eq('role', 'collector').order('created_at', { ascending: false });
     if (error) throw error;
     
+    // 2. Render Dropdown untuk Menu Penugasan
     const selectKol = document.getElementById('select_kolektor');
-    if(!selectKol) return;
-    
-    selectKol.innerHTML = '<option value="">-- Pilih Kolektor --</option>';
-    data.forEach(kol => {
-       selectKol.innerHTML += `<option value="${kol.id}">${kol.name}</option>`;
-    });
+    if(selectKol) {
+      selectKol.innerHTML = '<option value="">-- Pilih Kolektor --</option>';
+      data.forEach(kol => { selectKol.innerHTML += `<option value="${kol.id}">${kol.name}</option>`; });
+    }
+
+    // 3. Render Tabel Daftar Kolektor di Menu Kelola Akun
+    const listContainer = document.getElementById('collector-list');
+    if(listContainer) {
+      if(data.length === 0) {
+         listContainer.innerHTML = '<p class="text-sm text-slate-500 py-4 text-center">Belum ada akun kolektor yang terdaftar.</p>';
+      } else {
+         listContainer.innerHTML = data.map(kol => `
+            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-orange-300 transition-colors">
+               <div>
+                  <p class="text-[13px] font-black text-slate-800 uppercase tracking-wide">${kol.name}</p>
+                  <p class="text-[11px] font-semibold text-slate-500 mt-0.5">User: <span class="text-slate-700">${kol.username}</span> | WA: ${kol.phone || '-'}</p>
+               </div>
+               <button onclick="openEditKolektor('${kol.id}', '${kol.name.replace(/'/g, "\\'")}', '${kol.username.replace(/'/g, "\\'")}', '${kol.phone || ''}')" 
+                       class="text-[10px] bg-orange-100 text-[#E65C00] border border-orange-200 px-3 py-2 rounded-lg font-black uppercase tracking-wider hover:bg-orange-500 hover:text-white transition-all">
+                   ✏️ Edit
+               </button>
+            </div>
+         `).join('');
+      }
+    }
   } catch (error) {
     console.error("Gagal load kolektor: ", error.message);
   }

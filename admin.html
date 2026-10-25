@@ -8,9 +8,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
   
-  <!-- LIBRARY BACA EXCEL -->
+  <!-- LIBRARY BACA EXCEL & PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <!-- LIBRARY BACA PDF (Mozilla PDF.js) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
   <style>
@@ -43,18 +42,14 @@
       </div>
     </div>
 
-    <!-- Menu Navigasi Admin -->
     <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1">
       <p class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Workspace</p>
-      
       <button data-target="akun" class="nav-item active w-full flex items-center px-3 py-3 rounded-lg text-sm font-semibold hover:bg-white/5 transition-all text-left">
         <span class="mr-3 text-lg">👥</span> Kelola Akun
       </button>
-      
       <button data-target="debitur" class="nav-item w-full flex items-center px-3 py-3 rounded-lg text-sm font-semibold hover:bg-white/5 transition-all text-left mt-1">
         <span class="mr-3 text-lg">📁</span> Manajemen Debitur
       </button>
-
       <button data-target="penugasan" class="nav-item w-full flex items-center px-3 py-3 rounded-lg text-sm font-semibold hover:bg-white/5 transition-all text-left mt-1">
         <span class="mr-3 text-lg">📍</span> Penugasan Kolektor
       </button>
@@ -67,13 +62,11 @@
     </div>
   </aside>
 
-  <!-- OVERLAY MOBILE -->
   <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/50 z-40 hidden md:hidden backdrop-blur-sm" onclick="closeMobileSidebar()"></div>
 
   <!-- AREA KONTEN UTAMA (KANAN) -->
   <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
     
-    <!-- Topbar -->
     <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-30">
       <div class="flex items-center">
         <button id="mobileMenuBtn" onclick="openMobileSidebar()" class="md:hidden mr-4 text-slate-500 hover:text-slate-800">
@@ -86,25 +79,39 @@
       </div>
     </header>
 
-    <!-- Konten Scrollable -->
     <div class="flex-1 overflow-y-auto p-6 md:p-8">
       
       <!-- TAB 1: KELOLA AKUN -->
       <div id="akun" class="section-tab active">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
-          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm col-span-1 lg:col-span-2">
-            <div class="flex items-center gap-3 mb-6">
-                <span class="text-3xl">📋</span>
-                <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Buat Akun Collector</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          
+          <!-- Kiri: Form Buat Akun -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm col-span-1">
+            <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+                <span class="text-2xl">📋</span>
+                <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Buat Akun Baru</h2>
             </div>
             <form id="formCollector" class="space-y-4">
               <input type="text" id="c_name" required placeholder="Nama Lengkap Collector" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
               <input type="text" id="c_user" required placeholder="Username Login" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
               <input type="password" id="c_pass" required placeholder="Password Akun" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
               <input type="number" id="c_phone" placeholder="Nomor HP / WA (Opsional)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-              <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all hover:bg-orange-600 shadow-md">Simpan Akun Collector</button>
+              <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all hover:bg-orange-600 shadow-md">Simpan Akun</button>
             </form>
           </div>
+
+          <!-- Kanan: Daftar Akun Kolektor -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm col-span-1 lg:col-span-2">
+            <div class="flex items-center gap-3 mb-4 border-b border-slate-100 pb-4">
+                <span class="text-2xl">🏃‍♂️</span>
+                <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Daftar Kolektor Aktif</h2>
+            </div>
+            <!-- Wadah List Kolektor -->
+            <div id="collector-list" class="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+               <p class="text-sm text-slate-500 py-4 text-center">Memuat daftar kolektor...</p>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -246,6 +253,42 @@
         </div>
         <button type="submit" id="btnUploadProcess" class="w-full bg-green-600 text-white font-bold text-sm py-4 rounded-xl mt-4 active:scale-95 transition-all hover:bg-green-700 shadow-md flex justify-center items-center gap-2">
           Mulai Proses & Upload Data
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT / RESET PASSWORD KOLEKTOR -->
+  <div id="modal-edit-kolektor" class="fixed inset-0 bg-slate-900/60 z-[100] hidden flex items-center justify-center backdrop-blur-sm transition-opacity px-4">
+    <div class="bg-white w-full max-w-md p-6 lg:p-8 rounded-3xl shadow-2xl relative border border-slate-200">
+      <button onclick="closeEditKolektor()" class="absolute top-4 right-5 text-slate-400 hover:text-red-500 font-bold text-2xl leading-none transition-colors">&times;</button>
+      <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+        <span class="text-4xl drop-shadow-sm">⚙️</span>
+        <div>
+          <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Edit / Reset Akun</h2>
+          <p class="text-[11px] text-slate-500 font-medium">Kosongkan kolom password jika tidak ingin diganti.</p>
+        </div>
+      </div>
+      <form id="formEditKolektor" class="space-y-4">
+        <input type="hidden" id="edit_col_id">
+        <div>
+           <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nama Lengkap</label>
+           <input type="text" id="edit_col_name" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
+        </div>
+        <div>
+           <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Username Login</label>
+           <input type="text" id="edit_col_user" readonly class="w-full bg-slate-100 border border-slate-200 text-slate-500 cursor-not-allowed rounded-xl px-4 py-3 text-sm">
+        </div>
+        <div>
+           <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">No HP / WA</label>
+           <input type="number" id="edit_col_phone" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
+        </div>
+        <div>
+           <label class="block text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1.5 ml-1">Password Baru (Opsional)</label>
+           <input type="text" id="edit_col_pass" placeholder="Ketik sandi baru untuk reset..." class="w-full bg-red-50 border border-red-200 text-red-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500 placeholder:text-red-300 font-semibold">
+        </div>
+        <button type="submit" class="w-full bg-[#0B1B3D] text-white font-bold text-sm py-4 rounded-xl mt-4 active:scale-95 transition-all hover:bg-blue-900 shadow-md">
+          Simpan Perubahan
         </button>
       </form>
     </div>
