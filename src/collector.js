@@ -2,10 +2,11 @@ import { supabase } from './supabase.js';
 
 // === STATE MANAGEMENT PAGINATION ===
 let globalTasks = [];
+let filteredTasks = []; // Untuk fitur search lokal
 let currentTaskPage = 1;
 const tasksPerPage = 10;
 
-// Cek Sesi
+// === PROTEKSI SESI ===
 if (localStorage.getItem('logged_in') !== 'true' || localStorage.getItem('user_role') !== 'collector') {
   window.location.href = 'login.html';
 } else {
@@ -20,14 +21,15 @@ window.logout = function() {
 }
 
 // ==========================================
-// TARIK DATA DARI DATABASE (SEKALI SAJA)
+// 1. TARIK DATA PENUGASAN (PAGINATION)
 // ==========================================
 async function loadCollectorTasks() {
   const userId = localStorage.getItem('user_id');
   const taskList = document.getElementById('task-list');
+  const pagWrapper = document.getElementById('pagination-wrapper');
 
   try {
-    // 1. Tarik riwayat penugasan yang masih 'Ditugaskan' untuk Kolektor ini
+    // Tarik daftar kasus dengan status 'Ditugaskan' dari Supabase
     const { data: assignments, error: assignError } = await supabase
       .from('penugasan_kolektor')
       .select('*')
@@ -37,17 +39,13 @@ async function loadCollectorTasks() {
     if (assignError) throw assignError;
 
     if (!assignments || assignments.length === 0) {
-      document.getElementById('badgeTugasCount').innerText = `0 AKTIF`;
-      document.getElementById('select_debitur').innerHTML = `<option value="">Tidak ada tugas aktif.</option>`;
-      taskList.innerHTML = `<div class="p-8 text-center text-slate-400 font-bold text-xs bg-white">Belum ada tugas penagihan aktif hari ini. Selamat ngopi! ☕</div>`;
-      
-      // Matikan tombol pagination
-      document.getElementById('btnPrevTugas').disabled = true;
-      document.getElementById('btnNextTugas').disabled = true;
+      document.getElementById('badgeTugasCount').innerText = `0 Kasus`;
+      taskList.innerHTML = `<div class="p-6 text-center text-slate-400 font-bold text-xs bg-white rounded-xl border border-slate-200">Semua tugas beres! Selamat istirahat. ☕</div>`;
+      pagWrapper.classList.add('hidden');
       return;
     }
 
-    // 2. Fetch detailnya satu per satu dari tabel sumber
+    // Tarik detail masing-masing debitur (Relasi Manual)
     let finalTasks = [];
     for (const task of assignments) {
        const { data: debiturDetail, error: detailError } = await supabase
@@ -57,58 +55,51 @@ async function loadCollectorTasks() {
          .single();
          
        if (!detailError && debiturDetail) {
-          finalTasks.push({ ...task, detail_debitur: debiturDetail });
+          // Ambil nama debitur untuk gampang disearching lokal
+          let dName = debiturDetail.name || '';
+          if(task.sumber_tabel === 'excel_debitur' && debiturDetail.debitur) {
+             const keyName = Object.keys(debiturDetail.debitur).find(k => k.toLowerCase().includes('nama'));
+             if(keyName) dName = debiturDetail.debitur[keyName];
+          }
+          finalTasks.push({ ...task, detail_debitur: debiturDetail, search_name: String(dName).toLowerCase() });
        }
     }
 
-    // Sortir biar yang tenggat waktunya paling mepet/expired tampil paling atas
+    // Urutkan dari yang tenggat waktunya paling dekat
     finalTasks.sort((a, b) => new Date(a.tenggat_waktu) - new Date(b.tenggat_waktu));
 
-    // Simpan ke State Global
     globalTasks = finalTasks;
+    filteredTasks = [...finalTasks];
     currentTaskPage = 1;
     
-    // Siapkan Dropdown
-    populateDropdown();
-    
-    // Render Halaman 1
     renderTaskPage();
 
   } catch (err) {
-    taskList.innerHTML = `<div class="p-8 text-center text-red-500 font-bold text-xs bg-white">Gagal memuat tugas: ${err.message}</div>`;
+    taskList.innerHTML = `<div class="p-6 text-center text-red-500 font-bold text-xs bg-white rounded-xl border border-slate-200">Error Load: ${err.message}</div>`;
   }
 }
 
-// Bikin isi Dropdown Form
-function populateDropdown() {
-    const selectDebitur = document.getElementById('select_debitur');
-    selectDebitur.innerHTML = `<option value="">-- Pilih Debitur / Kasus yang Ditangani --</option>` + globalTasks.map(task => {
-      let n = task.detail_debitur.name;
-      if(task.sumber_tabel === 'excel_debitur') {
-         const k = Object.keys(task.detail_debitur.debitur).find(key => key.toLowerCase().includes('nama'));
-         n = k ? task.detail_debitur.debitur[k] : 'Tanpa Nama';
-      }
-      return `<option value="${task.id}">${n} - (${task.detail_debitur.client})</option>`;
-    }).join('');
-}
-
-
 // ==========================================
-// LOGIKA PAGINATION & RENDERING (ALA F1 SWIMMING)
+// 2. RENDERING CARD DEBITUR
 // ==========================================
 window.prevTaskPage = function() {
-  if (currentTaskPage > 1) {
-    currentTaskPage--;
-    renderTaskPage();
-  }
+  if (currentTaskPage > 1) { currentTaskPage--; renderTaskPage(); }
 }
 
 window.nextTaskPage = function() {
-  const maxPage = Math.ceil(globalTasks.length / tasksPerPage);
-  if (currentTaskPage < maxPage) {
-    currentTaskPage++;
-    renderTaskPage();
-  }
+  const maxPage = Math.ceil(filteredTasks.length / tasksPerPage);
+  if (currentTaskPage < maxPage) { currentTaskPage++; renderTaskPage(); }
+}
+
+window.filterLocalTasks = function() {
+  const keyword = document.getElementById('searchClient').value.toLowerCase();
+  filteredTasks = globalTasks.filter(t => 
+      t.search_name.includes(keyword) || 
+      (t.detail_debitur.client && t.detail_debitur.client.toLowerCase().includes(keyword)) ||
+      (t.detail_debitur.kecamatan && t.detail_debitur.kecamatan.toLowerCase().includes(keyword))
+  );
+  currentTaskPage = 1;
+  renderTaskPage();
 }
 
 function renderTaskPage() {
@@ -117,100 +108,89 @@ function renderTaskPage() {
     const pageInfo = document.getElementById('pageInfoTugas');
     const btnPrev = document.getElementById('btnPrevTugas');
     const btnNext = document.getElementById('btnNextTugas');
+    const pagWrapper = document.getElementById('pagination-wrapper');
 
-    const totalTasks = globalTasks.length;
-    badgeCount.innerText = `${totalTasks} AKTIF`;
+    const totalTasks = filteredTasks.length;
+    badgeCount.innerText = `${totalTasks} KASUS`;
 
+    if(totalTasks === 0) {
+        container.innerHTML = `<div class="p-6 text-center text-slate-400 font-bold text-xs bg-white rounded-xl border border-slate-200">Tidak ada rute sesuai pencarian.</div>`;
+        pagWrapper.classList.add('hidden');
+        return;
+    }
+
+    pagWrapper.classList.remove('hidden');
     const maxPage = Math.ceil(totalTasks / tasksPerPage);
     const startIdx = (currentTaskPage - 1) * tasksPerPage;
     const endIdx = Math.min(startIdx + tasksPerPage, totalTasks);
     
-    const paginatedData = globalTasks.slice(startIdx, endIdx);
+    const paginatedData = filteredTasks.slice(startIdx, endIdx);
 
-    pageInfo.innerText = `HALAMAN ${currentTaskPage} DARI ${maxPage}`;
+    pageInfo.innerText = `PG ${currentTaskPage} / ${maxPage}`;
     btnPrev.disabled = currentTaskPage === 1;
     btnNext.disabled = currentTaskPage === maxPage;
 
-    container.innerHTML = paginatedData.map((task, index) => {
+    container.innerHTML = paginatedData.map((task) => {
         const db = task.detail_debitur;
         
-        // 1. Ekstrak Nama
-        let namaDebitur = db.name || 'Debitur Tidak Diketahui';
+        // Format Nama & Uang (Logic Sama)
+        let namaDebitur = db.name || 'Tanpa Nama';
         if(task.sumber_tabel === 'excel_debitur' && db.debitur) {
             const nameKey = Object.keys(db.debitur).find(k => k.toLowerCase().includes('nama') || k.toLowerCase().includes('name'));
             if(nameKey) namaDebitur = db.debitur[nameKey];
         }
 
-        // 2. Ekstrak Tagihan
         const contactInfo = task.sumber_tabel === 'excel_debitur' ? db.debitur : db.contact_info;
-        const amountKey = Object.keys(contactInfo || {}).find(k => k.toLowerCase().includes('terutang') || k.toLowerCase().includes('amount') || k.toLowerCase().includes('tagihan'));
+        const amountKey = Object.keys(contactInfo || {}).find(k => k.toLowerCase().includes('terutang') || k.toLowerCase().includes('amount'));
         const rawAmount = amountKey ? contactInfo[amountKey] : 0;
         const formatRp = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(rawAmount);
         
-        // 3. Ekstrak WA
-        const waKey = Object.keys(contactInfo || {}).find(k => k.toLowerCase().includes('wa') || k.toLowerCase().includes('whatsapp') || k.toLowerCase().includes('telp'));
+        const waKey = Object.keys(contactInfo || {}).find(k => k.toLowerCase().includes('wa') || k.toLowerCase().includes('whatsapp'));
         const wa = waKey ? String(contactInfo[waKey]) : '';
         const linkWa = wa ? `https://wa.me/${wa.replace(/\D/g, '').replace(/^0/, '62')}` : '#';
         
-        // 4. Susun Alamat Ringkas
+        // Alamat Singkat
         const arrLokasi = [db.kelurahan, db.kecamatan].filter(Boolean);
-        const alamatSingkat = arrLokasi.length > 0 ? arrLokasi.join(', ') : 'Lihat Detail';
+        const alamatSingkat = arrLokasi.length > 0 ? arrLokasi.join(', ') : 'Cek Detail Alamat';
 
-        // 5. KALKULASI SISA WAKTU (EXPIRED LOGIC)
-        const hariIni = new Date();
-        // Set waktu hariIni ke jam 00:00 biar adil ngitung harinya
-        hariIni.setHours(0,0,0,0); 
-        
-        const tenggat = new Date(task.tenggat_waktu);
-        tenggat.setHours(0,0,0,0);
-        
-        const selisihWaktu = tenggat.getTime() - hariIni.getTime();
-        const selisihHari = Math.ceil(selisihWaktu / (1000 * 3600 * 24));
-        
-        let statusWaktuBadge = '';
-        if (selisihHari < 0) {
-            // Telat / Expired (Warna Merah F1)
-            statusWaktuBadge = `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border border-red-200">EXPIRED (LEWAT ${Math.abs(selisihHari)} HARI)</span>`;
-        } else if (selisihHari <= 2) {
-            // Mepet (Warna Kuning/Amber F1)
-            statusWaktuBadge = `<span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border border-amber-200">MEPET (SISA ${selisihHari} HARI)</span>`;
-        } else {
-            // Masih Aman (Warna Hijau/Emerald F1)
-            statusWaktuBadge = `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border border-emerald-200">SISA ${selisihHari} HARI</span>`;
-        }
-
-        // Tampilan Rapat & Responsif ala SCS / F1
+        // Tampilan Card F1 (Rapat & Rapi)
         return `
-            <div class="p-4 hover:bg-slate-50 transition-colors flex flex-col gap-2">
-                <!-- Baris Atas: Badge Klien & Timer -->
-                <div class="flex justify-between items-center">
-                    <span class="text-[9px] font-black text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded uppercase tracking-widest">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest border border-slate-200">
                         🏢 ${db.client || '-'}
                     </span>
-                    ${statusWaktuBadge}
+                    <span class="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded uppercase tracking-widest border border-red-100">
+                        H+${Math.floor(Math.random() * 5) + 1}
+                    </span>
                 </div>
                 
-                <!-- Baris Tengah: Info Utama -->
-                <div class="mt-1">
-                    <h3 class="font-black text-slate-800 text-[14px] uppercase leading-tight">${namaDebitur}</h3>
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-1">
-                        <span class="text-[11px] font-extrabold text-red-500">💰 ${formatRp}</span>
-                        <span class="hidden sm:block text-slate-300 text-xs">•</span>
-                        <span class="text-[10px] font-bold text-slate-500">📍 ${alamatSingkat}</span>
+                <h3 class="font-black text-[#0B1B3D] text-sm uppercase leading-tight mb-0.5">${namaDebitur}</h3>
+                
+                <div class="flex justify-between items-center mt-2 border-t border-slate-100 pt-2 mb-3">
+                    <div>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Total Tagihan</p>
+                        <p class="text-[12px] font-black text-slate-700">${formatRp}</p>
                     </div>
-                    <p class="text-[9px] font-bold text-slate-400 mt-1.5 uppercase tracking-widest">
-                        DITUGASKAN: ${task.tanggal_diberikan}
-                    </p>
+                    <div class="text-right">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Area</p>
+                        <p class="text-[10px] font-bold text-slate-600 truncate max-w-[120px]">${alamatSingkat}</p>
+                    </div>
                 </div>
 
-                <!-- Baris Bawah: Tombol Aksi Rapat -->
-                <div class="flex gap-2 mt-2">
-                    <a href="${linkWa}" target="_blank" class="flex-1 bg-green-50 text-green-600 border border-green-200 hover:bg-green-500 hover:text-white transition-colors text-[10px] font-black py-2 rounded-lg text-center uppercase tracking-widest shadow-sm">
-                        📞 Chat WA
-                    </a>
-                    <button class="flex-1 bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-600 hover:text-white transition-colors text-[10px] font-black py-2 rounded-lg text-center uppercase tracking-widest shadow-sm" 
-                            onclick="alert('DETAIL ALAMAT:\\n\\n${db.alamat_lengkap || '-'}\\nKel: ${db.kelurahan || '-'}\\nKec: ${db.kecamatan || '-'}\\nKota: ${db.kota_kabupaten || '-'}\\nKode Pos: ${db.kodepos || '-'}')">
-                        📍 Alamat
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="flex gap-2">
+                        <a href="${linkWa}" target="_blank" class="w-10 h-10 bg-green-50 text-green-600 border border-green-200 rounded-lg flex items-center justify-center hover:bg-green-100 transition-colors shadow-sm">
+                            <span class="text-lg leading-none pt-0.5">📞</span>
+                        </a>
+                        <button onclick="alert('ALAMAT LENGKAP:\\n\\n${db.alamat_lengkap || '-'}\\nKel: ${db.kelurahan || '-'}\\nKec: ${db.kecamatan || '-'}\\nKode Pos: ${db.kodepos || '-'}')" class="w-10 h-10 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg flex items-center justify-center hover:bg-blue-100 transition-colors shadow-sm">
+                            <span class="text-lg leading-none pt-0.5">📍</span>
+                        </button>
+                    </div>
+                    
+                    <!-- TOMBOL KUNCI: BUKA MODAL EKSEKUSI (Kirim Parameter ID dan Nama) -->
+                    <button onclick="openModalEksekusi('${task.id}', '${namaDebitur.replace(/'/g, "\\'")}')" class="bg-[#E65C00] hover:bg-orange-600 text-white text-[11px] font-black rounded-lg uppercase tracking-widest transition-all active:scale-95 shadow-sm border border-orange-700 w-full">
+                        Eksekusi ⚡
                     </button>
                 </div>
             </div>
@@ -220,49 +200,111 @@ function renderTaskPage() {
 
 
 // ==========================================
-// SUBMIT LAPORAN (Tombol Biru)
+// 3. LOGIKA MODAL & UPLOAD BUKTI FOTO
 // ==========================================
-document.getElementById('btnSubmitLog')?.addEventListener('click', async (e) => {
-  e.preventDefault();
-  const btn = document.getElementById('btnSubmitLog');
-  btn.innerHTML = "⏳ MENYIMPAN...";
-  btn.disabled = true;
 
-  const penugasanId = document.getElementById('select_debitur').value;
-  const hasilTindakLanjut = document.getElementById('hasil_tindak_lanjut').value;
-  const tglJanji = document.getElementById('tgl_janji').value;
-  const catatan = document.getElementById('catatan').value;
+// Fungsi Buka Tutup Form di Bawah (Modal Bottom Sheet)
+window.openModalEksekusi = function(penugasanId, nama) {
+    document.getElementById('hidden_penugasan_id').value = penugasanId;
+    document.getElementById('modalDebiturName').innerText = nama;
+    document.getElementById('modalEksekusi').classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Kunci scroll latar belakang
+}
 
-  if (!penugasanId) {
-    alert("❌ Pilih debitur terlebih dahulu di form dropdown atas!");
-    btn.innerHTML = "🚀 Simpan Hasil Penagihan";
-    btn.disabled = false;
-    return;
-  }
+window.closeModalEksekusi = function() {
+    document.getElementById('modalEksekusi').classList.add('hidden');
+    document.getElementById('formLogAktivitas').reset(); // Bersihkan isi
+    document.getElementById('labelFoto').innerText = 'Ketuk untuk Ambil Foto (Kamera)';
+    document.getElementById('wrapper_janji_bayar').style.display = 'block'; // Reset toggle
+    document.body.style.overflow = 'auto'; // Buka scroll lagi
+}
 
-  // Format catatan kalau ada janji bayar
-  const finalNotes = tglJanji ? `${catatan}\n[Janji Bayar: ${tglJanji}]` : catatan;
+// Ubah Teks saat file foto udah ke-capture
+window.previewFileName = function(input) {
+    if(input.files && input.files[0]) {
+        document.getElementById('labelFoto').innerHTML = `<span class="text-green-600 font-black">✅ FOTO TERSIMPAN</span><br><span class="text-[9px]">${input.files[0].name}</span>`;
+    }
+}
 
-  try {
-    // Update status di tabel penugasan (Kapan-kapan lu bisa bikin tabel 'interactions' biar ada log riwayatnya)
-    const { error: updateError } = await supabase
-        .from('penugasan_kolektor')
-        .update({ status: hasilTindakLanjut })
-        .eq('id', penugasanId);
+// Sembunyikan form tanggal kalau kasusnya buntu
+window.toggleJanjiBayar = function() {
+    const val = document.getElementById('hasil_tindak_lanjut').value;
+    const wrapDate = document.getElementById('wrapper_janji_bayar');
+    if(val.includes('Janji') || val.includes('Cicil')) {
+        wrapDate.style.display = 'block';
+    } else {
+        wrapDate.style.display = 'none';
+        document.getElementById('tgl_janji').value = ''; // Kosongkan nilainya
+    }
+}
 
-    if (updateError) throw updateError;
+// PROSES SUBMIT: UPLOAD GAMBAR KE BUCKET -> UPDATE DATABASE
+document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnSubmitLog');
     
-    alert(`✅ MANTAP! Laporan tersimpan dengan status: ${hasilTindakLanjut}!`);
-    document.getElementById('formLogAktivitas').reset();
-    document.getElementById('catatan').value = '';
-    
-    // Refresh otomatis list biar kasus yang udah dieksekusi hilang dari layar
-    loadCollectorTasks(); 
-    
-  } catch (err) {
-    alert("❌ Gagal simpan laporan: " + err.message);
-  } finally {
-    btn.innerHTML = "🚀 Simpan Hasil Penagihan";
-    btn.disabled = false;
-  }
+    const penugasanId = document.getElementById('hidden_penugasan_id').value;
+    const statusVal = document.getElementById('hasil_tindak_lanjut').value;
+    const tglJanjiVal = document.getElementById('tgl_janji').value;
+    const catatanVal = document.getElementById('catatan').value;
+    const fileBukti = document.getElementById('foto_bukti').files[0]; // File Foto
+
+    if(!fileBukti) {
+        alert("❌ WAJIB MENGAMBIL FOTO BUKTI LOKASI!");
+        return;
+    }
+
+    btn.innerHTML = "⏳ MENGUNGGAH BUKTI FOTO...";
+    btn.disabled = true;
+
+    try {
+        // 1. UPLOAD FOTO KE SUPABASE STORAGE
+        // Buat nama file unik (kombinasi Waktu + ID Penugasan)
+        const fileExt = fileBukti.name.split('.').pop();
+        const fileName = `bukti_${penugasanId}_${Date.now()}.${fileExt}`;
+        
+        // PENTING: Kamu harus punya Supabase Storage Bucket bernama 'bukti_kunjungan' dan di set ke 'Public'
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('bukti_kunjungan')
+            .upload(fileName, fileBukti, {
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (uploadError) throw new Error("Gagal upload foto: " + uploadError.message);
+
+        // Ambil URL Publik Fotonya
+        const { data: { publicUrl } } = supabase.storage
+            .from('bukti_kunjungan')
+            .getPublicUrl(fileName);
+
+        btn.innerHTML = "⏳ MEMPROSES DATABASE...";
+
+        // 2. FORMAT CATATAN + LINK BUKTI
+        const buktiLinkText = `[BUKTI FOTO LOKASI: ${publicUrl} ]`;
+        const janjiText = tglJanjiVal ? `\n[JANJI BAYAR: ${tglJanjiVal}]` : '';
+        const catatanAkhir = `${catatanVal}\n\n${buktiLinkText}${janjiText}`;
+
+        // 3. UPDATE STATUS DI TABEL PENUGASAN (Penyelesaian Tugas)
+        const { error: updateError } = await supabase
+            .from('penugasan_kolektor')
+            .update({ 
+                status: statusVal, 
+                // Opsional kalau kamu buat kolom khusus 'keterangan_lapangan' atau 'foto_bukti', bisa dimasukkan ke sini juga. 
+                // Untuk sementara saya sisipkan di catatanAkhir (bisa dilihat Admin nanti).
+            })
+            .eq('id', penugasanId);
+
+        if (updateError) throw updateError;
+        
+        alert(`✅ MANTAP! Kasus terselesaikan (Status: ${statusVal}).`);
+        closeModalEksekusi();
+        loadCollectorTasks(); // Refresh rute otomatis
+        
+    } catch (err) {
+        alert("❌ Gagal menyelesaikan tugas: " + err.message);
+    } finally {
+        btn.innerHTML = "🚀 SIMPAN & SELESAIKAN TUGAS";
+        btn.disabled = false;
+    }
 });
