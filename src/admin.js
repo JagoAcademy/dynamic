@@ -108,7 +108,7 @@ function parseAlamat(alamatStr) {
 
 
 // =========================================
-// JURUS KUNCI 2: PDF TEXT EXTRACTOR & TRANSLATOR
+// JURUS KUNCI 2: PDF TEXT EXTRACTOR & TRANSLATOR (UPDATE KHUSUS BRI & UMUM)
 // =========================================
 async function parsePDFToJSON(file) {
     if (!window.pdfjsLib) throw new Error("Library PDF.js belum termuat.");
@@ -118,41 +118,77 @@ async function parsePDFToJSON(file) {
     
     let extractedRows = [];
 
+    // Baca Per Halaman
     for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         
+        // Gabungkan semua teks
         const pageText = textContent.items.map(item => item.str).join(' ');
 
         let rowData = { "_sumber": `PDF Halaman ${i}` };
 
-        const matchNama = pageText.match(/(?:Nama Debitur|Nama|Name)\s*[:\-]?\s*([A-Z][A-Za-z\s]{2,40})/i);
-        if (matchNama) rowData["Nama"] = matchNama[1].trim();
-
-        const matchNIK = pageText.match(/(?:NIK|No Akun|ID|KTP)\s*[:\-]?\s*(\d{10,16})/i);
-        if (matchNIK) rowData["NIK"] = matchNIK[1].trim();
-
-        const matchUang = pageText.match(/(?:Tagihan|Terutang|Saldo|Amount)\s*[:\-]?\s*(?:Rp\.?\s*)?([\d\.,]+)/i);
-        if (matchUang) rowData["Total Terutang"] = matchUang[1].trim().replace(/[^\d]/g, '');
-
-        const matchAlamat = pageText.match(/(?:Alamat|Address|Domisili)\s*[:\-]?\s*([^0-9][A-Za-z0-9\s,\.]+?(?:Kec|Kota|Kab|Kel|Desa)[A-Za-z0-9\s,\.]+)/i);
-        if (matchAlamat) {
-            rowData["Alamat Lengkap"] = matchAlamat[1].trim();
-        } else {
-            const fallbackAlamat = pageText.match(/(?:Alamat)\s*[:\-]?\s*([A-Za-z0-9\s\.\,\-\/]{15,100})/i);
-            if(fallbackAlamat) rowData["Alamat Lengkap"] = fallbackAlamat[1].trim();
+        // 1. CARI NIK / NOMOR KARTU (16 Digit Account Number BRI)
+        const matchCcBri = pageText.match(/\b(\d{16})\b/);
+        const matchNikUmum = pageText.match(/(?:NIK|No Akun|ID|KTP)\s*[:\-]?\s*(\d{10,16})/i);
+        if (matchCcBri) {
+            rowData["NIK"] = matchCcBri[1]; // Ambil 16 digit nomor CC
+        } else if (matchNikUmum) {
+            rowData["NIK"] = matchNikUmum[1].trim();
         }
 
-        const matchTelp = pageText.match(/(?:Telp|WA|WhatsApp|No HP|Handphone)\s*[:\-]?\s*(\+?62\d{8,13}|08\d{8,11})/i);
-        if (matchTelp) rowData["No WhatsApp"] = matchTelp[1].trim();
+        // 2. CARI NAMA (Pola BRI: "NAMA CUSTOMER : [NAMA]" atau gabung dengan telepon)
+        const matchNamaBri = pageText.match(/NAMA CUSTOMER.*?:\s*([A-Z][A-Z\s\.\'\-]+)/);
+        const matchNamaUmum = pageText.match(/(?:Nama Debitur|Nama|Name)\s*[:\-]?\s*([A-Z][A-Za-z\s]{2,40})/i);
+        if (matchNamaBri) {
+            rowData["Nama"] = matchNamaBri[1].trim();
+        } else if (matchNamaUmum) {
+            rowData["Nama"] = matchNamaUmum[1].trim();
+        }
 
+        // 3. CARI TOTAL TAGIHAN (Cari angka besar setelah kata Rp.)
+        const matchUangBri = pageText.match(/Rp\.?\s*([\d\.,]{5,})/i);
+        const matchUangUmum = pageText.match(/(?:Tagihan|Terutang|Saldo|Amount)\s*[:\-]?\s*(?:Rp\.?\s*)?([\d\.,]+)/i);
+        if (matchUangBri) {
+            rowData["Total Terutang"] = matchUangBri[1].replace(/[^\d]/g, '');
+        } else if (matchUangUmum) {
+            rowData["Total Terutang"] = matchUangUmum[1].trim().replace(/[^\d]/g, '');
+        }
+
+        // 4. CARI ALAMAT LENGKAP (Pola BRI: Diapit kata ALAMAT dan KANTOR)
+        const matchAlamatBri = pageText.match(/ALAMAT[^:]*:\s*(.*?)(?:KANTOR\s*[:\|]|EMERGENCY CONTACT)/i);
+        const matchAlamatUmum = pageText.match(/(?:Alamat|Address|Domisili)\s*[:\-]?\s*([^0-9][A-Za-z0-9\s,\.]+?(?:Kec|Kota|Kab|Kel|Desa)[A-Za-z0-9\s,\.]+)/i);
+        if (matchAlamatBri) {
+            // Bersihkan alamat dari nomor kartu kredit yang sering nyelip & buang karakter pipa (|)
+            rowData["Alamat Lengkap"] = matchAlamatBri[1]
+                .replace(/\b\d{16}\b/g, '')
+                .replace(/\|/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        } else if (matchAlamatUmum) {
+            rowData["Alamat Lengkap"] = matchAlamatUmum[1].trim();
+        }
+
+        // 5. CARI NOMOR WA / TELEPON
+        const matchTelp = pageText.match(/(?:08|628)\d{8,11}/);
+        if (matchTelp) {
+            rowData["No WhatsApp"] = matchTelp[0].trim();
+        }
+
+        // 6. CARI KOLEKTIBILITAS (Ekstra Khusus Format Kartu Kredit)
+        const matchKol = pageText.match(/(?:MACET|DIRAGUKAN|KURANG LANCAR)/i);
+        if (matchKol) {
+            rowData["Kolektibilitas"] = matchKol[0].toUpperCase();
+        }
+
+        // VALIDASI: Simpan baris hanya jika minimal menemukan Nama atau NIK
         if (rowData["Nama"] || rowData["NIK"]) {
             extractedRows.push(rowData);
         }
     }
 
     if (extractedRows.length === 0) {
-        throw new Error("Gagal menemukan data Debitur (Nama/NIK) di dalam PDF ini. Pastikan format teksnya bisa diblok/copy (bukan hasil scan gambar).");
+        throw new Error("Gagal membaca data. Pastikan PDF yang diupload memiliki format teks yang tidak di-enkripsi.");
     }
 
     return extractedRows;
@@ -288,7 +324,7 @@ document.getElementById('formCollector')?.addEventListener('submit', async (e) =
 
 
 // -----------------------------------------
-// FITUR BARU: MODAL EDIT & RESET KOLEKTOR
+// FITUR MODAL EDIT & RESET KOLEKTOR
 // -----------------------------------------
 window.openEditKolektor = function(id, name, username, phone) {
     document.getElementById('edit_col_id').value = id;
