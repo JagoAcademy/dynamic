@@ -1,12 +1,11 @@
 import { supabase } from './supabase.js';
 
-// === STATE MANAGEMENT PAGINATION ===
+// === STATE MANAGEMENT ===
 let globalTasks = [];
 let filteredTasks = []; 
 let currentTaskPage = 1;
-const tasksPerPage = 10;
+const tasksPerPage = 12; // Dibuat genap agar rapi di Desktop (grid-cols-2 atau grid-cols-3)
 
-// === PROTEKSI SESI ===
 if (localStorage.getItem('logged_in') !== 'true' || localStorage.getItem('user_role') !== 'collector') {
   window.location.href = 'login.html';
 } else {
@@ -21,7 +20,7 @@ window.logout = function() {
 }
 
 // ==========================================
-// 1. TARIK DATA PENUGASAN (PAGINATION)
+// 1. TARIK DATA (SEMUA STATUS UNTUK HISTORY)
 // ==========================================
 async function loadCollectorTasks() {
   const userId = localStorage.getItem('user_id');
@@ -29,17 +28,17 @@ async function loadCollectorTasks() {
   const pagWrapper = document.getElementById('pagination-wrapper');
 
   try {
+    // KUNCI: Buang filter .eq('status', 'Ditugaskan') agar SEMUA tugas tampil
     const { data: assignments, error: assignError } = await supabase
       .from('penugasan_kolektor')
       .select('*')
-      .eq('collector_id', userId)
-      .eq('status', 'Ditugaskan');
+      .eq('collector_id', userId);
 
     if (assignError) throw assignError;
 
     if (!assignments || assignments.length === 0) {
       document.getElementById('badgeTugasCount').innerText = `0 Kasus`;
-      taskList.innerHTML = `<div class="p-6 text-center text-slate-400 font-bold text-xs bg-white rounded-xl border border-slate-200">Semua tugas beres! Selamat istirahat. ☕</div>`;
+      taskList.innerHTML = `<div class="col-span-full p-8 text-center text-slate-400 font-bold text-sm bg-white rounded-2xl border border-slate-200">Belum ada tugas penagihan untuk Anda.</div>`;
       pagWrapper.classList.add('hidden');
       return;
     }
@@ -62,8 +61,12 @@ async function loadCollectorTasks() {
        }
     }
 
-    // Urutkan berdasarkan tenggat waktu (yang terdekat di atas)
-    finalTasks.sort((a, b) => new Date(a.tenggat_waktu) - new Date(b.tenggat_waktu));
+    // SORTING: Yang "Ditugaskan" (Belum disentuh) taruh di paling atas, sisanya turun.
+    finalTasks.sort((a, b) => {
+        if (a.status === 'Ditugaskan' && b.status !== 'Ditugaskan') return -1;
+        if (a.status !== 'Ditugaskan' && b.status === 'Ditugaskan') return 1;
+        return new Date(a.tenggat_waktu) - new Date(b.tenggat_waktu);
+    });
 
     globalTasks = finalTasks;
     filteredTasks = [...finalTasks];
@@ -72,8 +75,28 @@ async function loadCollectorTasks() {
     renderTaskPage();
 
   } catch (err) {
-    taskList.innerHTML = `<div class="p-6 text-center text-red-500 font-bold text-xs bg-white rounded-xl border border-slate-200">Error Load: ${err.message}</div>`;
+    taskList.innerHTML = `<div class="col-span-full p-8 text-center text-red-500 font-bold text-sm bg-white rounded-2xl border border-slate-200">Error Load: ${err.message}</div>`;
   }
+}
+
+// ==========================================
+// PEMBERIAN WARNA STATUS (BADGE)
+// ==========================================
+function getStatusBadge(status) {
+    if (!status || status === 'Ditugaskan') {
+        return `<span class="text-[10px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest border border-slate-200">⏳ Belum Dikerjakan</span>`;
+    }
+    if (status.includes('Janji')) {
+        return `<span class="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded uppercase tracking-widest border border-orange-200">📅 Janji Bayar</span>`;
+    }
+    if (status.includes('Sebagian')) {
+        return `<span class="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest border border-blue-200">💸 Bayar Sebagian</span>`;
+    }
+    if (status.includes('Lunas')) {
+        return `<span class="text-[10px] font-black text-green-600 bg-green-50 px-2 py-0.5 rounded uppercase tracking-widest border border-green-200">✅ LUNAS</span>`;
+    }
+    // Sisanya (Rumah Kosong, Menolak, Fiktif) = Merah Invalid
+    return `<span class="text-[10px] font-black text-red-600 bg-red-50 px-2 py-0.5 rounded uppercase tracking-widest border border-red-200">❌ ${status}</span>`;
 }
 
 // ==========================================
@@ -82,18 +105,17 @@ async function loadCollectorTasks() {
 window.prevTaskPage = function() {
   if (currentTaskPage > 1) { currentTaskPage--; renderTaskPage(); }
 }
-
 window.nextTaskPage = function() {
   const maxPage = Math.ceil(filteredTasks.length / tasksPerPage);
   if (currentTaskPage < maxPage) { currentTaskPage++; renderTaskPage(); }
 }
-
 window.filterLocalTasks = function() {
   const keyword = document.getElementById('searchClient').value.toLowerCase();
   filteredTasks = globalTasks.filter(t => 
       t.search_name.includes(keyword) || 
       (t.detail_debitur.client && t.detail_debitur.client.toLowerCase().includes(keyword)) ||
-      (t.detail_debitur.kecamatan && t.detail_debitur.kecamatan.toLowerCase().includes(keyword))
+      (t.detail_debitur.kecamatan && t.detail_debitur.kecamatan.toLowerCase().includes(keyword)) ||
+      (t.status && t.status.toLowerCase().includes(keyword))
   );
   currentTaskPage = 1;
   renderTaskPage();
@@ -111,7 +133,7 @@ function renderTaskPage() {
     badgeCount.innerText = `${totalTasks} KASUS`;
 
     if(totalTasks === 0) {
-        container.innerHTML = `<div class="p-6 text-center text-slate-400 font-bold text-xs bg-white rounded-xl border border-slate-200">Tidak ada rute sesuai pencarian.</div>`;
+        container.innerHTML = `<div class="col-span-full p-8 text-center text-slate-400 font-bold text-sm bg-white rounded-2xl border border-slate-200">Tidak ada rute sesuai pencarian.</div>`;
         pagWrapper.classList.add('hidden');
         return;
     }
@@ -123,7 +145,7 @@ function renderTaskPage() {
     
     const paginatedData = filteredTasks.slice(startIdx, endIdx);
 
-    pageInfo.innerText = `PG ${currentTaskPage} / ${maxPage}`;
+    pageInfo.innerText = `HALAMAN ${currentTaskPage} DARI ${maxPage}`;
     btnPrev.disabled = currentTaskPage === 1;
     btnNext.disabled = currentTaskPage === maxPage;
 
@@ -138,58 +160,61 @@ function renderTaskPage() {
 
         const contactInfo = task.sumber_tabel === 'excel_debitur' ? db.debitur : db.contact_info;
         
-        // Deteksi nilai uang
         const amountKey = Object.keys(contactInfo || {}).find(k => k.toLowerCase().includes('terutang') || k.toLowerCase().includes('amount') || k.toLowerCase().includes('tagihan'));
         const rawAmount = amountKey ? contactInfo[amountKey] : 0;
         const formatRp = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(String(rawAmount).replace(/\D/g, ''));
         
-        // Deteksi nomor WA
         const waKey = Object.keys(contactInfo || {}).find(k => k.toLowerCase().includes('wa') || k.toLowerCase().includes('whatsapp') || k.toLowerCase().includes('telepon'));
         const wa = waKey ? String(contactInfo[waKey]) : '';
         const linkWa = wa ? `https://wa.me/${wa.replace(/\D/g, '').replace(/^0/, '62')}` : '#';
         
-        // Format Alamat Singkat
         const arrLokasi = [db.kelurahan, db.kecamatan].filter(Boolean);
         const alamatSingkat = arrLokasi.length > 0 ? arrLokasi.join(', ') : 'Cek Detail Alamat';
 
-        // Escape JSON Info untuk dioper ke fungsi Modal Rincian
         const jsonStringInfo = encodeURIComponent(JSON.stringify(contactInfo || {}));
         const safeAlamatLengkap = db.alamat_lengkap ? db.alamat_lengkap.replace(/'/g, "\\'") : '-';
 
+        const badgeStatus = getStatusBadge(task.status);
+        
+        // Ubah tombol eksekusi kalau sudah dikerjakan
+        const isDikerjakan = task.status !== 'Ditugaskan';
+        const btnText = isDikerjakan ? 'Edit ✏️' : 'Eksekusi ⚡';
+        const btnStyle = isDikerjakan 
+            ? 'bg-slate-700 hover:bg-slate-800 border-slate-800' 
+            : 'bg-[#E65C00] hover:bg-orange-600 border-orange-700';
+
         return `
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
-                <div class="flex justify-between items-start mb-2">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-[0_2px_15px_-4px_rgba(0,0,0,0.05)] flex flex-col h-full hover:border-orange-300 transition-colors">
+                <div class="flex justify-between items-start mb-3">
                     <span class="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest border border-slate-200">
                         🏢 ${db.client || '-'}
                     </span>
-                    <span class="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded uppercase tracking-widest border border-red-100">
-                        H+${Math.floor(Math.random() * 5) + 1}
-                    </span>
+                    ${badgeStatus}
                 </div>
                 
-                <h3 class="font-black text-[#0B1B3D] text-sm uppercase leading-tight mb-0.5">${namaDebitur}</h3>
+                <h3 class="font-black text-[#0B1B3D] text-[15px] uppercase leading-tight mb-1">${namaDebitur}</h3>
                 
-                <div class="flex justify-between items-center mt-2 border-t border-slate-100 pt-2 mb-3">
+                <div class="flex justify-between items-center mt-3 border-t border-slate-100 pt-3 mb-4 flex-1">
                     <div>
                         <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Total Tagihan</p>
-                        <p class="text-[12px] font-black text-slate-700">${formatRp}</p>
+                        <p class="text-[13px] font-black text-slate-700">${formatRp}</p>
                     </div>
                     <div class="text-right">
                         <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Area</p>
-                        <p class="text-[10px] font-bold text-slate-600 truncate max-w-[120px]">${alamatSingkat}</p>
+                        <p class="text-[11px] font-bold text-slate-600 truncate max-w-[120px]">${alamatSingkat}</p>
                     </div>
                 </div>
 
                 <!-- Tombol Aksi Bawah Card -->
-                <div class="grid grid-cols-4 gap-2">
-                    <button onclick="openModalDetail('${namaDebitur.replace(/'/g, "\\'")}', '${safeAlamatLengkap}', '${jsonStringInfo}')" class="col-span-2 bg-slate-100 text-slate-600 text-[10px] font-black rounded-lg uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200 w-full py-2.5 shadow-sm">
+                <div class="grid grid-cols-4 gap-2 mt-auto">
+                    <button onclick="openModalDetail('${namaDebitur.replace(/'/g, "\\'")}', '${safeAlamatLengkap}', '${jsonStringInfo}')" class="col-span-2 bg-slate-100 text-slate-600 text-[10px] font-black rounded-xl uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200 w-full py-3 shadow-sm">
                         🔍 Rincian
                     </button>
-                    <a href="${linkWa}" target="_blank" class="col-span-1 bg-green-50 text-green-600 border border-green-200 rounded-lg flex items-center justify-center hover:bg-green-100 transition-colors shadow-sm">
-                        <span class="text-lg leading-none pt-0.5">📞</span>
+                    <a href="${linkWa}" target="_blank" class="col-span-1 bg-green-50 text-green-600 border border-green-200 rounded-xl flex items-center justify-center hover:bg-green-100 transition-colors shadow-sm">
+                        <span class="text-xl leading-none pt-0.5">📞</span>
                     </a>
-                    <button onclick="openModalEksekusi('${task.id}', '${namaDebitur.replace(/'/g, "\\'")}')" class="col-span-1 bg-[#E65C00] hover:bg-orange-600 text-white rounded-lg flex items-center justify-center transition-all active:scale-95 shadow-sm border border-orange-700 w-full">
-                        <span class="text-lg leading-none pt-0.5 text-white">⚡</span>
+                    <button onclick="openModalEksekusi('${task.id}', '${namaDebitur.replace(/'/g, "\\'")}')" class="col-span-1 text-white rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-sm border w-full ${btnStyle}">
+                        <span class="text-sm font-bold pt-0.5 text-white">${btnText}</span>
                     </button>
                 </div>
             </div>
@@ -204,24 +229,20 @@ function renderTaskPage() {
 window.openModalDetail = function(nama, alamat, jsonStrEncoded) {
     const infoData = JSON.parse(decodeURIComponent(jsonStrEncoded));
     
-    // Tampilkan Nama & Alamat
     document.getElementById('detail_nama').innerText = nama;
     document.getElementById('detail_alamat').innerText = alamat;
     
-    // Looping semua kunci dari JSON 
     const listContainer = document.getElementById('detail_json_list');
     listContainer.innerHTML = '';
     
     for (const [key, value] of Object.entries(infoData)) {
-        // Abaikan kolom yang tidak perlu ditampilkan dobel
         if(key.toLowerCase().includes('nama') || key.toLowerCase().includes('alamat')) continue;
         
-        // Bersihkan nama key (_ menjadi spasi, dibuat Kapital)
         const cleanKey = key.replace(/_/g, ' ').toUpperCase();
         const cleanValue = value ? value : '-';
 
         listContainer.innerHTML += `
-            <div class="flex justify-between py-3 border-b border-slate-200 last:border-0 items-center">
+            <div class="flex justify-between py-3 border-b border-slate-200 last:border-0 items-center hover:bg-white px-2 rounded-lg transition-colors">
                 <span class="text-[10px] font-bold text-slate-400 w-1/3 break-words pr-2">${cleanKey}</span>
                 <span class="text-xs font-black text-slate-700 w-2/3 text-right break-words">${cleanValue}</span>
             </div>
@@ -229,11 +250,13 @@ window.openModalDetail = function(nama, alamat, jsonStrEncoded) {
     }
     
     document.getElementById('modalDetailData').classList.remove('hidden');
+    document.getElementById('modalDetailData').classList.add('flex');
     document.body.style.overflow = 'hidden'; 
 }
 
 window.closeModalDetail = function() {
     document.getElementById('modalDetailData').classList.add('hidden');
+    document.getElementById('modalDetailData').classList.remove('flex');
     document.body.style.overflow = 'auto'; 
 }
 
@@ -245,27 +268,28 @@ window.openModalEksekusi = function(penugasanId, nama) {
     document.getElementById('hidden_penugasan_id').value = penugasanId;
     document.getElementById('modalDebiturName').innerText = nama;
     document.getElementById('modalEksekusi').classList.remove('hidden');
+    document.getElementById('modalEksekusi').classList.add('flex');
     document.body.style.overflow = 'hidden'; 
 }
 
 window.closeModalEksekusi = function() {
     document.getElementById('modalEksekusi').classList.add('hidden');
+    document.getElementById('modalEksekusi').classList.remove('flex');
     document.getElementById('formLogAktivitas').reset(); 
-    document.getElementById('labelFoto').innerText = 'Ketuk untuk Ambil Foto (Kamera)';
+    document.getElementById('labelFoto').innerText = 'Ketuk untuk Ambil Foto';
     document.getElementById('wrapper_janji_bayar').style.display = 'block'; 
     document.body.style.overflow = 'auto'; 
 }
 
 window.previewFileName = function(input) {
     if(input.files && input.files[0]) {
-        document.getElementById('labelFoto').innerHTML = `<span class="text-green-600 font-black">✅ FOTO TERSIMPAN</span><br><span class="text-[9px]">${input.files[0].name}</span>`;
+        document.getElementById('labelFoto').innerHTML = `<span class="text-green-600 font-black">✅ FOTO TERSIMPAN</span><br><span class="text-[9px] mt-1 text-slate-500">${input.files[0].name}</span>`;
     }
 }
 
 window.toggleJanjiBayar = function() {
     const val = document.getElementById('hasil_tindak_lanjut').value;
     const wrapDate = document.getElementById('wrapper_janji_bayar');
-    // Jika statusnya janji bayar atau nyicil, tampilkan form tanggal
     if(val.includes('Janji') || val.includes('Cicil')) {
         wrapDate.style.display = 'block';
     } else {
@@ -297,24 +321,16 @@ document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e
         const fileExt = fileBukti.name.split('.').pop();
         const fileName = `bukti_${penugasanId}_${Date.now()}.${fileExt}`;
         
-        // 1. Upload ke Storage Bucket
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
             .from('bukti_kunjungan')
-            .upload(fileName, fileBukti, {
-                cacheControl: '3600',
-                upsert: false
-            });
+            .upload(fileName, fileBukti, { cacheControl: '3600', upsert: false });
 
         if (uploadError) throw new Error("Gagal upload foto: " + uploadError.message);
 
-        // Ambil URL Publiknya
-        const { data: { publicUrl } } = supabase.storage
-            .from('bukti_kunjungan')
-            .getPublicUrl(fileName);
+        const { data: { publicUrl } } = supabase.storage.from('bukti_kunjungan').getPublicUrl(fileName);
 
         btn.innerHTML = "⏳ MENYIMPAN DATA...";
 
-        // 2. Update baris di tabel penugasan_kolektor
         const { error: updateError } = await supabase
             .from('penugasan_kolektor')
             .update({ 
@@ -327,14 +343,14 @@ document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e
 
         if (updateError) throw updateError;
         
-        alert(`✅ MANTAP! Kasus terselesaikan (Status: ${statusVal}).`);
+        alert(`✅ MANTAP! Laporan terkirim (Status: ${statusVal}).`);
         closeModalEksekusi();
-        loadCollectorTasks(); // Reload List 
+        loadCollectorTasks(); // Reload List agar warnanya langsung berubah
         
     } catch (err) {
-        alert("❌ Gagal menyelesaikan tugas: " + err.message);
+        alert("❌ Gagal mengirim laporan: " + err.message);
     } finally {
-        btn.innerHTML = "🚀 SIMPAN & SELESAIKAN TUGAS";
+        btn.innerHTML = "🚀 SIMPAN & SELESAIKAN";
         btn.disabled = false;
     }
 });

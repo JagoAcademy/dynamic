@@ -7,71 +7,74 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', sans-serif; background-color: #f4f6f9; }
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
     /* Animasi Buka Tutup Modal */
     .modal-enter { animation: slideUp 0.3s ease-out forwards; }
-    @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
   </style>
 </head>
-<body class="text-slate-800 pb-20">
+<body class="text-slate-800 pb-20 md:pb-10">
 
-  <!-- TOP NAV COLLECTOR (Fixed, Solid) -->
-  <nav class="bg-[#0B1B3D] px-5 py-4 sticky top-0 z-40 flex justify-between items-center shadow-[0_4px_15px_rgba(0,0,0,0.1)]">
-      <div class="flex items-center gap-3">
-          <div class="bg-white p-1 rounded-full">
-              <img src="/images/logo.png" class="w-8 h-8 object-contain" onerror="this.src='https://via.placeholder.com/32?text=C'">
+  <!-- TOP NAV COLLECTOR -->
+  <nav class="bg-[#0B1B3D] px-5 py-4 sticky top-0 z-40 shadow-md">
+      <div class="max-w-6xl mx-auto flex justify-between items-center">
+          <div class="flex items-center gap-3">
+              <div class="bg-white p-1.5 rounded-full shadow-sm">
+                  <img src="/images/logo.png" class="w-7 h-7 object-contain" onerror="this.src='https://via.placeholder.com/32?text=C'">
+              </div>
+              <div>
+                  <h1 class="text-[13px] font-black text-[#E65C00] tracking-widest uppercase">ACS Field Mobile</h1>
+                  <p class="text-[10px] text-slate-300 font-medium tracking-wide" id="welcomeCollector">Memuat Akun...</p>
+              </div>
           </div>
-          <div>
-              <h1 class="text-[12px] font-black text-[#E65C00] tracking-widest uppercase">ACS Field Mobile</h1>
-              <p class="text-[10px] text-slate-300 font-medium tracking-wide" id="welcomeCollector">Memuat Akun...</p>
-          </div>
+          <button onclick="logout()" class="px-4 py-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20 rounded-lg text-[10px] font-black tracking-wider transition-colors shadow-sm">
+              LOGOUT
+          </button>
       </div>
-      <button onclick="logout()" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20 rounded-md text-[9px] font-black tracking-wider transition-colors">
-          LOGOUT
-      </button>
   </nav>
 
-  <!-- KONTEN UTAMA LIST TUGAS -->
-  <main class="max-w-md mx-auto px-4 mt-5 space-y-4">
+  <!-- KONTEN UTAMA LIST TUGAS (RESPONSIVE DESKTOP & MOBILE) -->
+  <main class="max-w-md md:max-w-6xl mx-auto px-4 mt-6 space-y-6">
     
-    <!-- HEADER LIST (Pencarian & Counter) -->
-    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-       <div class="flex justify-between items-center mb-3">
-           <h2 class="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+    <!-- HEADER LIST -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 md:flex md:justify-between md:items-center md:gap-6">
+       <div class="flex justify-between items-center mb-4 md:mb-0 md:w-1/3">
+           <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
                <span>📍</span> Rute Penagihan
            </h2>
-           <span id="badgeTugasCount" class="bg-blue-50 text-blue-700 font-black px-2.5 py-1 rounded text-[10px] uppercase tracking-widest border border-blue-100">0 Kasus</span>
+           <span id="badgeTugasCount" class="bg-blue-50 text-blue-700 font-black px-3 py-1 rounded-md text-[10px] uppercase tracking-widest border border-blue-100">0 Kasus</span>
        </div>
        
        <!-- Search Kolom Cepat -->
-       <div class="relative">
-           <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 text-sm">🔍</span>
-           <input type="text" id="searchClient" onkeyup="filterLocalTasks()" placeholder="Cari nama klien atau wilayah..." class="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-lg pl-9 pr-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-[#E65C00] focus:bg-white outline-none transition-all">
+       <div class="relative flex-1">
+           <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 text-sm">🔍</span>
+           <input type="text" id="searchClient" onkeyup="filterLocalTasks()" placeholder="Cari nama klien atau wilayah..." class="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl pl-10 pr-4 py-3 text-xs font-bold focus:ring-2 focus:ring-[#E65C00] focus:bg-white outline-none transition-all shadow-inner">
        </div>
     </div>
 
-    <!-- WADAH CARD DEBITUR -->
-    <div id="task-list" class="space-y-3">
-        <div class="p-6 text-center text-slate-400 font-bold text-xs bg-white rounded-xl border border-slate-200 shadow-sm">
+    <!-- WADAH CARD DEBITUR (GRID UNTUK DESKTOP) -->
+    <!-- Di HP 1 kolom, di Tablet 2 kolom, di Desktop besar 3 kolom -->
+    <div id="task-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="col-span-full p-8 text-center text-slate-400 font-bold text-sm bg-white rounded-2xl border border-slate-200 shadow-sm">
             ⏳ Memuat rute penugasan Anda...
         </div>
     </div>
 
     <!-- PAGINATION INFO -->
-    <div id="pagination-wrapper" class="hidden flex justify-between items-center bg-white p-3 rounded-xl border border-slate-200 shadow-sm mt-4">
-        <button id="btnPrevTugas" onclick="prevTaskPage()" class="px-3 py-2 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed active:bg-slate-100">&laquo; Prev</button>
-        <span id="pageInfoTugas" class="text-[10px] font-black text-slate-500 tracking-widest uppercase">1 of 1</span>
-        <button id="btnNextTugas" onclick="nextTaskPage()" class="px-3 py-2 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed active:bg-slate-100">Next &raquo;</button>
+    <div id="pagination-wrapper" class="hidden flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mt-6">
+        <button id="btnPrevTugas" onclick="prevTaskPage()" class="px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-xl text-[11px] font-black uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 transition-colors">&laquo; Prev</button>
+        <span id="pageInfoTugas" class="text-[11px] font-black text-slate-500 tracking-widest uppercase">1 of 1</span>
+        <button id="btnNextTugas" onclick="nextTaskPage()" class="px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-xl text-[11px] font-black uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 transition-colors">Next &raquo;</button>
     </div>
 
   </main>
 
-  <!-- MODAL DETAIL DEBITUR (KREDIVO / UNIVERSAL) -->
-  <div id="modalDetailData" class="fixed inset-0 bg-slate-900/70 z-50 hidden flex flex-col justify-end">
-     <div class="bg-white w-full rounded-t-3xl h-[85vh] flex flex-col modal-enter relative">
+  <!-- MODAL DETAIL DEBITUR (RESPONSIVE) -->
+  <div id="modalDetailData" class="fixed inset-0 bg-slate-900/70 z-50 hidden flex-col justify-end md:justify-center md:items-center">
+     <div class="bg-white w-full md:w-full md:max-w-lg rounded-t-3xl md:rounded-3xl h-[85vh] md:h-auto md:max-h-[85vh] flex flex-col modal-enter relative shadow-2xl">
          <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
              <div>
                  <p class="text-[10px] font-black text-[#0B1B3D] uppercase tracking-widest mb-0.5">Informasi Lengkap</p>
@@ -79,7 +82,7 @@
              </div>
              <button onclick="closeModalDetail()" class="bg-slate-100 text-slate-500 w-8 h-8 rounded-full font-bold flex items-center justify-center hover:bg-slate-200 transition-colors">&times;</button>
          </div>
-         <div class="p-5 overflow-y-auto flex-1 pb-10 bg-slate-50">
+         <div class="p-5 overflow-y-auto flex-1 pb-10 bg-slate-50 md:rounded-b-3xl">
              <!-- Alamat Lengkap -->
              <div class="bg-white p-4 rounded-xl border border-slate-200 mb-4 shadow-sm">
                  <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">📍 Alamat Lengkap</p>
@@ -97,30 +100,29 @@
      </div>
   </div>
 
-  <!-- MODAL / POPUP EKSEKUSI TUGAS (Upload Foto & Hasil) -->
-  <div id="modalEksekusi" class="fixed inset-0 bg-slate-900/70 z-50 hidden flex flex-col justify-end">
-     <div class="bg-white w-full rounded-t-3xl max-h-[90vh] flex flex-col modal-enter relative">
+  <!-- MODAL EKSEKUSI TUGAS (RESPONSIVE) -->
+  <div id="modalEksekusi" class="fixed inset-0 bg-slate-900/70 z-50 hidden flex-col justify-end md:justify-center md:items-center">
+     <div class="bg-white w-full md:w-full md:max-w-md rounded-t-3xl md:rounded-3xl max-h-[90vh] md:max-h-[85vh] flex flex-col modal-enter relative shadow-2xl">
          
          <!-- Header Modal -->
          <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
              <div>
-                 <p class="text-[10px] font-black text-[#E65C00] uppercase tracking-widest mb-0.5">Eksekusi Kasus</p>
+                 <p class="text-[10px] font-black text-[#E65C00] uppercase tracking-widest mb-0.5">Laporan Kunjungan</p>
                  <h3 id="modalDebiturName" class="text-sm font-black text-slate-800 uppercase leading-tight truncate w-56">Nama Debitur</h3>
              </div>
              <button onclick="closeModalEksekusi()" class="bg-slate-100 text-slate-500 w-8 h-8 rounded-full font-bold flex items-center justify-center hover:bg-slate-200 transition-colors">&times;</button>
          </div>
 
-         <!-- Body Form (Bisa di-scroll) -->
+         <!-- Body Form -->
          <div class="p-5 overflow-y-auto flex-1 pb-10">
              <form id="formLogAktivitas" class="space-y-4">
                  
-                 <!-- Hidden Field untuk lempar ID tugas -->
                  <input type="hidden" id="hidden_penugasan_id">
 
                  <div>
-                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Status Kunjungan / Panggilan</label>
-                     <select id="hasil_tindak_lanjut" onchange="toggleJanjiBayar()" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-[#E65C00] outline-none">
-                         <option value="Tersambung & Janji Bayar">Tersambung & Janji Bayar</option>
+                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Status Hasil Lapangan</label>
+                     <select id="hasil_tindak_lanjut" onchange="toggleJanjiBayar()" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-[#E65C00] outline-none shadow-inner">
+                         <option value="Tersambung & Janji Bayar">Tersambung & Janji Bayar (PTP)</option>
                          <option value="Bayar Sebagian">Bayar Sebagian / Cicil</option>
                          <option value="Lunas di Tempat">Lunas di Tempat / Transfer Valid</option>
                          <option value="Rumah Kosong">Rumah Kosong / Tidak Bertemu</option>
@@ -129,36 +131,33 @@
                      </select>
                  </div>
 
-                 <!-- Muncul dinamis kalau janji bayar dipilih -->
                  <div id="wrapper_janji_bayar">
                      <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Tanggal Janji Bayar</label>
-                     <input type="date" id="tgl_janji" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-[#E65C00] outline-none">
+                     <input type="date" id="tgl_janji" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-[#E65C00] outline-none shadow-inner">
                  </div>
 
-                 <!-- FITUR UPLOAD BUKTI FOTO (Buka Kamera Belakang) -->
                  <div>
                      <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Bukti Foto Lokasi (Wajib)</label>
-                     <div class="w-full border-2 border-dashed border-slate-300 bg-slate-50 rounded-xl p-4 text-center cursor-pointer hover:bg-slate-100 transition-colors" onclick="document.getElementById('foto_bukti').click()">
-                         <span class="text-3xl block mb-1">📸</span>
-                         <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block" id="labelFoto">Ketuk untuk Ambil Foto (Kamera)</span>
+                     <div class="w-full border-2 border-dashed border-slate-300 bg-slate-50 rounded-xl p-6 text-center cursor-pointer hover:bg-slate-100 transition-colors shadow-inner" onclick="document.getElementById('foto_bukti').click()">
+                         <span class="text-3xl block mb-2">📸</span>
+                         <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block" id="labelFoto">Ketuk untuk Ambil Foto</span>
                      </div>
                      <input type="file" id="foto_bukti" accept="image/*" capture="environment" required class="hidden" onchange="previewFileName(this)">
                  </div>
 
                  <div>
-                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Catatan Lapangan</label>
-                     <textarea id="catatan" required placeholder="Tuliskan alasan lengkap, ringkasan negosiasi, atau kondisi lapangan..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-[#E65C00] outline-none min-h-[100px] font-medium"></textarea>
+                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Catatan Tambahan</label>
+                     <textarea id="catatan" required placeholder="Tuliskan ringkasan negosiasi, keluhan, atau kondisi rumah..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-[#E65C00] outline-none min-h-[100px] font-medium shadow-inner"></textarea>
                  </div>
                  
                  <button type="submit" id="btnSubmitLog" class="w-full bg-[#E65C00] hover:bg-orange-600 text-white font-black tracking-widest uppercase text-xs py-4 rounded-xl shadow-[0_8px_20px_rgba(230,92,0,0.25)] transition-all active:scale-95 flex items-center justify-center gap-2 mt-4">
-                    <span>🚀</span> SIMPAN & SELESAIKAN TUGAS
+                    <span>🚀</span> SIMPAN & SELESAIKAN
                  </button>
              </form>
          </div>
      </div>
   </div>
 
-  <!-- Pastikan src menunjuk ke JS mu -->
   <script type="module" src="/src/collector.js"></script>
 </body>
 </html>
