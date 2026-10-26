@@ -62,6 +62,7 @@ async function loadCollectorTasks() {
        }
     }
 
+    // Urutkan berdasarkan tenggat waktu (yang terdekat di atas)
     finalTasks.sort((a, b) => new Date(a.tenggat_waktu) - new Date(b.tenggat_waktu));
 
     globalTasks = finalTasks;
@@ -136,16 +137,24 @@ function renderTaskPage() {
         }
 
         const contactInfo = task.sumber_tabel === 'excel_debitur' ? db.debitur : db.contact_info;
-        const amountKey = Object.keys(contactInfo || {}).find(k => k.toLowerCase().includes('terutang') || k.toLowerCase().includes('amount'));
-        const rawAmount = amountKey ? contactInfo[amountKey] : 0;
-        const formatRp = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(rawAmount);
         
-        const waKey = Object.keys(contactInfo || {}).find(k => k.toLowerCase().includes('wa') || k.toLowerCase().includes('whatsapp'));
+        // Deteksi nilai uang
+        const amountKey = Object.keys(contactInfo || {}).find(k => k.toLowerCase().includes('terutang') || k.toLowerCase().includes('amount') || k.toLowerCase().includes('tagihan'));
+        const rawAmount = amountKey ? contactInfo[amountKey] : 0;
+        const formatRp = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(String(rawAmount).replace(/\D/g, ''));
+        
+        // Deteksi nomor WA
+        const waKey = Object.keys(contactInfo || {}).find(k => k.toLowerCase().includes('wa') || k.toLowerCase().includes('whatsapp') || k.toLowerCase().includes('telepon'));
         const wa = waKey ? String(contactInfo[waKey]) : '';
         const linkWa = wa ? `https://wa.me/${wa.replace(/\D/g, '').replace(/^0/, '62')}` : '#';
         
+        // Format Alamat Singkat
         const arrLokasi = [db.kelurahan, db.kecamatan].filter(Boolean);
         const alamatSingkat = arrLokasi.length > 0 ? arrLokasi.join(', ') : 'Cek Detail Alamat';
+
+        // Escape JSON Info untuk dioper ke fungsi Modal Rincian
+        const jsonStringInfo = encodeURIComponent(JSON.stringify(contactInfo || {}));
+        const safeAlamatLengkap = db.alamat_lengkap ? db.alamat_lengkap.replace(/'/g, "\\'") : '-';
 
         return `
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
@@ -171,18 +180,16 @@ function renderTaskPage() {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2">
-                    <div class="flex gap-2">
-                        <a href="${linkWa}" target="_blank" class="w-10 h-10 bg-green-50 text-green-600 border border-green-200 rounded-lg flex items-center justify-center hover:bg-green-100 transition-colors shadow-sm">
-                            <span class="text-lg leading-none pt-0.5">📞</span>
-                        </a>
-                        <button onclick="alert('ALAMAT LENGKAP:\\n\\n${db.alamat_lengkap || '-'}\\nKel: ${db.kelurahan || '-'}\\nKec: ${db.kecamatan || '-'}\\nKode Pos: ${db.kodepos || '-'}')" class="w-10 h-10 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg flex items-center justify-center hover:bg-blue-100 transition-colors shadow-sm">
-                            <span class="text-lg leading-none pt-0.5">📍</span>
-                        </button>
-                    </div>
-                    
-                    <button onclick="openModalEksekusi('${task.id}', '${namaDebitur.replace(/'/g, "\\'")}')" class="bg-[#E65C00] hover:bg-orange-600 text-white text-[11px] font-black rounded-lg uppercase tracking-widest transition-all active:scale-95 shadow-sm border border-orange-700 w-full">
-                        Eksekusi ⚡
+                <!-- Tombol Aksi Bawah Card -->
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="openModalDetail('${namaDebitur.replace(/'/g, "\\'")}', '${safeAlamatLengkap}', '${jsonStringInfo}')" class="col-span-2 bg-slate-100 text-slate-600 text-[10px] font-black rounded-lg uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200 w-full py-2.5 shadow-sm">
+                        🔍 Rincian
+                    </button>
+                    <a href="${linkWa}" target="_blank" class="col-span-1 bg-green-50 text-green-600 border border-green-200 rounded-lg flex items-center justify-center hover:bg-green-100 transition-colors shadow-sm">
+                        <span class="text-lg leading-none pt-0.5">📞</span>
+                    </a>
+                    <button onclick="openModalEksekusi('${task.id}', '${namaDebitur.replace(/'/g, "\\'")}')" class="col-span-1 bg-[#E65C00] hover:bg-orange-600 text-white rounded-lg flex items-center justify-center transition-all active:scale-95 shadow-sm border border-orange-700 w-full">
+                        <span class="text-lg leading-none pt-0.5 text-white">⚡</span>
                     </button>
                 </div>
             </div>
@@ -192,7 +199,47 @@ function renderTaskPage() {
 
 
 // ==========================================
-// 3. LOGIKA MODAL & UPLOAD BUKTI FOTO
+// 3. LOGIKA MODAL RINCIAN (BONGKAR JSON)
+// ==========================================
+window.openModalDetail = function(nama, alamat, jsonStrEncoded) {
+    const infoData = JSON.parse(decodeURIComponent(jsonStrEncoded));
+    
+    // Tampilkan Nama & Alamat
+    document.getElementById('detail_nama').innerText = nama;
+    document.getElementById('detail_alamat').innerText = alamat;
+    
+    // Looping semua kunci dari JSON 
+    const listContainer = document.getElementById('detail_json_list');
+    listContainer.innerHTML = '';
+    
+    for (const [key, value] of Object.entries(infoData)) {
+        // Abaikan kolom yang tidak perlu ditampilkan dobel
+        if(key.toLowerCase().includes('nama') || key.toLowerCase().includes('alamat')) continue;
+        
+        // Bersihkan nama key (_ menjadi spasi, dibuat Kapital)
+        const cleanKey = key.replace(/_/g, ' ').toUpperCase();
+        const cleanValue = value ? value : '-';
+
+        listContainer.innerHTML += `
+            <div class="flex justify-between py-3 border-b border-slate-200 last:border-0 items-center">
+                <span class="text-[10px] font-bold text-slate-400 w-1/3 break-words pr-2">${cleanKey}</span>
+                <span class="text-xs font-black text-slate-700 w-2/3 text-right break-words">${cleanValue}</span>
+            </div>
+        `;
+    }
+    
+    document.getElementById('modalDetailData').classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; 
+}
+
+window.closeModalDetail = function() {
+    document.getElementById('modalDetailData').classList.add('hidden');
+    document.body.style.overflow = 'auto'; 
+}
+
+
+// ==========================================
+// 4. LOGIKA MODAL EKSEKUSI & UPLOAD BUKTI FOTO
 // ==========================================
 window.openModalEksekusi = function(penugasanId, nama) {
     document.getElementById('hidden_penugasan_id').value = penugasanId;
@@ -218,6 +265,7 @@ window.previewFileName = function(input) {
 window.toggleJanjiBayar = function() {
     const val = document.getElementById('hasil_tindak_lanjut').value;
     const wrapDate = document.getElementById('wrapper_janji_bayar');
+    // Jika statusnya janji bayar atau nyicil, tampilkan form tanggal
     if(val.includes('Janji') || val.includes('Cicil')) {
         wrapDate.style.display = 'block';
     } else {
@@ -226,7 +274,7 @@ window.toggleJanjiBayar = function() {
     }
 }
 
-// === UPLOAD KE STORAGE & UPDATE 1 TABEL ===
+// === SUBMIT KE SUPABASE STORAGE & DATABASE ===
 document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btnSubmitLog');
@@ -242,13 +290,14 @@ document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e
         return;
     }
 
-    btn.innerHTML = "⏳ MENGUNGGAH BUKTI FOTO...";
+    btn.innerHTML = "⏳ MENGUNGGAH FOTO...";
     btn.disabled = true;
 
     try {
         const fileExt = fileBukti.name.split('.').pop();
         const fileName = `bukti_${penugasanId}_${Date.now()}.${fileExt}`;
         
+        // 1. Upload ke Storage Bucket
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from('bukti_kunjungan')
             .upload(fileName, fileBukti, {
@@ -258,13 +307,14 @@ document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e
 
         if (uploadError) throw new Error("Gagal upload foto: " + uploadError.message);
 
+        // Ambil URL Publiknya
         const { data: { publicUrl } } = supabase.storage
             .from('bukti_kunjungan')
             .getPublicUrl(fileName);
 
-        btn.innerHTML = "⏳ MEMPROSES DATABASE...";
+        btn.innerHTML = "⏳ MENYIMPAN DATA...";
 
-        // Update SEMUA data ke dalam 1 Tabel (penugasan_kolektor)
+        // 2. Update baris di tabel penugasan_kolektor
         const { error: updateError } = await supabase
             .from('penugasan_kolektor')
             .update({ 
@@ -279,7 +329,7 @@ document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e
         
         alert(`✅ MANTAP! Kasus terselesaikan (Status: ${statusVal}).`);
         closeModalEksekusi();
-        loadCollectorTasks(); 
+        loadCollectorTasks(); // Reload List 
         
     } catch (err) {
         alert("❌ Gagal menyelesaikan tugas: " + err.message);
