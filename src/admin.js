@@ -108,7 +108,7 @@ function parseAlamat(alamatStr) {
 
 
 // =========================================
-// JURUS KUNCI 2: PDF TEXT EXTRACTOR & TRANSLATOR (UPDATE KHUSUS BRI & UMUM)
+// JURUS KUNCI 2: PDF TEXT EXTRACTOR (SUPER PARSER ANTI-GAGAL)
 // =========================================
 async function parsePDFToJSON(file) {
     if (!window.pdfjsLib) throw new Error("Library PDF.js belum termuat.");
@@ -123,76 +123,82 @@ async function parsePDFToJSON(file) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         
-        // Gabungkan semua teks
-        const pageText = textContent.items.map(item => item.str).join(' ');
+        // Ambil string mentah dari PDF
+        const rawStrings = textContent.items.map(item => item.str);
+        
+        // 1. Teks Normal (spasi dirapikan) untuk mencari Nama dan Alamat
+        const textNormalized = rawStrings.join(' ').replace(/\s+/g, ' ');
+        // 2. Teks Rapat (Tanpa spasi) -> SUPER AMPUH untuk melacak Angka (NIK/WA/Uang)
+        const textNoSpace = rawStrings.join('').replace(/\s+/g, '');
 
         let rowData = { "_sumber": `PDF Halaman ${i}` };
 
-        // 1. CARI NIK / NOMOR KARTU (16 Digit Account Number BRI)
-        const matchCcBri = pageText.match(/\b(\d{16})\b/);
-        const matchNikUmum = pageText.match(/(?:NIK|No Akun|ID|KTP)\s*[:\-]?\s*(\d{10,16})/i);
+        // --- CARI NIK / NOMOR KARTU (16 Digit) ---
+        // Pencarian dilakukan pada teks rapat agar kebal dari spasi gaib PDF
+        const matchCcBri = textNoSpace.match(/(\d{16})/);
         if (matchCcBri) {
-            rowData["NIK"] = matchCcBri[1]; // Ambil 16 digit nomor CC
-        } else if (matchNikUmum) {
-            rowData["NIK"] = matchNikUmum[1].trim();
+            rowData["NIK"] = matchCcBri[1];
+        } else {
+            const matchNikUmum = textNormalized.match(/(?:NIK|No Akun|ID|KTP)\s*[:\-]?\s*(\d{10,16})/i);
+            if (matchNikUmum) rowData["NIK"] = matchNikUmum[1].trim();
         }
 
-        // 2. CARI NAMA (Pola BRI: "NAMA CUSTOMER : [NAMA]" atau gabung dengan telepon)
-        const matchNamaBri = pageText.match(/NAMA CUSTOMER.*?:\s*([A-Z][A-Z\s\.\'\-]+)/);
-        const matchNamaUmum = pageText.match(/(?:Nama Debitur|Nama|Name)\s*[:\-]?\s*([A-Z][A-Za-z\s]{2,40})/i);
+        // --- CARI NAMA ---
+        const matchNamaBri = textNormalized.match(/NAMA CUSTOMER.*?:\s*([A-Za-z\s\.\'\-]{3,40})(?:TELEPON|JENIS|K\s*=|R\s*=|$)/i);
+        const matchNamaUmum = textNormalized.match(/(?:Nama Debitur|Nama|Name)\s*[:\-]?\s*([A-Za-z\s\.\'\-]{3,40})/i);
+        
         if (matchNamaBri) {
-            rowData["Nama"] = matchNamaBri[1].trim();
+            // Bersihkan sisa teks aneh yang mungkin ikut terbawa
+            rowData["Nama"] = matchNamaBri[1].replace(/TELEPON/i, '').replace(/:/g, '').trim();
         } else if (matchNamaUmum) {
             rowData["Nama"] = matchNamaUmum[1].trim();
         }
 
-        // 3. CARI TOTAL TAGIHAN (Cari angka besar setelah kata Rp.)
-        const matchUangBri = pageText.match(/Rp\.?\s*([\d\.,]{5,})/i);
-        const matchUangUmum = pageText.match(/(?:Tagihan|Terutang|Saldo|Amount)\s*[:\-]?\s*(?:Rp\.?\s*)?([\d\.,]+)/i);
-        if (matchUangBri) {
-            rowData["Total Terutang"] = matchUangBri[1].replace(/[^\d]/g, '');
-        } else if (matchUangUmum) {
-            rowData["Total Terutang"] = matchUangUmum[1].trim().replace(/[^\d]/g, '');
+        // --- CARI UANG/TAGIHAN ---
+        const matchUangBriNoSpace = textNoSpace.match(/Rp\.?(\d{5,})/i); 
+        const matchUangNormal = textNormalized.match(/Rp\.?\s*([\d\.,]{5,})/i);
+        
+        if (matchUangBriNoSpace) {
+            rowData["Total Terutang"] = matchUangBriNoSpace[1];
+        } else if (matchUangNormal) {
+            rowData["Total Terutang"] = matchUangNormal[1].replace(/[^\d]/g, '');
         }
 
-        // 4. CARI ALAMAT LENGKAP (Pola BRI: Diapit kata ALAMAT dan KANTOR)
-        const matchAlamatBri = pageText.match(/ALAMAT[^:]*:\s*(.*?)(?:KANTOR\s*[:\|]|EMERGENCY CONTACT)/i);
-        const matchAlamatUmum = pageText.match(/(?:Alamat|Address|Domisili)\s*[:\-]?\s*([^0-9][A-Za-z0-9\s,\.]+?(?:Kec|Kota|Kab|Kel|Desa)[A-Za-z0-9\s,\.]+)/i);
+        // --- CARI ALAMAT ---
+        const matchAlamatBri = textNormalized.match(/ALAMAT[^:]*:\s*(.*?)(?:KANTOR|EMERGENCY|TELEPON|MEMO)/i);
         if (matchAlamatBri) {
-            // Bersihkan alamat dari nomor kartu kredit yang sering nyelip & buang karakter pipa (|)
-            rowData["Alamat Lengkap"] = matchAlamatBri[1]
-                .replace(/\b\d{16}\b/g, '')
-                .replace(/\|/g, '')
-                .replace(/\s+/g, ' ')
-                .trim();
-        } else if (matchAlamatUmum) {
-            rowData["Alamat Lengkap"] = matchAlamatUmum[1].trim();
+            rowData["Alamat Lengkap"] = matchAlamatBri[1].replace(/\b\d{16}\b/g, '').replace(/\|/g, '').trim();
         }
 
-        // 5. CARI NOMOR WA / TELEPON
-        const matchTelp = pageText.match(/(?:08|628)\d{8,11}/);
-        if (matchTelp) {
-            rowData["No WhatsApp"] = matchTelp[0].trim();
-        }
+        // --- CARI NOMOR WA ---
+        // Cari di teks rapat agar tidak meleset
+        const matchTelp = textNoSpace.match(/(?:08|628)\d{8,11}/);
+        if (matchTelp) rowData["No WhatsApp"] = matchTelp[0];
 
-        // 6. CARI KOLEKTIBILITAS (Ekstra Khusus Format Kartu Kredit)
-        const matchKol = pageText.match(/(?:MACET|DIRAGUKAN|KURANG LANCAR)/i);
-        if (matchKol) {
-            rowData["Kolektibilitas"] = matchKol[0].toUpperCase();
-        }
+        // --- CARI KOLEKTIBILITAS ---
+        const matchKol = textNormalized.match(/(MACET|DIRAGUKAN|KURANG LANCAR)/i);
+        if (matchKol) rowData["Kolektibilitas"] = matchKol[1].toUpperCase();
 
-        // VALIDASI: Simpan baris hanya jika minimal menemukan Nama atau NIK
-        if (rowData["Nama"] || rowData["NIK"]) {
+        // VALIDASI FINAL: 
+        // Selama ada NIK (16 digit) yang tertangkap, simpan baris data ini!
+        if (rowData["NIK"]) {
+            // Jika PDF terlalu berantakan sampai namanya gagal disedot, kasih nama otomatis
+            if (!rowData["Nama"]) rowData["Nama"] = `Debitur (${rowData["NIK"].substring(0, 6)}...)`; 
+            extractedRows.push(rowData);
+        } 
+        // Atau jika NIK tidak ada tapi Nama tertangkap (format luar)
+        else if (rowData["Nama"]) {
             extractedRows.push(rowData);
         }
     }
 
     if (extractedRows.length === 0) {
-        throw new Error("Gagal membaca data. Pastikan PDF yang diupload memiliki format teks yang tidak di-enkripsi.");
+        throw new Error("Gagal membaca data. File PDF ini tidak memiliki teks angka 16-digit atau formatnya tidak terbaca mesin.");
     }
 
     return extractedRows;
 }
+
 
 
 // =========================================
