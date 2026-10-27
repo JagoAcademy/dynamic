@@ -2,14 +2,10 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <!-- Meta Viewport untuk Mobile -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>ACS - Aviando Collector System</title>
   
-  <!-- Tailwind CSS dari CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Google Fonts: Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
   
   <style>
@@ -21,61 +17,68 @@
 </head>
 <body class="bg-gradient-custom min-h-screen flex flex-col justify-between text-white selection:bg-[#E65C00] selection:text-white">
 
-  <!-- Bagian Atas: Logo & Judul -->
-  <main class="flex-1 flex flex-col items-center justify-center px-6 pt-12 pb-8">
+  <!-- WRAPPER UTAMA (RESPONSIVE DESKTOP & MOBILE) -->
+  <div class="flex-1 flex flex-col justify-center items-center p-4 md:p-10">
     
-    <!-- Wadah Logo (Bisa diklik kembali ke index) -->
-    <!-- Menghilangkan bg-white agar background hitam dari logo menyatu, atau gunakan object-fit -->
-    <a href="index.html" class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl shadow-xl overflow-hidden mb-6 transition-transform hover:scale-105 active:scale-95 block">
-        <!-- Logo fit in penuh -->
-        <img src="/images/logo.png" alt="Logo ACS" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150/000000/FFFFFF?text=ACS'">
-    </a>
-
-    <!-- Judul Aplikasi -->
-    <div class="text-center mb-10">
-      <h1 class="text-3xl sm:text-4xl font-black mb-2 tracking-tight">Aviando<br/>Collector System</h1>
-      <p class="text-[#E65C00] text-[11px] sm:text-xs font-bold uppercase tracking-[0.2em]">Sistem Penagihan Terpadu</p>
-    </div>
-
-    <!-- Badge Fitur (Grid 2 Kolom) -->
-    <div class="grid grid-cols-2 gap-3 mb-4 w-full max-w-[320px]">
-      <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full py-2 px-3 flex items-center justify-center gap-2 shadow-sm">
-        <span class="text-base">⚖️</span>
-        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-200">Task Assign</span>
-      </div>
-      <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full py-2 px-3 flex items-center justify-center gap-2 shadow-sm">
-        <span class="text-base">⚡</span>
-        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-200">Fast Update</span>
-      </div>
-    </div>
-    
-    <!-- Badge Fitur Tengah -->
-    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full py-2 px-5 flex items-center justify-center gap-2 shadow-sm mb-10">
-        <span class="text-base">📊</span>
-        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-200">Real-Time</span>
-    </div>
-
-  </main>
-
-  <!-- Bagian Bawah: Panel Aksi (Warna Putih) -->
-  <footer class="bg-white text-slate-800 rounded-t-[2.5rem] w-full max-w-md mx-auto p-8 shadow-[0_-10px_40px_rgba(0,0,0,0.2)]">
+    <div class="w-full max-w-md md:max-w-4xl bg-transparent md:bg-white/5 md:backdrop-blur-md md:border md:border-white/10 md:rounded-3xl md:shadow-2xl md:overflow-hidden grid grid-cols-1 md:grid-cols-2 items-center">
       
-      <!-- Tombol Menuju Login -->
-      <a href="login.html" class="w-full bg-[#E65C00] hover:bg-orange-600 text-white font-black text-xs sm:text-sm py-4 rounded-2xl flex items-center justify-center gap-2 uppercase tracking-widest transition-all active:scale-95 shadow-[0_8px_20px_rgba(230,92,0,0.3)] mb-8">
-        <span class="text-lg leading-none pt-0.5">👤</span> AKSES LOGIN PORTAL
-      </a>
-      
-      <!-- Footer Info -->
-      <div class="text-center flex flex-col items-center">
-        <!-- Logo Kecil Abu-abu (Opsional, jika mau diklik ke index juga bisa) -->
-        <a href="index.html" class="w-10 h-10 mb-3 opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all block">
-           <img src="/images/logo.png" alt="Logo Footer" class="w-full h-full object-cover rounded-md" onerror="this.src='https://via.placeholder.com/40'">
+      <!-- KIRI (DESKTOP) / ATAS (MOBILE): HERO & BRANDING -->
+      <div class="flex flex-col items-center justify-center p-6 md:p-12 text-center">
+        <!-- Logo (Klik Ke Index) -->
+        <a href="index.html" title="Kembali ke Beranda" class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl shadow-xl overflow-hidden mb-6 transition-transform hover:scale-105 active:scale-95 block border border-white/10">
+            <img src="/images/logo.png" alt="Logo ACS" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150/000000/FFFFFF?text=ACS'">
         </a>
-        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Aviando Collector System</p>
-        <p class="text-[8px] font-bold text-slate-300 mt-1">Developed by PT. TPI</p>
+
+        <!-- Judul -->
+        <h1 class="text-3xl sm:text-4xl md:text-3xl font-black mb-2 tracking-tight">Aviando<br class="hidden md:block"/> Collector System</h1>
+        <p class="text-[#E65C00] text-[11px] sm:text-xs font-bold uppercase tracking-[0.2em] mb-6">Sistem Penagihan Terpadu</p>
+
+        <!-- Badge Fitur (Grid 2 Kolom) -->
+        <div class="grid grid-cols-2 gap-2.5 mb-3 w-full max-w-[300px]">
+          <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full py-2 px-3 flex items-center justify-center gap-2 shadow-sm">
+            <span class="text-xs">⚖️</span>
+            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-200">Task Assign</span>
+          </div>
+          <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full py-2 px-3 flex items-center justify-center gap-2 shadow-sm">
+            <span class="text-xs">⚡</span>
+            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-200">Fast Update</span>
+          </div>
+        </div>
+        
+        <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full py-2 px-5 flex items-center justify-center gap-2 shadow-sm">
+            <span class="text-xs">📊</span>
+            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-200">Real-Time Sync</span>
+        </div>
       </div>
 
-  </footer>
+      <!-- KANAN (DESKTOP) / BAWAH (MOBILE): KARTU AKSI -->
+      <div class="bg-white text-slate-800 rounded-t-[2.5rem] md:rounded-t-none md:h-full p-8 md:p-12 shadow-[0_-10px_40px_rgba(0,0,0,0.2)] md:shadow-none flex flex-col justify-between items-center text-center">
+          
+          <div class="w-full my-auto">
+            <h2 class="hidden md:block text-xl font-black text-[#0B1B3D] mb-2 uppercase tracking-wide">Selamat Datang</h2>
+            <p class="hidden md:block text-xs font-semibold text-slate-500 mb-8">Silakan masuk ke portal manajemen penagihan ACS.</p>
+
+            <!-- Tombol Menuju Login -->
+            <a href="login.html" class="w-full bg-[#E65C00] hover:bg-orange-600 text-white font-black text-xs sm:text-sm py-4 rounded-2xl flex items-center justify-center gap-2 uppercase tracking-widest transition-all active:scale-95 shadow-[0_8px_20px_rgba(230,92,0,0.3)] mb-4">
+              <span class="text-lg leading-none pt-0.5">👤</span> AKSES LOGIN PORTAL
+            </a>
+          </div>
+
+          <!-- Footer Info & Watermark -->
+          <div class="text-center flex flex-col items-center mt-6">
+            <a href="index.html" class="w-8 h-8 mb-2 opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all block">
+               <img src="/images/logo.png" alt="Logo Footer" class="w-full h-full object-cover rounded-md" onerror="this.src='https://via.placeholder.com/40'">
+            </a>
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Aviando Collector System</p>
+            <p class="text-[8px] font-bold text-slate-400 mt-1">Developed by PT. TPI</p>
+            <p class="text-[8px] font-semibold text-slate-300 mt-2 tracking-wider uppercase">All Rights Reserved © 2026 PT. TPI</p>
+          </div>
+
+      </div>
+
+    </div>
+
+  </div>
 
 </body>
 </html>
