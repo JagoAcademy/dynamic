@@ -11,7 +11,6 @@ let globalDebitur = [];
 let globalPenugasan = [];
 let globalCollectors = [];
 
-// Arrays khusus untuk masing-masing tab
 let unassignedDebitur = [];
 let masterFilteredData = [];
 let masterCurrentPage = 1;
@@ -25,14 +24,28 @@ if (localStorage.getItem('logged_in') !== 'true' || localStorage.getItem('user_r
   document.getElementById('welcomeAdmin').innerText = `Halo, ${adminName}!`;
 }
 
-// Inisialisasi Aplikasi
+// Inisialisasi Aplikasi (Tanggal Fix Dikembalikan!)
 const initApp = async () => {
-  const el = document.getElementById('manual_date');
-  if (el) {
-    const today = new Date();
-    el.value = today.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    el.dataset.date = today.toISOString().split('T')[0];
+  const elManual = document.getElementById('manual_date');
+  const elExcel = document.getElementById('excel_date'); 
+  
+  const today = new Date();
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  const strDate = today.toLocaleDateString('id-ID', options);
+  const isoDate = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, '0') + "-" + String(today.getDate()).padStart(2, '0');
+
+  // Set tanggal fix di Form Manual (Read-Only)
+  if (elManual) {
+    elManual.value = strDate;
+    elManual.dataset.date = isoDate;
   }
+  
+  // Set tanggal fix di Form Excel/PDF Modal (Read-Only)
+  if (elExcel) {
+    elExcel.value = strDate;
+    elExcel.dataset.date = isoDate;
+  }
+
   await fetchAllData(); 
 };
 
@@ -82,7 +95,6 @@ async function fetchAllData() {
     if(loadingUI) loadingUI.classList.remove('hidden');
 
     try {
-        // Tarik 4 tabel secara bersamaan (Mencegah loading lama)
         const [resMan, resExc, resCol, resPen] = await Promise.all([
             supabase.from('manual_debitur').select('*'),
             supabase.from('excel_debitur').select('*'),
@@ -98,7 +110,6 @@ async function fetchAllData() {
         globalCollectors = resCol.data || [];
         globalPenugasan = resPen.data || [];
 
-        // Standarisasi format data manual & excel
         const normalizedManual = (resMan.data || []).map(d => ({ ...d, sumber_tabel: 'manual_debitur' }));
         const normalizedExcel = (resExc.data || []).map(e => {
             const rawData = e.debitur || {};
@@ -118,17 +129,14 @@ async function fetchAllData() {
             };
         });
 
-        // Gabungkan jadi satu Master Data
         globalDebitur = [...normalizedManual, ...normalizedExcel].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-        // Kelompokkan data (Assigned vs Unassigned)
         const assignedIds = new Set(globalPenugasan.map(p => p.debitur_id));
         unassignedDebitur = globalDebitur.filter(d => !assignedIds.has(d.id));
         
         masterFilteredData = [...globalDebitur];
         masterCurrentPage = 1;
 
-        // Distribusi Data ke Masing-masing Tab (Trigger Render Ulang Semua)
         renderAkunTab();
         renderMasterTab();
         renderAntreanTab();
@@ -152,13 +160,11 @@ function renderAkunTab() {
     const listContainer = document.getElementById('collector-list');
     const selectKol = document.getElementById('select_kolektor'); 
     
-    // Update Dropdown di Tab Penugasan
     if(selectKol) {
       selectKol.innerHTML = '<option value="">-- Pilih Kolektor --</option>';
       globalCollectors.forEach(kol => { selectKol.innerHTML += `<option value="${kol.id}">${kol.name}</option>`; });
     }
 
-    // Update List Akun Kolektor
     if(listContainer) {
       if(globalCollectors.length === 0) {
          listContainer.innerHTML = '<p class="text-sm text-slate-500 py-4 text-center">Belum ada akun kolektor.</p>';
@@ -179,7 +185,6 @@ function renderAkunTab() {
     }
 }
 
-// Tambah Akun Kolektor Baru
 document.getElementById('formCollector')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button'); 
@@ -202,7 +207,6 @@ document.getElementById('formCollector')?.addEventListener('submit', async (e) =
     finally { btn.innerText = "Simpan Akun Collector"; }
 });
 
-// Edit & Reset Password Kolektor
 window.openEditKolektor = function(id, name, username, phone) {
     document.getElementById('edit_col_id').value = id;
     document.getElementById('edit_col_name').value = name;
@@ -400,7 +404,6 @@ function renderMonitoringList(dataArray) {
         return;
     }
 
-    // Sort: Terbaru yg diupdate
     dataArray.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
     container.innerHTML = dataArray.map(task => {
@@ -467,7 +470,6 @@ window.closeLaporan = function() {
 // TAB 5: MASTER DATA & PEMBERSIHAN
 // =========================================
 
-// Fitur Tambah Field JSON Dinamis
 window.addJsonField = function() {
   const container = document.getElementById('jsonb-fields-container');
   const newRow = document.createElement('div');
@@ -480,7 +482,6 @@ window.addJsonField = function() {
   container.appendChild(newRow);
 }
 
-// Simpan Data Debitur Manual
 document.getElementById('formEditDebitur')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = e.target.querySelector('button');
@@ -524,7 +525,6 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
     alert(`✅ Data Debitur ${namaDebitur} berhasil disimpan manual!`);
     e.target.reset();
     
-    // Reset form json ke default
     document.getElementById('jsonb-fields-container').innerHTML = `
       <div class="flex gap-2 json-row">
         <input type="text" value="No WhatsApp" readonly class="w-1/3 bg-slate-100 border border-slate-200 text-slate-500 rounded-lg px-3 py-2 text-xs font-semibold">
@@ -540,7 +540,6 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
   }
 });
 
-// Render Pagination Master
 window.prevMasterPage = function() { if (masterCurrentPage > 1) { masterCurrentPage--; renderMasterTab(); } }
 window.nextMasterPage = function() { if (masterCurrentPage < Math.ceil(masterFilteredData.length / itemsPerPage)) { masterCurrentPage++; renderMasterTab(); } }
 
@@ -601,9 +600,7 @@ window.deleteSingleDebitur = async function(id, tabel) {
     
     try {
         document.getElementById('global-loading').classList.remove('hidden');
-        // Hapus penugasannya dulu (mencegah bentrok relasi)
         await supabase.from('penugasan_kolektor').delete().eq('debitur_id', id);
-        // Baru hapus debiturnya
         const { error } = await supabase.from(tabel).delete().eq('id', id);
         if (error) throw error;
         
@@ -617,7 +614,6 @@ window.massDeleteAll = async function() {
     try {
         document.getElementById('global-loading').classList.remove('hidden');
         
-        // Hapus semua data dari 3 tabel
         await supabase.from('penugasan_kolektor').delete().not('id', 'is', null);
         await supabase.from('excel_debitur').delete().not('id', 'is', null);
         await supabase.from('manual_debitur').delete().not('id', 'is', null);
@@ -711,6 +707,8 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
   const clientName = document.getElementById('excel_client').value.trim();
   const fileInput = document.getElementById('excel_file');
   const submitBtn = document.getElementById('btnUploadProcess');
+  
+  // Ambil tanggal fix dari atribut data-date yang tersembunyi
   const isoUploadDate = document.getElementById('excel_date').dataset.date;
   
   if (fileInput.files.length > 0) {
