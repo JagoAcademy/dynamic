@@ -1,6 +1,5 @@
 import { supabase } from './supabase.js';
 
-// === INISIALISASI PDF.js WORKER ===
 if (window['pdfjs-dist/build/pdf']) {
     window.pdfjsLib = window['pdfjs-dist/build/pdf'];
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -42,7 +41,6 @@ window.logout = function() {
   window.location.href = 'login.html';
 }
 
-// Navigasi UI
 const navItems = document.querySelectorAll('.nav-item');
 const sectionTabs = document.querySelectorAll('.section-tab');
 const pageTitle = document.getElementById('pageTitle');
@@ -121,8 +119,8 @@ async function fetchAllData() {
         runAssignFilter(); 
         populateMonitorDropdowns();
         runMonitorFilter(); 
-        populateMasterDropdowns(); // Baru
-        runMasterFilter();         // Baru
+        populateMasterDropdowns();
+        runMasterFilter();
         renderAntreanTab();
 
     } catch (err) {
@@ -132,7 +130,10 @@ async function fetchAllData() {
     }
 }
 
-// === AKUN & ANTREAN & MONITORING (FUNGSI TETAP SAMA SEPERTI SEBELUMNYA) === //
+
+// =========================================
+// TAB 1: KELOLA AKUN
+// =========================================
 function renderAkunTab() {
     const listContainer = document.getElementById('collector-list');
     const selectKol = document.getElementById('select_kolektor'); 
@@ -186,6 +187,10 @@ document.getElementById('formEditKolektor')?.addEventListener('submit', async (e
     } catch (err) { alert("Gagal update profil: " + err.message); } finally { btn.innerText = "Simpan Perubahan"; }
 });
 
+
+// =========================================
+// TAB 2 & 4: PENUGASAN & ANTREAN
+// =========================================
 function renderAntreanTab() {
     const listContainer = document.getElementById('antrean-list'); document.getElementById('badgeAntreanCount').innerText = `${unassignedDebitur.length} Antrean`;
     if(unassignedDebitur.length === 0) { listContainer.innerHTML = '<p class="text-sm text-slate-500 py-4 text-center bg-slate-50 rounded-xl border border-slate-200">Tidak ada kasus menganggur. Semua sudah ditugaskan!</p>'; return; }
@@ -228,6 +233,10 @@ window.submitPenugasan = async function() {
   try { const { error } = await supabase.from('penugasan_kolektor').insert(payload); if (error) throw error; alert(`🚀 MANTAP! ${payload.length} Debitur berhasil ditugaskan.`); await fetchAllData(); } catch (err) { alert("❌ Gagal menugaskan kolektor: " + err.message); }
 }
 
+
+// =========================================
+// TAB 3: MONITORING
+// =========================================
 function populateMonitorDropdowns() { const sel = document.getElementById('filter_mon_kolektor'); if(sel) { sel.innerHTML = '<option value="ALL">Semua Kolektor</option>'; globalCollectors.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.name}</option>`); } }
 window.runMonitorFilter = function() {
     const kolId = document.getElementById('filter_mon_kolektor').value; const stat = document.getElementById('filter_mon_status').value;
@@ -252,7 +261,13 @@ function renderMonitoringList(dataArray) {
     container.innerHTML = dataArray.map(task => {
         const dbt = globalDebitur.find(d => d.id === task.debitur_id) || { name: 'Data Dihapus', client: '-' }; const col = globalCollectors.find(c => c.id === task.collector_id) || { name: 'Kolektor Dihapus' };
         const safeNama = dbt.name.replace(/'/g, "\\'"); const safeKol = col.name.replace(/'/g, "\\'"); const safeStat = task.status || 'Ditugaskan'; const safeCatatan = task.catatan_lapangan ? task.catatan_lapangan.replace(/'/g, "\\'") : '-'; const safeTgl = task.tanggal_janji_bayar || '-'; const safeImg = task.foto_url || '';
-        return `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-[0_2px_15px_-4px_rgba(0,0,0,0.05)] flex flex-col h-full hover:border-blue-300 transition-colors"><div class="flex justify-between items-start mb-3"><span class="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest border border-slate-200">👤 ${col.name}</span>${getStatusBadge(task.status)}</div><h3 class="font-black text-[#0B1B3D] text-[13px] uppercase leading-tight mb-1 truncate">${dbt.name}</h3><p class="text-[10px] text-slate-400 font-bold mb-4">🏢 ${dbt.client}</p><div class="mt-auto"><button onclick="openLaporan('${safeNama}', '${safeKol}', '${safeStat}', '${safeCatatan}', '${safeTgl}', '${safeImg}')" class="w-full bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-600 border border-slate-200 hover:border-blue-300 text-[10px] font-black py-2.5 rounded-xl uppercase tracking-widest transition-all">👁️ Lihat Laporan</button></div></div>`;
+        
+        let nominalFormatted = '-';
+        if(task.nominal_bayar) {
+            nominalFormatted = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(task.nominal_bayar);
+        }
+
+        return `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-[0_2px_15px_-4px_rgba(0,0,0,0.05)] flex flex-col h-full hover:border-blue-300 transition-colors"><div class="flex justify-between items-start mb-3"><span class="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest border border-slate-200">👤 ${col.name}</span>${getStatusBadge(task.status)}</div><h3 class="font-black text-[#0B1B3D] text-[13px] uppercase leading-tight mb-1 truncate">${dbt.name}</h3><p class="text-[10px] text-slate-400 font-bold mb-2">🏢 ${dbt.client}</p><p class="text-[11px] font-black text-blue-600 mb-4">💰 Nominal: ${nominalFormatted}</p><div class="mt-auto"><button onclick="openLaporan('${safeNama}', '${safeKol}', '${safeStat}', '${safeCatatan}', '${safeTgl}', '${safeImg}')" class="w-full bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-600 border border-slate-200 hover:border-blue-300 text-[10px] font-black py-2.5 rounded-xl uppercase tracking-widest transition-all">👁️ Lihat Laporan</button></div></div>`;
     }).join('');
 }
 window.openLaporan = function(namaDb, namaKol, status, catatan, tgl, img) {
@@ -266,10 +281,8 @@ window.closeLaporan = function() { document.getElementById('modal-laporan').clas
 
 
 // =========================================
-// TAB 5: MASTER DATA & PEMBERSIHAN (NEW UPGRADE)
+// TAB 5: MASTER DATA & PEMBERSIHAN (DENGAN POP-UP RAW JSON)
 // =========================================
-
-// --- FITUR FILTER, PENCARIAN & CHECKBOX ---
 function populateMasterDropdowns() {
     const uniqueClients = [...new Set(globalDebitur.map(d => d.client))].filter(Boolean);
     const filterTab = document.getElementById('filter_master_client');
@@ -285,8 +298,7 @@ window.runMasterFilter = function() {
     
     masterFilteredData = globalDebitur.filter(d => {
         const matchClient = (client === 'ALL' || d.client === client);
-        const matchSearch = !search || 
-                            (d.name.toLowerCase().includes(search) || String(d.nik).toLowerCase().includes(search));
+        const matchSearch = !search || (d.name.toLowerCase().includes(search) || String(d.nik).toLowerCase().includes(search));
         return matchClient && matchSearch;
     });
     
@@ -295,8 +307,7 @@ window.runMasterFilter = function() {
 }
 
 window.updateMasterSelectedCount = function() {
-    const count = document.querySelectorAll('.master-checkbox:checked').length;
-    document.getElementById('master-selected-count').innerText = count;
+    document.getElementById('master-selected-count').innerText = document.querySelectorAll('.master-checkbox:checked').length;
 }
 
 window.toggleAllMaster = function(sourceCheckbox) {
@@ -333,49 +344,70 @@ function renderMasterTab() {
   btnPrev.disabled = masterCurrentPage === 1;
   btnNext.disabled = masterCurrentPage === maxPage;
   
-  // Header Checkbox "Pilih Semua" (di-reset tiap pindah halaman)
-  let htmlResult = `
-      <div class="bg-red-50 px-4 py-3 rounded-xl border border-red-200 flex gap-3 items-center mb-1">
-         <input type="checkbox" onclick="toggleAllMaster(this)" class="w-5 h-5 cursor-pointer accent-red-600 rounded">
-         <span class="text-xs font-black text-red-900 uppercase tracking-wide">Pilih Semua di Halaman Ini</span>
-      </div>
-  `;
+  let htmlResult = `<div class="bg-red-50 px-4 py-3 rounded-xl border border-red-200 flex gap-3 items-center mb-1"><input type="checkbox" onclick="toggleAllMaster(this)" class="w-5 h-5 cursor-pointer accent-red-600 rounded"><span class="text-xs font-black text-red-900 uppercase tracking-wide">Pilih Semua di Halaman Ini</span></div>`;
 
-  // Item List dengan Checkbox Masing-Masing
   htmlResult += paginatedData.map(d => {
     const isAssigned = globalPenugasan.find(p => p.debitur_id === d.id);
     const badgeAsg = isAssigned 
         ? `<span class="text-[9px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded border border-green-200">Ditugaskan</span>`
         : `<span class="text-[9px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded border border-slate-200">Nganggur</span>`;
 
+    // Siapkan data JSON untuk di-passing ke modal pop-up
+    const contactInfo = d.sumber_tabel === 'excel_debitur' ? d.debitur : d.contact_info;
+    const jsonEncoded = encodeURIComponent(JSON.stringify(contactInfo || {}));
+
     return `
-      <label class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4 cursor-pointer hover:border-red-300 transition-colors">
-        <input type="checkbox" value="${d.id}|${d.sumber_tabel}" onchange="updateMasterSelectedCount()" class="master-checkbox w-5 h-5 accent-red-600 rounded mt-1 shadow-sm shrink-0">
-        <div class="flex-1">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4 hover:border-red-300 transition-colors">
+        <input type="checkbox" value="${d.id}|${d.sumber_tabel}" onchange="updateMasterSelectedCount()" class="master-checkbox w-5 h-5 accent-red-600 rounded mt-1 shadow-sm shrink-0 cursor-pointer">
+        <div class="flex-1 overflow-hidden">
           <div class="flex items-center gap-2 mb-1">
              <span class="text-[9px] font-black text-orange-600 uppercase tracking-wider bg-orange-50 px-2 py-0.5 rounded-md">🏢 ${d.client || '-'}</span>
              ${badgeAsg}
           </div>
-          <h3 class="font-black text-[#0B1B3D] text-[13px] uppercase leading-tight mb-0.5">${d.name}</h3>
+          <!-- Klik Nama Debitur untuk membuka Pop-Up Raw JSON -->
+          <h3 onclick="openMasterDetail('${jsonEncoded}')" class="font-black text-[#0B1B3D] text-[13px] uppercase leading-tight mb-0.5 truncate cursor-pointer hover:text-red-600 transition-colors flex items-center gap-2">
+             <span>${d.name}</span>
+             <span class="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded text-[9px] shrink-0 border border-blue-100 shadow-sm font-bold">🔍 Cek Data JSON</span>
+          </h3>
           <p class="text-[10px] text-slate-400 font-bold">ID: <span class="text-slate-600">${d.nik}</span> | Masuk: ${d.tanggal_upload}</p>
         </div>
-      </label>
+      </div>
     `;
   }).join('');
 
   container.innerHTML = htmlResult;
-  updateMasterSelectedCount(); // reset counter
+  updateMasterSelectedCount();
+}
+
+// FUNGSI POP-UP MASTER DETAIL JSON
+window.openMasterDetail = function(jsonStrEncoded) {
+    const infoData = JSON.parse(decodeURIComponent(jsonStrEncoded));
+    const container = document.getElementById('master-detail-content');
+    container.innerHTML = '';
+    
+    for (const [key, value] of Object.entries(infoData)) {
+        const cleanKey = key.replace(/_/g, ' ').toUpperCase();
+        container.innerHTML += `
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <span class="text-[9px] font-black text-slate-400 block uppercase mb-1 tracking-widest">${cleanKey}</span>
+                <span class="text-xs font-bold text-slate-800 block break-words">${value || '-'}</span>
+            </div>
+        `;
+    }
+    document.getElementById('modal-master-detail').classList.remove('hidden');
+    document.getElementById('modal-master-detail').classList.add('flex');
+}
+
+window.closeMasterDetail = function() {
+    document.getElementById('modal-master-detail').classList.add('hidden');
+    document.getElementById('modal-master-detail').classList.remove('flex');
 }
 
 
 // --- FITUR HAPUS MASSAL & EXPORT PDF ---
 window.triggerMassDelete = function() {
     const checked = document.querySelectorAll('.master-checkbox:checked');
-    if (checked.length === 0) {
-        alert("❌ Oooppss! Pilih minimal 1 data dengan mencentang kotak di daftar untuk dihapus.");
-        return;
-    }
-    
+    if (checked.length === 0) { alert("❌ Pilih minimal 1 data dengan mencentang kotak di daftar untuk dihapus."); return; }
     document.getElementById('del-count-text').innerText = checked.length;
     document.getElementById('modal-delete-confirm').classList.remove('hidden');
     document.getElementById('modal-delete-confirm').classList.add('flex');
@@ -388,87 +420,46 @@ window.closeDeleteConfirm = function() {
 
 window.executeMassDelete = async function(isExportPdf) {
     closeDeleteConfirm();
-    
     const checkedBoxes = Array.from(document.querySelectorAll('.master-checkbox:checked'));
     const idsToDelete = checkedBoxes.map(cb => cb.value.split('|')[0]);
     const dataToExport = globalDebitur.filter(d => idsToDelete.includes(d.id));
 
-    // Jika Admin Memilih Cetak PDF
     if (isExportPdf) {
         const loadingUI = document.getElementById('global-loading');
         loadingUI.classList.remove('hidden');
         document.getElementById('loading-text').innerText = "Menyiapkan PDF...";
         
-        // Buat Elemen HTML Sementara untuk Report
         const reportDiv = document.createElement('div');
-        reportDiv.style.padding = '30px';
-        reportDiv.style.fontFamily = 'Helvetica, Arial, sans-serif';
+        reportDiv.style.padding = '30px'; reportDiv.style.fontFamily = 'Helvetica, Arial, sans-serif';
         reportDiv.innerHTML = `
            <h2 style="text-align:center; color:#0B1B3D; margin-bottom:5px;">Laporan Penghapusan Master Data ACS</h2>
            <p style="text-align:center; font-size:12px; color:#666; margin-top:0;">Diekspor pada: ${new Date().toLocaleString('id-ID')}</p>
            <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse; font-size:11px; margin-top:20px; border-color:#ccc;">
-             <tr style="background-color:#f1f5f9; color:#333;">
-                <th>No</th><th>Perusahaan Klien</th><th>Nama Debitur</th><th>NIK / ID Akun</th><th>Tanggal Masuk Database</th>
-             </tr>
-             ${dataToExport.map((d, index) => `
-                 <tr>
-                    <td style="text-align:center;">${index + 1}</td>
-                    <td>${d.client}</td>
-                    <td>${d.name}</td>
-                    <td>${d.nik}</td>
-                    <td>${d.tanggal_upload}</td>
-                 </tr>
-             `).join('')}
+             <tr style="background-color:#f1f5f9; color:#333;"><th>No</th><th>Perusahaan Klien</th><th>Nama Debitur</th><th>NIK / ID Akun</th><th>Tanggal Masuk Database</th></tr>
+             ${dataToExport.map((d, index) => `<tr><td style="text-align:center;">${index + 1}</td><td>${d.client}</td><td>${d.name}</td><td>${d.nik}</td><td>${d.tanggal_upload}</td></tr>`).join('')}
            </table>
            <p style="font-size:10px; color:#999; margin-top:30px;">Dokumen ini digenerate secara otomatis oleh Aviando Collector System.</p>
         `;
         
-        const opt = {
-            margin:       0.5,
-            filename:     `Report_Delete_${new Date().getTime()}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
-            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-        };
-
-        // Eksekusi HTML2PDF dan simpan otomatis
+        const opt = { margin: 0.5, filename: `Report_Delete_${new Date().getTime()}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
         await html2pdf().set(opt).from(reportDiv).save();
     }
 
-    // Eksekusi Penghapusan Data (Jalan setelah PDF selesai, atau jika pilih tidak pakai PDF)
     const loadingUI = document.getElementById('global-loading');
-    loadingUI.classList.remove('hidden');
-    document.getElementById('loading-text').innerText = "Menghapus Data...";
+    loadingUI.classList.remove('hidden'); document.getElementById('loading-text').innerText = "Menghapus Data...";
 
     try {
-        // 1. Hapus Penugasan Terkait Terlebih Dahulu
-        for (const id of idsToDelete) {
-            await supabase.from('penugasan_kolektor').delete().eq('debitur_id', id);
-        }
-
-        // 2. Kelompokkan Data Berdasarkan Tabel Sumber untuk Optimalisasi Query
+        for (const id of idsToDelete) { await supabase.from('penugasan_kolektor').delete().eq('debitur_id', id); }
         const tableMap = {};
-        checkedBoxes.forEach(cb => {
-            const [id, tabel] = cb.value.split('|');
-            if(!tableMap[tabel]) tableMap[tabel] = [];
-            tableMap[tabel].push(id);
-        });
-
-        // 3. Hapus Data Utama
+        checkedBoxes.forEach(cb => { const [id, tabel] = cb.value.split('|'); if(!tableMap[tabel]) tableMap[tabel] = []; tableMap[tabel].push(id); });
         for (const tabel in tableMap) {
             const { error } = await supabase.from(tabel).delete().in('id', tableMap[tabel]);
             if (error) throw error;
         }
-
         alert(`✅ Selesai! ${checkedBoxes.length} Data telah dihapus dari database.`);
         await fetchAllData();
-        
-    } catch (err) {
-        alert("Gagal menghapus data: " + err.message);
-    } finally {
-        loadingUI.classList.add('hidden');
-        document.getElementById('loading-text').innerText = "Sinkronisasi Database...";
-    }
+    } catch (err) { alert("Gagal menghapus data: " + err.message); } 
+    finally { loadingUI.classList.add('hidden'); document.getElementById('loading-text').innerText = "Sinkronisasi Database..."; }
 }
 
 window.massDeleteAll = async function() {
@@ -483,17 +474,24 @@ window.massDeleteAll = async function() {
     } catch (err) { alert("Gagal hapus massal: " + err.message); }
 }
 
-// === INPUT MANUAL JSON & BACA EXCEL/PDF (TETAP SAMA) === //
+
+// --- INPUT MANUAL & PARSER EXCEL/PDF ---
 window.addJsonField = function() {
-  const container = document.getElementById('jsonb-fields-container'); const newRow = document.createElement('div'); newRow.className = "flex gap-2 json-row mt-2";
+  const container = document.getElementById('jsonb-fields-container');
+  const newRow = document.createElement('div'); newRow.className = "flex gap-2 json-row mt-2";
   newRow.innerHTML = `<input type="text" placeholder="Label (Cth: Agama)" required class="json-key w-1/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-orange-500"><input type="text" placeholder="Isi Data..." required class="json-val w-2/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"><button type="button" onclick="this.parentElement.remove()" class="bg-red-100 text-red-500 px-3 rounded-lg font-bold hover:bg-red-200">X</button>`;
   container.appendChild(newRow);
 }
+
 document.getElementById('formEditDebitur')?.addEventListener('submit', async (e) => {
   e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Menyimpan Data...";
   const isoUploadDate = document.getElementById('manual_date').dataset.date;
   const jsonbData = { total_terutang: document.getElementById('input_amount').value, jatuh_tempo: document.getElementById('input_tgl').value };
-  document.querySelectorAll('.json-row').forEach(row => { const key = row.querySelector('.json-key') || row.querySelector('input[readonly]'); const val = row.querySelector('.json-val'); if (key && val && val.value.trim() !== '') { jsonbData[key.value.trim().replace(/\s+/g, '_').toLowerCase()] = val.value.trim(); } });
+  document.querySelectorAll('.json-row').forEach(row => {
+    const key = row.querySelector('.json-key') || row.querySelector('input[readonly]');
+    const val = row.querySelector('.json-val');
+    if (key && val && val.value.trim() !== '') { jsonbData[key.value.trim().replace(/\s+/g, '_').toLowerCase()] = val.value.trim(); }
+  });
   try {
     const { error } = await supabase.from('manual_debitur').insert([{ tanggal_upload: isoUploadDate, client: document.getElementById('input_client').value.trim(), name: document.getElementById('input_nama').value.trim(), nik: document.getElementById('input_nik').value.trim(), alamat_lengkap: document.getElementById('input_alamat').value.trim(), kelurahan: document.getElementById('input_kelurahan').value.trim(), kecamatan: document.getElementById('input_kecamatan').value.trim(), kota_kabupaten: document.getElementById('input_kota').value.trim(), kodepos: document.getElementById('input_kodepos').value.trim(), provinsi: document.getElementById('input_provinsi').value.trim(), contact_info: jsonbData }]);
     if (error) throw error; alert(`✅ Data berhasil disimpan!`); e.target.reset(); document.getElementById('jsonb-fields-container').innerHTML = `<div class="flex gap-2 json-row"><input type="text" value="No WhatsApp" readonly class="w-1/3 bg-slate-100 border border-slate-200 text-slate-500 rounded-lg px-3 py-2 text-xs font-semibold"><input type="text" placeholder="6281234..." required class="json-val w-2/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"></div>`; await fetchAllData(); 
@@ -501,9 +499,11 @@ document.getElementById('formEditDebitur')?.addEventListener('submit', async (e)
 });
 
 function parseAlamat(alamatStr) {
-  if (!alamatStr) return {}; const str = String(alamatStr); const extract = (prefix) => { const rgx = new RegExp(`(?:${prefix})\\s*([a-zA-Z\\s]+?)(?:,|\\b(?:kec|kel|desa|kota|kab|prov)\\b|\\d{5}|$)`, 'i'); const match = str.match(rgx); return match ? match[1].trim() : null; };
+  if (!alamatStr) return {}; const str = String(alamatStr);
+  const extract = (prefix) => { const rgx = new RegExp(`(?:${prefix})\\s*([a-zA-Z\\s]+?)(?:,|\\b(?:kec|kel|desa|kota|kab|prov)\\b|\\d{5}|$)`, 'i'); const match = str.match(rgx); return match ? match[1].trim() : null; };
   return { kodepos: str.match(/\b\d{5}\b/)?.[0] || null, kelurahan: extract('kelurahan|kel\\.?|desa'), kecamatan: extract('kecamatan|kec\\.?'), kota_kabupaten: extract('kota|kabupaten|kab\\.?'), provinsi: extract('provinsi|prov\\.?') };
 }
+
 async function parsePDFToJSON(file) {
     if (!window.pdfjsLib) throw new Error("Library PDF.js belum termuat.");
     const arrayBuffer = await file.arrayBuffer(); const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise; let extractedRows = [];
@@ -522,6 +522,7 @@ async function parsePDFToJSON(file) {
     }
     if (extractedRows.length === 0) throw new Error("Gagal membaca data (Mesin tidak mendeteksi format yang tepat)."); return extractedRows;
 }
+
 window.openExcelModal = function() { document.getElementById('modal-excel').classList.remove('hidden'); }
 window.closeExcelModal = function() { document.getElementById('modal-excel').classList.add('hidden'); document.getElementById('formUploadExcel').reset(); }
 

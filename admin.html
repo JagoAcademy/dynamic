@@ -25,7 +25,6 @@
     .section-tab.active { display: block; animation: fadeIn 0.3s ease-in-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     
-    /* Animasi Buka Tutup Modal */
     .modal-enter { animation: slideUp 0.3s ease-out forwards; }
     @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
   </style>
@@ -79,10 +78,9 @@
   <!-- OVERLAY MOBILE -->
   <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/50 z-40 hidden md:hidden backdrop-blur-sm" onclick="closeMobileSidebar()"></div>
 
-  <!-- AREA KONTEN UTAMA (KANAN) -->
+  <!-- AREA KONTEN UTAMA -->
   <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
     
-    <!-- Topbar -->
     <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-30">
       <div class="flex items-center">
         <button id="mobileMenuBtn" onclick="openMobileSidebar()" class="md:hidden mr-4 text-slate-500 hover:text-slate-800">
@@ -99,10 +97,8 @@
       </div>
     </header>
 
-    <!-- Konten Scrollable -->
     <div class="flex-1 overflow-y-auto p-6 md:p-8">
       
-      <!-- TAB 1, 2, 3, 4 (Tetap Sama) -->
       <!-- TAB 1: KELOLA AKUN -->
       <div id="akun" class="section-tab active">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -189,7 +185,6 @@
       <!-- TAB 5: MASTER DATA & PEMBERSIHAN -->
       <div id="pembersihan" class="section-tab">
         
-        <!-- Form Manual Dihilangkan Jika Mengganggu, Atau Dibiarkan Saja -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8 transition-all">
           <div class="flex items-center mb-6 pb-4 border-b border-slate-100">
               <h2 class="text-sm font-black text-[#0B1B3D] uppercase">Input Data Kasus Baru (Manual)</h2>
@@ -235,7 +230,6 @@
           </form>
         </div>
 
-        <!-- TOMBOL UPLOAD MASSAL & SUMMARY -->
         <div class="bg-red-50 p-5 rounded-2xl border border-red-200 shadow-sm mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-3 w-full md:w-auto">
                <span class="text-2xl">🗄️</span>
@@ -254,7 +248,6 @@
             </div>
         </div>
 
-        <!-- NEW: FILTER & HAPUS TERPILIH -->
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-4 flex flex-col md:flex-row gap-4 justify-between items-center">
             <div class="flex flex-col sm:flex-row gap-3 w-full flex-1">
                 <select id="filter_master_client" onchange="runMasterFilter()" class="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-red-500 cursor-pointer">
@@ -267,12 +260,10 @@
             </button>
         </div>
 
-        <!-- DAFTAR DATA MASTER (Include Checkbox) -->
         <div id="master-debitur-list" class="space-y-3">
           <p class="text-sm text-slate-500 py-4 text-center bg-white rounded-2xl border border-slate-200">Memuat master data database...</p>
         </div>
 
-        <!-- Pagination Pembersihan -->
         <div id="pagination-controls" class="hidden flex justify-between items-center mt-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
            <span id="page-info" class="text-[11px] font-bold text-slate-500">Menampilkan 0 - 0 dari 0 data</span>
            <div class="flex gap-2">
@@ -285,7 +276,7 @@
     </div>
   </main>
 
-  <!-- MODAL EXCEL / PDF (Tetap Sama) -->
+  <!-- MODAL EXCEL / PDF -->
   <div id="modal-excel" class="fixed inset-0 bg-slate-900/60 z-[100] hidden flex items-center justify-center backdrop-blur-sm px-4">
     <div class="bg-white w-full max-w-md p-6 lg:p-8 rounded-3xl shadow-2xl relative border border-slate-200 modal-enter">
       <button onclick="closeExcelModal()" class="absolute top-4 right-5 text-slate-400 hover:text-red-500 font-bold text-2xl leading-none transition-colors">&times;</button>
@@ -337,7 +328,22 @@
       </div>
   </div>
 
-  <!-- MODAL EDIT KOLEKTOR & BACA LAPORAN (Tetap ada di bawah script) -->
+  <!-- MODAL MASTER DETAIL DATA JSON (NEW) -->
+  <div id="modal-master-detail" class="fixed inset-0 bg-slate-900/70 z-[120] hidden flex items-center justify-center backdrop-blur-sm px-4">
+      <div class="bg-white w-full max-w-md p-6 rounded-3xl shadow-2xl relative border border-slate-200 modal-enter flex flex-col max-h-[85vh]">
+          <div class="flex justify-between items-center mb-4 pb-4 border-b border-slate-100 shrink-0">
+              <div>
+                  <h2 class="text-sm font-black text-[#0B1B3D] uppercase">Raw Data Debitur</h2>
+                  <p class="text-[10px] text-slate-500 font-bold">Hasil Parsing JSONb (Import Excel / PDF)</p>
+              </div>
+              <button onclick="closeMasterDetail()" class="bg-slate-100 text-slate-500 w-8 h-8 rounded-full font-bold flex items-center justify-center hover:bg-red-100 hover:text-red-500 transition-colors">&times;</button>
+          </div>
+          <!-- Tempat Render JSON -->
+          <div id="master-detail-content" class="overflow-y-auto space-y-3 flex-1 pb-4 pr-1"></div>
+      </div>
+  </div>
+
+  <!-- MODAL EDIT KOLEKTOR -->
   <div id="modal-edit-kolektor" class="fixed inset-0 bg-slate-900/60 z-[100] hidden flex items-center justify-center backdrop-blur-sm px-4">
       <div class="bg-white w-full max-w-sm p-6 rounded-3xl shadow-2xl relative border border-slate-200 modal-enter">
           <button onclick="closeEditKolektor()" class="absolute top-4 right-5 text-slate-400 hover:text-red-500 font-bold text-2xl leading-none">&times;</button>
@@ -356,6 +362,7 @@
       </div>
   </div>
 
+  <!-- MODAL LAPORAN -->
   <div id="modal-laporan" class="fixed inset-0 bg-slate-900/70 z-[100] hidden flex justify-center items-end md:items-center px-4 md:px-0">
      <div class="bg-white w-full md:w-full md:max-w-md rounded-t-3xl md:rounded-3xl max-h-[85vh] flex flex-col modal-enter relative shadow-2xl pb-6 md:pb-0">
          <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
@@ -367,7 +374,7 @@
          </div>
          <div class="p-5 overflow-y-auto flex-1 bg-slate-50 md:rounded-b-3xl space-y-4">
              <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
-                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Bukti Foto Lokasi</p>
+                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Bukti Foto / Transfer</p>
                  <img id="lap_foto" src="" alt="Bukti Lapangan" class="w-full h-48 object-cover rounded-lg border border-slate-100 bg-slate-100" onerror="this.style.display='none'">
                  <p id="lap_no_foto" class="text-xs font-bold text-slate-400 py-6 hidden">Tidak ada foto bukti.</p>
              </div>
