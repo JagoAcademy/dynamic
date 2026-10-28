@@ -28,7 +28,7 @@ async function loadCollectorTasks() {
   const pagWrapper = document.getElementById('pagination-wrapper');
 
   try {
-    // KUNCI: Buang filter .eq('status', 'Ditugaskan') agar SEMUA tugas tampil
+    // Tarik semua tugas kolektor ini
     const { data: assignments, error: assignError } = await supabase
       .from('penugasan_kolektor')
       .select('*')
@@ -83,19 +83,10 @@ async function loadCollectorTasks() {
 // PEMBERIAN WARNA STATUS (BADGE)
 // ==========================================
 function getStatusBadge(status) {
-    if (!status || status === 'Ditugaskan') {
-        return `<span class="text-[10px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest border border-slate-200">⏳ Belum Dikerjakan</span>`;
-    }
-    if (status.includes('Janji')) {
-        return `<span class="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded uppercase tracking-widest border border-orange-200">📅 Janji Bayar</span>`;
-    }
-    if (status.includes('Sebagian')) {
-        return `<span class="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest border border-blue-200">💸 Bayar Sebagian</span>`;
-    }
-    if (status.includes('Lunas')) {
-        return `<span class="text-[10px] font-black text-green-600 bg-green-50 px-2 py-0.5 rounded uppercase tracking-widest border border-green-200">✅ LUNAS</span>`;
-    }
-    // Sisanya (Rumah Kosong, Menolak, Fiktif) = Merah Invalid
+    if (!status || status === 'Ditugaskan') return `<span class="text-[10px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest border border-slate-200">⏳ Belum Dikerjakan</span>`;
+    if (status.includes('Janji')) return `<span class="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded uppercase tracking-widest border border-orange-200">📅 Janji Bayar</span>`;
+    if (status.includes('Sebagian')) return `<span class="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest border border-blue-200">💸 Bayar Sebagian</span>`;
+    if (status.includes('Lunas')) return `<span class="text-[10px] font-black text-green-600 bg-green-50 px-2 py-0.5 rounded uppercase tracking-widest border border-green-200">✅ LUNAS</span>`;
     return `<span class="text-[10px] font-black text-red-600 bg-red-50 px-2 py-0.5 rounded uppercase tracking-widest border border-red-200">❌ ${status}</span>`;
 }
 
@@ -164,7 +155,7 @@ function renderTaskPage() {
         const rawAmount = amountKey ? contactInfo[amountKey] : 0;
         const formatRp = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(String(rawAmount).replace(/\D/g, ''));
         
-        const waKey = Object.keys(contactInfo || {}).find(k => k.toLowerCase().includes('wa') || k.toLowerCase().includes('whatsapp') || k.toLowerCase().includes('telepon'));
+        const waKey = Object.keys(contactInfo || {}).find(k => k.toLowerCase().includes('wa') || k.toLowerCase().includes('whatsapp') || k.toLowerCase().includes('telepon') || k.toLowerCase().includes('hp'));
         const wa = waKey ? String(contactInfo[waKey]) : '';
         const linkWa = wa ? `https://wa.me/${wa.replace(/\D/g, '').replace(/^0/, '62')}` : '#';
         
@@ -205,7 +196,6 @@ function renderTaskPage() {
                     </div>
                 </div>
 
-                <!-- Tombol Aksi Bawah Card -->
                 <div class="grid grid-cols-4 gap-2 mt-auto">
                     <button onclick="openModalDetail('${namaDebitur.replace(/'/g, "\\'")}', '${safeAlamatLengkap}', '${jsonStringInfo}')" class="col-span-2 bg-slate-100 text-slate-600 text-[10px] font-black rounded-xl uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200 w-full py-3 shadow-sm">
                         🔍 Rincian
@@ -224,7 +214,7 @@ function renderTaskPage() {
 
 
 // ==========================================
-// 3. LOGIKA MODAL RINCIAN (BONGKAR JSON)
+// 3. LOGIKA MODAL RINCIAN (BONGKAR JSON & KATEGORISASI)
 // ==========================================
 window.openModalDetail = function(nama, alamat, jsonStrEncoded) {
     const infoData = JSON.parse(decodeURIComponent(jsonStrEncoded));
@@ -233,22 +223,62 @@ window.openModalDetail = function(nama, alamat, jsonStrEncoded) {
     document.getElementById('detail_alamat').innerText = alamat;
     
     const listContainer = document.getElementById('detail_json_list');
-    listContainer.innerHTML = '';
+    
+    // Variabel Penampung Kategori
+    let htmlTagihan = '';
+    let htmlPribadi = '';
+    let htmlLainnya = '';
     
     for (const [key, value] of Object.entries(infoData)) {
-        if(key.toLowerCase().includes('nama') || key.toLowerCase().includes('alamat')) continue;
+        const lowerKey = key.toLowerCase();
+        
+        // Lewati nama dan alamat karena sudah ada di header utama modal
+        if(lowerKey === 'nama' || lowerKey === 'name' || lowerKey === 'alamat lengkap' || lowerKey === 'alamat' || lowerKey === '_sumber') continue;
         
         const cleanKey = key.replace(/_/g, ' ').toUpperCase();
-        const cleanValue = value ? value : '-';
+        let cleanValue = value ? value : '-';
 
-        listContainer.innerHTML += `
-            <div class="flex justify-between py-3 border-b border-slate-200 last:border-0 items-center hover:bg-white px-2 rounded-lg transition-colors">
-                <span class="text-[10px] font-bold text-slate-400 w-1/3 break-words pr-2">${cleanKey}</span>
-                <span class="text-xs font-black text-slate-700 w-2/3 text-right break-words">${cleanValue}</span>
+        // Auto-Format Rupiah untuk kolom uang/tagihan jika isinya angka
+        if ((lowerKey.includes('amount') || lowerKey.includes('principal') || lowerKey.includes('terutang') || lowerKey.includes('limit') || lowerKey.includes('installment')) && !isNaN(String(cleanValue).replace(/\D/g, ''))) {
+            const numOnly = String(cleanValue).replace(/\D/g, '');
+            if(numOnly.length > 0) {
+                cleanValue = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(numOnly);
+            }
+        }
+
+        // Template Baris Data
+        const rowHtml = `
+            <div class="flex justify-between py-2.5 border-b border-slate-100 last:border-0 items-center hover:bg-slate-50 transition-colors px-1">
+                <span class="text-[10px] font-bold text-slate-400 w-[45%] break-words pr-2 leading-tight">${cleanKey}</span>
+                <span class="text-[11px] font-black text-slate-700 w-[55%] text-right break-words leading-tight">${cleanValue}</span>
             </div>
         `;
+        
+        // Pisahkan ke kategori masing-masing berdasarkan Nama Kolom Excel
+        if (lowerKey.match(/dpd|os|amount|principal|terutang|tagihan|limit|tenor|lpa|installment|byr|bayar|loan/)) {
+            htmlTagihan += rowHtml;
+        } else if (lowerKey.match(/lahir|agama|pekerjaan|gender|mother|ibu|sttus/)) {
+            htmlPribadi += rowHtml;
+        } else {
+            htmlLainnya += rowHtml; // Info lainnya
+        }
     }
     
+    // Inject HTML dengan UI Label Kategori yang enak dilihat
+    listContainer.innerHTML = `
+        ${htmlTagihan ? `<div class="mb-5 bg-red-50/30 p-2 rounded-xl border border-red-50"><div class="flex items-center gap-2 mb-2 pb-1 border-b border-red-100"><span class="text-sm">💰</span><p class="text-[10px] font-black text-red-600 uppercase tracking-widest">Detail Keuangan</p></div>${htmlTagihan}</div>` : ''}
+        
+        ${htmlPribadi ? `<div class="mb-5 bg-blue-50/30 p-2 rounded-xl border border-blue-50"><div class="flex items-center gap-2 mb-2 pb-1 border-b border-blue-100"><span class="text-sm">👤</span><p class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Profil Pribadi</p></div>${htmlPribadi}</div>` : ''}
+        
+        ${htmlLainnya ? `<div class="mb-2 p-2"><div class="flex items-center gap-2 mb-2 pb-1 border-b border-slate-200"><span class="text-sm">📝</span><p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Kontak & Keterangan</p></div>${htmlLainnya}</div>` : ''}
+    `;
+    
+    // Sembunyikan p title statis bawaan HTML jika ada
+    const paramTitle = listContainer.previousElementSibling;
+    if(paramTitle && paramTitle.tagName.toLowerCase() === 'p') {
+        paramTitle.style.display = 'none';
+    }
+
     document.getElementById('modalDetailData').classList.remove('hidden');
     document.getElementById('modalDetailData').classList.add('flex');
     document.body.style.overflow = 'hidden'; 
@@ -345,7 +375,7 @@ document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e
         
         alert(`✅ MANTAP! Laporan terkirim (Status: ${statusVal}).`);
         closeModalEksekusi();
-        loadCollectorTasks(); // Reload List agar warnanya langsung berubah
+        loadCollectorTasks(); 
         
     } catch (err) {
         alert("❌ Gagal mengirim laporan: " + err.message);

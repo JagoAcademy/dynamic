@@ -8,9 +8,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
   
-  <!-- LIBRARY BACA EXCEL & PDF -->
+  <!-- LIBRARY BACA EXCEL, PDF & HTML2PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
     body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
@@ -94,17 +95,17 @@
       </div>
       <div id="global-loading" class="hidden flex items-center gap-2">
           <span class="animate-spin text-orange-500">⏳</span>
-          <span class="text-xs font-bold text-slate-500">Sinkronisasi Database...</span>
+          <span id="loading-text" class="text-xs font-bold text-slate-500">Sinkronisasi Database...</span>
       </div>
     </header>
 
     <!-- Konten Scrollable -->
     <div class="flex-1 overflow-y-auto p-6 md:p-8">
       
+      <!-- TAB 1, 2, 3, 4 (Tetap Sama) -->
       <!-- TAB 1: KELOLA AKUN -->
       <div id="akun" class="section-tab active">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          <!-- Buat Akun -->
           <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <div class="flex items-center gap-3 mb-6">
                 <span class="text-2xl">📋</span>
@@ -118,15 +119,12 @@
               <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all hover:bg-orange-600 shadow-md">Simpan Akun Collector</button>
             </form>
           </div>
-          <!-- List Akun -->
           <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
              <div class="flex items-center gap-3 mb-6">
                 <span class="text-2xl">👥</span>
                 <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Daftar Kolektor Aktif</h2>
              </div>
-             <div id="collector-list" class="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                 <!-- List Kolektor Dimuat Disini -->
-             </div>
+             <div id="collector-list" class="space-y-2 max-h-[400px] overflow-y-auto pr-2"></div>
           </div>
         </div>
       </div>
@@ -136,33 +134,23 @@
          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6">
             <h2 class="text-sm font-black text-[#0B1B3D] uppercase mb-4 tracking-wide border-b border-slate-100 pb-3">📍 Filter Kasus Belum Ditugaskan</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-               <select id="filter_assign_client" onchange="runAssignFilter()" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer">
-                  <option value="ALL">Semua Klien</option>
-               </select>
+               <select id="filter_assign_client" onchange="runAssignFilter()" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"><option value="ALL">Semua Klien</option></select>
                <input type="text" id="filter_assign_kecamatan" onkeyup="runAssignFilter()" placeholder="Filter Kecamatan..." class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
                <input type="text" id="filter_assign_kelurahan" onkeyup="runAssignFilter()" placeholder="Filter Kelurahan..." class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
                <input type="text" id="filter_assign_kodepos" onkeyup="runAssignFilter()" placeholder="Filter Kode Pos..." class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
             </div>
          </div>
-
          <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-5 rounded-2xl border border-blue-200 shadow-sm mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-3">
                <h2 class="text-sm font-black text-blue-900 uppercase">Pilih Kolektor Untuk Bertugas</h2>
                <span id="assign-selected-count" class="bg-white text-blue-700 border border-blue-200 text-[11px] font-black px-3 py-1.5 rounded-full">0 Dipilih</span>
             </div>
             <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-               <select id="select_kolektor" class="w-full sm:w-56 bg-white border border-blue-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer">
-                  <option value="">-- Pilih Kolektor --</option>
-               </select>
-               <button type="button" onclick="submitPenugasan()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl shadow-[0_4px_10px_rgba(37,99,235,0.3)] transition-all active:scale-95">
-                   🚀 TUGASKAN SEKARANG
-               </button>
+               <select id="select_kolektor" class="w-full sm:w-56 bg-white border border-blue-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"><option value="">-- Pilih Kolektor --</option></select>
+               <button type="button" onclick="submitPenugasan()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl shadow-[0_4px_10px_rgba(37,99,235,0.3)] transition-all active:scale-95">🚀 TUGASKAN SEKARANG</button>
             </div>
          </div>
-
-         <div id="assign-debitur-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            <p class="col-span-full text-sm text-slate-500 py-4 text-center bg-white rounded-2xl border border-slate-200">Memuat data penugasan...</p>
-         </div>
+         <div id="assign-debitur-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
       </div>
 
       <!-- TAB 3: STATUS PENUGASAN (MONITORING) -->
@@ -173,9 +161,7 @@
                <h2 class="text-sm font-black text-[#0B1B3D] uppercase">Monitoring Hasil Kolektor</h2>
             </div>
             <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                <select id="filter_mon_kolektor" onchange="runMonitorFilter()" class="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-orange-500">
-                   <option value="ALL">Semua Kolektor</option>
-                </select>
+                <select id="filter_mon_kolektor" onchange="runMonitorFilter()" class="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-orange-500"><option value="ALL">Semua Kolektor</option></select>
                 <select id="filter_mon_status" onchange="runMonitorFilter()" class="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-orange-500">
                    <option value="ALL">Semua Status</option>
                    <option value="Ditugaskan">Menunggu Dikerjakan</option>
@@ -185,10 +171,7 @@
                 </select>
             </div>
          </div>
-
-         <div id="monitoring-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <p class="col-span-full text-sm text-slate-500 py-4 text-center bg-white rounded-2xl border border-slate-200">Memuat data monitoring...</p>
-         </div>
+         <div id="monitoring-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
       </div>
 
       <!-- TAB 4: MENUNGGU PENUGASAN (ANTREAN) -->
@@ -200,13 +183,13 @@
             </div>
             <span id="badgeAntreanCount" class="bg-yellow-100 text-yellow-700 text-xs font-black px-3 py-1.5 rounded-full uppercase tracking-wide border border-yellow-200">0 Antrean</span>
          </div>
-         <div id="antrean-list" class="space-y-3">
-            <p class="text-sm text-slate-500 py-4 text-center bg-white rounded-2xl border border-slate-200">Memuat antrean...</p>
-         </div>
+         <div id="antrean-list" class="space-y-3"></div>
       </div>
 
       <!-- TAB 5: MASTER DATA & PEMBERSIHAN -->
       <div id="pembersihan" class="section-tab">
+        
+        <!-- Form Manual Dihilangkan Jika Mengganggu, Atau Dibiarkan Saja -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8 transition-all">
           <div class="flex items-center mb-6 pb-4 border-b border-slate-100">
               <h2 class="text-sm font-black text-[#0B1B3D] uppercase">Input Data Kasus Baru (Manual)</h2>
@@ -252,11 +235,12 @@
           </form>
         </div>
 
+        <!-- TOMBOL UPLOAD MASSAL & SUMMARY -->
         <div class="bg-red-50 p-5 rounded-2xl border border-red-200 shadow-sm mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-3 w-full md:w-auto">
-               <span class="text-2xl">🗑️</span>
+               <span class="text-2xl">🗄️</span>
                <div>
-                   <h2 class="text-sm font-black text-red-900 uppercase">Pembersihan Master Data</h2>
+                   <h2 class="text-sm font-black text-red-900 uppercase">Kelola Master Data</h2>
                    <p class="text-[11px] font-bold text-red-700">Total: <span id="total-master-count">0</span> Data Terdaftar</p>
                </div>
             </div>
@@ -265,11 +249,25 @@
                     <span class="text-base">📁</span> Upload Excel/PDF Baru
                 </button>
                 <button type="button" onclick="massDeleteAll()" class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95">
-                    Hapus Semua Data ⚠️
+                    Hapus Seluruh Database ⚠️
                 </button>
             </div>
         </div>
 
+        <!-- NEW: FILTER & HAPUS TERPILIH -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-4 flex flex-col md:flex-row gap-4 justify-between items-center">
+            <div class="flex flex-col sm:flex-row gap-3 w-full flex-1">
+                <select id="filter_master_client" onchange="runMasterFilter()" class="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-red-500 cursor-pointer">
+                   <option value="ALL">Semua Klien</option>
+                </select>
+                <input type="text" id="filter_master_search" onkeyup="runMasterFilter()" placeholder="Cari Nama / NIK..." class="w-full md:max-w-md bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-red-500 transition-all">
+            </div>
+            <button type="button" onclick="triggerMassDelete()" class="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-6 py-3 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+                🗑️ Hapus Terpilih (<span id="master-selected-count">0</span>)
+            </button>
+        </div>
+
+        <!-- DAFTAR DATA MASTER (Include Checkbox) -->
         <div id="master-debitur-list" class="space-y-3">
           <p class="text-sm text-slate-500 py-4 text-center bg-white rounded-2xl border border-slate-200">Memuat master data database...</p>
         </div>
@@ -287,7 +285,7 @@
     </div>
   </main>
 
-  <!-- MODAL EXCEL / PDF -->
+  <!-- MODAL EXCEL / PDF (Tetap Sama) -->
   <div id="modal-excel" class="fixed inset-0 bg-slate-900/60 z-[100] hidden flex items-center justify-center backdrop-blur-sm px-4">
     <div class="bg-white w-full max-w-md p-6 lg:p-8 rounded-3xl shadow-2xl relative border border-slate-200 modal-enter">
       <button onclick="closeExcelModal()" class="absolute top-4 right-5 text-slate-400 hover:text-red-500 font-bold text-2xl leading-none transition-colors">&times;</button>
@@ -318,7 +316,28 @@
     </div>
   </div>
 
-  <!-- MODAL EDIT KOLEKTOR (Optional jika mau ganti pass) -->
+  <!-- MODAL KONFIRMASI HAPUS & PDF -->
+  <div id="modal-delete-confirm" class="fixed inset-0 bg-slate-900/70 z-[110] hidden flex items-center justify-center backdrop-blur-sm px-4">
+      <div class="bg-white w-full max-w-sm p-6 rounded-3xl shadow-2xl relative border border-slate-200 modal-enter text-center">
+          <span class="text-5xl block mb-3 drop-shadow-sm">⚠️</span>
+          <h2 class="text-base font-black text-[#0B1B3D] uppercase tracking-wide mb-2">Konfirmasi Hapus</h2>
+          <p class="text-[13px] text-slate-500 mb-6 font-medium leading-relaxed">Anda akan menghapus <span id="del-count-text" class="font-black text-red-600 text-base">0</span> data. Tindakan ini permanen. Apakah Anda ingin mengekstrak laporan PDF terlebih dahulu?</p>
+          
+          <div class="flex flex-col gap-3">
+              <button onclick="executeMassDelete(true)" class="w-full bg-blue-600 text-white font-bold text-sm py-3.5 rounded-xl hover:bg-blue-700 transition-all flex justify-center items-center gap-2 shadow-sm active:scale-95">
+                  📄 Ya, Export PDF & Hapus
+              </button>
+              <button onclick="executeMassDelete(false)" class="w-full bg-red-50 border border-red-200 text-red-600 font-bold text-sm py-3.5 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-95">
+                  🗑️ Tidak, Langsung Hapus
+              </button>
+              <button onclick="closeDeleteConfirm()" class="w-full bg-slate-100 text-slate-500 font-bold text-sm py-3.5 rounded-xl hover:bg-slate-200 transition-all mt-1 active:scale-95">
+                  Batal
+              </button>
+          </div>
+      </div>
+  </div>
+
+  <!-- MODAL EDIT KOLEKTOR & BACA LAPORAN (Tetap ada di bawah script) -->
   <div id="modal-edit-kolektor" class="fixed inset-0 bg-slate-900/60 z-[100] hidden flex items-center justify-center backdrop-blur-sm px-4">
       <div class="bg-white w-full max-w-sm p-6 rounded-3xl shadow-2xl relative border border-slate-200 modal-enter">
           <button onclick="closeEditKolektor()" class="absolute top-4 right-5 text-slate-400 hover:text-red-500 font-bold text-2xl leading-none">&times;</button>
@@ -337,7 +356,6 @@
       </div>
   </div>
 
-  <!-- MODAL BACA LAPORAN (MONITORING) -->
   <div id="modal-laporan" class="fixed inset-0 bg-slate-900/70 z-[100] hidden flex justify-center items-end md:items-center px-4 md:px-0">
      <div class="bg-white w-full md:w-full md:max-w-md rounded-t-3xl md:rounded-3xl max-h-[85vh] flex flex-col modal-enter relative shadow-2xl pb-6 md:pb-0">
          <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
@@ -360,7 +378,6 @@
              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                  <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Hasil Kunjungan</p>
                  <p id="lap_status" class="text-sm font-black text-blue-600 uppercase">-</p>
-                 
                  <div id="lap_tgl_wrap" class="mt-3 hidden pt-3 border-t border-slate-100">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tanggal Janji Bayar</p>
                     <p id="lap_tgl_janji" class="text-xs font-bold text-slate-700">-</p>
