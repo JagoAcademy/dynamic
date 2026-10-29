@@ -79,33 +79,57 @@ window.closeMobileSidebar = function() {
     sidebarOverlay.classList.add('hidden'); 
 }
 
+// =========================================
+// FUNGSI BYPASS LIMIT 1000 SUPABASE (LOOP FETCH)
+// =========================================
+async function fetchAllRows(tableName) {
+    let allData = [];
+    let from = 0;
+    const step = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+        const { data, error } = await supabase
+            .from(tableName)
+            .select('*')
+            .range(from, from + step - 1);
+            
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+            allData = allData.concat(data);
+            from += step;
+            if (data.length < step) hasMore = false; 
+        } else {
+            hasMore = false;
+        }
+    }
+    return allData;
+}
+
 
 // =========================================
-// FETCH ALL DATA (FIX LIMIT SUPABASE 10.000)
+// FETCH ALL DATA UTAMA
 // =========================================
 async function fetchAllData() {
     const loadingUI = document.getElementById('global-loading');
     if(loadingUI) loadingUI.classList.remove('hidden');
 
     try {
-        const [resMan, resExc, resCol, resPen] = await Promise.all([
-            supabase.from('manual_debitur').select('*').limit(10000),
-            supabase.from('excel_debitur').select('*').limit(10000),
-            supabase.from('users').select('*').eq('role', 'collector').order('created_at', { ascending: false }),
-            supabase.from('penugasan_kolektor').select('*').limit(10000)
-        ]);
-
-        if (resMan.error) throw resMan.error;
-        if (resExc.error) throw resExc.error;
-        if (resCol.error) throw resCol.error;
-        if (resPen.error) throw resPen.error;
-
-        globalCollectors = resCol.data || [];
-        globalPenugasan = resPen.data || [];
-
-        const normalizedManual = (resMan.data || []).map(d => ({ ...d, sumber_tabel: 'manual_debitur' }));
+        // Fetch menggunakan bypass loop untuk mengatasi limit server Supabase
+        const resMan = await fetchAllRows('manual_debitur');
+        const resExc = await fetchAllRows('excel_debitur');
+        const resPen = await fetchAllRows('penugasan_kolektor');
         
-        const normalizedExcel = (resExc.data || []).map(e => {
+        const { data: resCol, error: errCol } = await supabase.from('users').select('*').eq('role', 'collector').order('created_at', { ascending: false });
+        if (errCol) throw errCol;
+
+        globalCollectors = resCol || [];
+        globalPenugasan = resPen || [];
+
+        const normalizedManual = (resMan || []).map(d => ({ ...d, sumber_tabel: 'manual_debitur' }));
+        
+        const normalizedExcel = (resExc || []).map(e => {
             const rawData = e.debitur || {};
             const nameKey = Object.keys(rawData).find(k => k.toLowerCase().includes('nama') || k.toLowerCase().includes('name'));
             const idKey = Object.keys(rawData).find(k => k.toLowerCase().includes('id') || k.toLowerCase().includes('nik') || k.toLowerCase().includes('no_akun'));
@@ -689,36 +713,72 @@ function parseAlamat(alamatStr) {
   return { kodepos: str.match(/\b\d{5}\b/)?.[0] || null, kelurahan: extract('kelurahan|kel\\.?|desa'), kecamatan: extract('kecamatan|kec\\.?'), kota_kabupaten: extract('kota|kabupaten|kab\\.?'), provinsi: extract('provinsi|prov\\.?') };
 }
 
+
+// =========================================
+// PARSER PDF YANG DIPERBAIKI (TOLAK "PERIODE ACCOUNT")
+// =========================================
 async function parsePDFToJSON(file) {
     if (!window.pdfjsLib) throw new Error("Library PDF.js belum termuat.");
-    const arrayBuffer = await file.arrayBuffer(); const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise; let extractedRows = [];
+    const arrayBuffer = await file.arrayBuffer(); 
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise; 
+    let extractedRows = [];
     
     for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i); const textContent = await page.getTextContent(); const rawStrings = textContent.items.map(item => item.str);
-        const textNormalized = rawStrings.join(' ').replace(/\s+/g, ' '); const textNoSpace = rawStrings.join('').replace(/\s+/g, ''); let rowData = { "_sumber": `PDF Halaman ${i}` };
+        const page = await pdf.getPage(i); 
+        const textContent = await page.getTextContent(); 
+        const rawStrings = textContent.items.map(item => item.str);
         
+        const textNormalized = rawStrings.join(' ').replace(/\s+/g, ' '); 
+        const textNoSpace = rawStrings.join('').replace(/\s+/g, ''); 
+        
+        let rowData = { "_sumber": `PDF Halaman ${i}` };
+        
+        // 1. Ekstrak NIK / CC
         const matchCcBri = textNoSpace.match(/(\d{16})/); 
-        if (matchCcBri) rowData["NIK"] = matchCcBri[1]; 
-        else { const matchNikUmum = textNormalized.match(/(?:NIK|No Akun|ID|KTP)\s*[:\-]?\s*(\d{10,16})/i); if (matchNikUmum) rowData["NIK"] = matchNikUmum[1].trim(); }
+        if (matchCcBri) {
+            rowData["NIK"] = matchCcBri[1]; 
+        } else { 
+            const matchNikUmum = textNormalized.match(/(?:NIK|No Akun|ID|KTP)\s*[:\-]?\s*(\d{10,16})/i); 
+            if (matchNikUmum) rowData["NIK"] = matchNikUmum[1].trim(); 
+        }
         
-        const matchNamaBri = textNormalized.match(/NAMA CUSTOMER.*?:\s*([A-Za-z\s\.\'\-]{3,40})(?:TELEPON|JENIS|K\s*=|R\s*=|$)/i); const matchNamaUmum = textNormalized.match(/(?:Nama Debitur|Nama|Name)\s*[:\-]?\s*([A-Za-z\s\.\'\-]{3,40})/i);
-        if (matchNamaBri) rowData["Nama"] = matchNamaBri[1].replace(/TELEPON/i, '').replace(/:/g, '').trim(); 
-        else if (matchNamaUmum) rowData["Nama"] = matchNamaUmum[1].trim();
+        // 2. Ekstrak Nama (Pencegahan Teks "Periode Account")
+        let namaDebitur = null;
+        // Regex diperketat, harus nyambung lurus setelah tanda titik dua (:)
+        const matchNamaBri = textNormalized.match(/NAMA CUSTOMER\s*:\s*([A-Za-z\s\.\'\-]{3,40})/i); 
+        const matchNamaUmum = textNormalized.match(/(?:Nama Debitur|Nama|Name)\s*:\s*([A-Za-z\s\.\'\-]{3,40})/i);
         
-        const matchUangBriNoSpace = textNoSpace.match(/Rp\.?(\d{5,})/i); const matchUangNormal = textNormalized.match(/Rp\.?\s*([\d\.,]{5,})/i);
+        if (matchNamaBri) namaDebitur = matchNamaBri[1].replace(/TELEPON|JENIS/i, '').trim(); 
+        else if (matchNamaUmum) namaDebitur = matchNamaUmum[1].trim();
+        
+        // Validasi: Kalau ternyata isinya kata "periode", kita buang biar sistem nggak gila
+        if (namaDebitur && !namaDebitur.toLowerCase().includes("periode")) {
+            rowData["Nama"] = namaDebitur;
+        }
+        
+        // 3. Ekstrak Uang
+        const matchUangBriNoSpace = textNoSpace.match(/Rp\.?(\d{5,})/i); 
+        const matchUangNormal = textNormalized.match(/Rp\.?\s*([\d\.,]{5,})/i);
         if (matchUangBriNoSpace) rowData["Total Terutang"] = matchUangBriNoSpace[1]; 
         else if (matchUangNormal) rowData["Total Terutang"] = matchUangNormal[1].replace(/[^\d]/g, '');
         
-        const matchAlamatBri = textNormalized.match(/ALAMAT[^:]*:\s*(.*?)(?:KANTOR|EMERGENCY|TELEPON|MEMO)/i); 
+        // 4. Ekstrak Alamat
+        const matchAlamatBri = textNormalized.match(/ALAMAT[^:]*:\s*(.*?)(?:KANTOR|EMERGENCY|TELEPON|MEMO|$)/i); 
         if (matchAlamatBri) rowData["Alamat Lengkap"] = matchAlamatBri[1].replace(/\b\d{16}\b/g, '').replace(/\|/g, '').trim();
         
-        const matchTelp = textNoSpace.match(/(?:08|628)\d{8,11}/); if (matchTelp) rowData["No WhatsApp"] = matchTelp[0];
-        const matchKol = textNormalized.match(/(MACET|DIRAGUKAN|KURANG LANCAR)/i); if (matchKol) rowData["Kolektibilitas"] = matchKol[1].toUpperCase();
+        // 5. Ekstrak Telp & Kolektibilitas
+        const matchTelp = textNoSpace.match(/(?:08|628)\d{8,11}/); 
+        if (matchTelp) rowData["No WhatsApp"] = matchTelp[0];
+        
+        const matchKol = textNormalized.match(/(MACET|DIRAGUKAN|KURANG LANCAR)/i); 
+        if (matchKol) rowData["Kolektibilitas"] = matchKol[1].toUpperCase();
         
         if (rowData["NIK"]) { 
             if (!rowData["Nama"]) rowData["Nama"] = `Debitur (${rowData["NIK"].substring(0, 6)}...)`; 
             extractedRows.push(rowData); 
-        } else if (rowData["Nama"]) { extractedRows.push(rowData); }
+        } else if (rowData["Nama"]) { 
+            extractedRows.push(rowData); 
+        }
     }
     
     if (extractedRows.length === 0) throw new Error("Gagal membaca data (Mesin tidak mendeteksi format yang tepat)."); 
@@ -762,7 +822,7 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
           return { tanggal_upload: isoUploadDate, client: clientName, alamat_lengkap: locInfo ? String(row[alamatKey]) : null, kelurahan: locInfo.kelurahan, kecamatan: locInfo.kecamatan, kota_kabupaten: locInfo.kota_kabupaten, kodepos: locInfo.kodepos, provinsi: locInfo.provinsi, debitur: row, status: 'Pending' };
         });
         
-        // Supabase Insert maksimal ~1000 per request kalau JSONB besar, kita chunk manual
+        // Data dipecah per-500 agar tidak kena limit JSON payload dari API Supabase
         const chunkSize = 500;
         for (let i = 0; i < payload.length; i += chunkSize) {
             const chunk = payload.slice(i, i + chunkSize);
