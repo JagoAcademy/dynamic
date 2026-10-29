@@ -99,29 +99,73 @@
 
     <div class="flex-1 overflow-y-auto p-6 md:p-8">
       
-      <!-- TAB 1: KELOLA AKUN -->
+      <!-- TAB 1: KELOLA AKUN (DATABASE DI ATAS, FORM DI BAWAH, MATIKAN AUTOFILL, 2X PASSWORD + UNHIDE) -->
       <div id="akun" class="section-tab active">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div class="flex items-center gap-3 mb-6">
-                <span class="text-2xl">📋</span>
-                <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Buat Akun Collector</h2>
-            </div>
-            <form id="formCollector" class="space-y-4">
-              <input type="text" id="c_name" required placeholder="Nama Lengkap Collector" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-              <input type="text" id="c_user" required placeholder="Username Login" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-              <input type="password" id="c_pass" required placeholder="Password Akun" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-              <input type="number" id="c_phone" placeholder="Nomor HP / WA (Opsional)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-              <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all hover:bg-orange-600 shadow-md">Simpan Akun Collector</button>
-            </form>
-          </div>
+          
+          <!-- DATABASE / DAFTAR KOLEKTOR AKTIF (DI PINDAH KE ATAS) -->
           <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
              <div class="flex items-center gap-3 mb-6">
                 <span class="text-2xl">👥</span>
                 <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Daftar Kolektor Aktif</h2>
              </div>
-             <div id="collector-list" class="space-y-2 max-h-[400px] overflow-y-auto pr-2"></div>
+             <div id="collector-list" class="space-y-2 max-h-[450px] overflow-y-auto pr-2"></div>
           </div>
+
+          <!-- FORM BUAT AKUN (DI BAWAH) -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="text-2xl">📋</span>
+                <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Buat Akun Collector</h2>
+            </div>
+            
+            <!-- autocomplete="off" untuk matikan cache/autofill browser -->
+            <form id="formCollector" autocomplete="off" class="space-y-4">
+              <!-- Hidden dummy inputs untuk menipu autofill browser -->
+              <input type="text" style="display:none" autocomplete="username">
+              <input type="password" style="display:none" autocomplete="current-password">
+
+              <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Nama Lengkap</label>
+                  <input type="text" id="c_name" required autocomplete="off" placeholder="Nama Lengkap Collector" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
+              </div>
+
+              <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Username Login</label>
+                  <input type="text" id="c_user" required autocomplete="off" placeholder="Username Login" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
+              </div>
+
+              <!-- Password 1 dengan Unhide -->
+              <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Password</label>
+                  <div class="relative">
+                      <input type="password" id="c_pass" required autocomplete="new-password" placeholder="Password Akun" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-12 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
+                      <button type="button" onclick="togglePassField('c_pass', 'eyePass1')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-orange-500">
+                          <svg id="eyePass1" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                      </button>
+                  </div>
+              </div>
+
+              <!-- Konfirmasi Password 2 dengan Unhide -->
+              <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Konfirmasi Password</label>
+                  <div class="relative">
+                      <input type="password" id="c_pass_confirm" required autocomplete="new-password" placeholder="Ulangi Password Akun" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-12 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
+                      <button type="button" onclick="togglePassField('c_pass_confirm', 'eyePass2')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-orange-500">
+                          <svg id="eyePass2" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                      </button>
+                  </div>
+              </div>
+
+              <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Nomor WhatsApp (Opsional)</label>
+                  <input type="number" id="c_phone" autocomplete="off" placeholder="62812345..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
+              </div>
+
+              <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all hover:bg-orange-600 shadow-md">Simpan Akun Collector</button>
+            </form>
+          </div>
+
         </div>
       </div>
 
@@ -328,7 +372,7 @@
       </div>
   </div>
 
-  <!-- MODAL MASTER DETAIL DATA JSON (NEW) -->
+  <!-- MODAL MASTER DETAIL DATA JSON -->
   <div id="modal-master-detail" class="fixed inset-0 bg-slate-900/70 z-[120] hidden flex items-center justify-center backdrop-blur-sm px-4">
       <div class="bg-white w-full max-w-md p-6 rounded-3xl shadow-2xl relative border border-slate-200 modal-enter flex flex-col max-h-[85vh]">
           <div class="flex justify-between items-center mb-4 pb-4 border-b border-slate-100 shrink-0">
@@ -338,7 +382,6 @@
               </div>
               <button onclick="closeMasterDetail()" class="bg-slate-100 text-slate-500 w-8 h-8 rounded-full font-bold flex items-center justify-center hover:bg-red-100 hover:text-red-500 transition-colors">&times;</button>
           </div>
-          <!-- Tempat Render JSON -->
           <div id="master-detail-content" class="overflow-y-auto space-y-3 flex-1 pb-4 pr-1"></div>
       </div>
   </div>
@@ -397,6 +440,21 @@
          </div>
      </div>
   </div>
+
+  <!-- SCRIPT UNHIDE PASSWORD DI FORM KOLEKTOR -->
+  <script>
+      function togglePassField(fieldId, iconId) {
+          const field = document.getElementById(fieldId);
+          const icon = document.getElementById(iconId);
+          if (field.type === 'password') {
+              field.type = 'text';
+              icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>`;
+          } else {
+              field.type = 'password';
+              icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>`;
+          }
+      }
+  </script>
 
   <script type="module" src="/src/admin.js"></script>
 </body>
