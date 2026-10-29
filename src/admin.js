@@ -55,14 +55,11 @@ const sidebarOverlay = document.getElementById('sidebarOverlay');
 
 navItems.forEach(item => {
   item.addEventListener('click', (e) => {
-    // Reset warna menu
     navItems.forEach(nav => nav.classList.remove('active'));
     e.currentTarget.classList.add('active');
     
-    // Ganti Judul
     pageTitle.innerText = e.currentTarget.innerText.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]/g, '').trim();
     
-    // Tampilkan Tab Konten
     const targetId = e.currentTarget.getAttribute('data-target');
     sectionTabs.forEach(tab => {
       tab.classList.remove('active');
@@ -84,7 +81,7 @@ window.closeMobileSidebar = function() {
 
 
 // =========================================
-// FETCH ALL DATA 
+// FETCH ALL DATA (FIX LIMIT SUPABASE 10.000)
 // =========================================
 async function fetchAllData() {
     const loadingUI = document.getElementById('global-loading');
@@ -92,10 +89,10 @@ async function fetchAllData() {
 
     try {
         const [resMan, resExc, resCol, resPen] = await Promise.all([
-            supabase.from('manual_debitur').select('*'),
-            supabase.from('excel_debitur').select('*'),
+            supabase.from('manual_debitur').select('*').limit(10000),
+            supabase.from('excel_debitur').select('*').limit(10000),
             supabase.from('users').select('*').eq('role', 'collector').order('created_at', { ascending: false }),
-            supabase.from('penugasan_kolektor').select('*')
+            supabase.from('penugasan_kolektor').select('*').limit(10000)
         ]);
 
         if (resMan.error) throw resMan.error;
@@ -126,17 +123,14 @@ async function fetchAllData() {
             };
         });
 
-        // Gabung data & Urutkan Paling Baru
         globalDebitur = [...normalizedManual, ...normalizedExcel].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-        // Pisahkan yang sudah ditugaskan vs belum
         const assignedIds = new Set(globalPenugasan.map(p => p.debitur_id));
         unassignedDebitur = globalDebitur.filter(d => !assignedIds.has(d.id));
         
         masterFilteredData = [...globalDebitur];
         masterCurrentPage = 1;
 
-        // Render Ulang Semua UI
         renderAkunTab();
         populateAssignDropdowns();
         runAssignFilter(); 
@@ -183,7 +177,6 @@ function renderAkunTab() {
     }
 }
 
-// BIKIN AKUN KOLEKTOR (DENGAN VALIDASI DOUBLE PASSWORD)
 document.getElementById('formCollector')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button'); 
@@ -194,7 +187,6 @@ document.getElementById('formCollector')?.addEventListener('submit', async (e) =
     const passConfirmVal = document.getElementById('c_pass_confirm').value;
     const phoneVal = document.getElementById('c_phone').value.trim();
     
-    // Cek Konfirmasi Password
     if (passwordVal !== passConfirmVal) {
         alert("❌ Password dan Konfirmasi Password tidak sama!");
         return;
@@ -451,7 +443,7 @@ window.closeLaporan = function() {
 
 
 // =========================================
-// TAB 5: MASTER DATA & PEMBERSIHAN (POP-UP RAW JSON)
+// TAB 5: MASTER DATA & PEMBERSIHAN
 // =========================================
 function populateMasterDropdowns() {
     const uniqueClients = [...new Set(globalDebitur.map(d => d.client))].filter(Boolean);
@@ -770,8 +762,13 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
           return { tanggal_upload: isoUploadDate, client: clientName, alamat_lengkap: locInfo ? String(row[alamatKey]) : null, kelurahan: locInfo.kelurahan, kecamatan: locInfo.kecamatan, kota_kabupaten: locInfo.kota_kabupaten, kodepos: locInfo.kodepos, provinsi: locInfo.provinsi, debitur: row, status: 'Pending' };
         });
         
-        const { error } = await supabase.from('excel_debitur').insert(payload); 
-        if (error) throw error; 
+        // Supabase Insert maksimal ~1000 per request kalau JSONB besar, kita chunk manual
+        const chunkSize = 500;
+        for (let i = 0; i < payload.length; i += chunkSize) {
+            const chunk = payload.slice(i, i + chunkSize);
+            const { error } = await supabase.from('excel_debitur').insert(chunk);
+            if (error) throw error;
+        }
         
         alert(`✅ UPLOAD BERHASIL!\n\n${extractedRows.length} data sukses masuk.`); 
         closeExcelModal(); 
