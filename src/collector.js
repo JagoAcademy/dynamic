@@ -89,6 +89,17 @@ async function loadCollectorTasks() {
 }
 
 // ==========================================
+// FUNGSI PEMBANTU (BACKGROUND CARD)
+// ==========================================
+function getCardBackground(status) {
+    if (!status || status === 'Ditugaskan') return 'bg-white border-slate-200 hover:border-orange-300';
+    if (status.includes('Janji')) return 'bg-orange-50/40 border-orange-200 hover:border-orange-400';
+    if (status.includes('Sebagian')) return 'bg-blue-50/40 border-blue-200 hover:border-blue-400';
+    if (status.includes('Lunas')) return 'bg-green-50/40 border-green-200 hover:border-green-400';
+    return 'bg-red-50/40 border-red-200 hover:border-red-400';
+}
+
+// ==========================================
 // FUNGSI PEMBANTU (BADGE STATUS)
 // ==========================================
 function getStatusBadge(status) {
@@ -204,8 +215,10 @@ function renderTaskPage() {
             ? 'bg-slate-700 hover:bg-slate-800 border-slate-800' 
             : 'bg-[#E65C00] hover:bg-orange-600 border-orange-700';
 
+        const cardBgClass = getCardBackground(task.status);
+
         return `
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-[0_2px_15px_-4px_rgba(0,0,0,0.05)] flex flex-col h-full hover:border-orange-300 transition-colors">
+            <div class="${cardBgClass} p-5 rounded-2xl border shadow-[0_2px_15px_-4px_rgba(0,0,0,0.05)] flex flex-col h-full transition-colors">
                 <div class="flex justify-between items-start mb-3">
                     <span class="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest border border-slate-200">
                         🏢 ${db.client || '-'}
