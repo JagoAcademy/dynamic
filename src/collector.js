@@ -21,6 +21,91 @@ window.logout = function() {
 }
 
 // ==========================================
+// HELPER PEMBACA DATA SESUAI TEMPLATE
+// ==========================================
+function isValidVal(val) {
+    if (val === undefined || val === null) return false;
+    const str = String(val).trim();
+    return str !== '' && str !== '0' && str !== '.' && str !== '-';
+}
+
+function getDebiturName(db, sumberTabel) {
+    if (sumberTabel === 'excel_debitur' && db.debitur) {
+        const raw = db.debitur;
+        const keys = Object.keys(raw);
+        const priority = ['nama nasabah', 'nama debitur', 'nama customer', 'nama', 'name'];
+        for (const target of priority) {
+            const found = keys.find(k => k.trim().toLowerCase() === target);
+            if (found && isValidVal(raw[found])) return String(raw[found]).trim();
+        }
+        const fallback = keys.find(k => {
+            const lk = k.trim().toLowerCase();
+            return (lk.includes('nama') || lk.includes('name')) &&
+                   !lk.includes('kantor') && !lk.includes('ec') && !lk.includes('ibu') && !lk.includes('mother');
+        });
+        if (fallback && isValidVal(raw[fallback])) return String(raw[fallback]).trim();
+    }
+    return db.name || 'Tanpa Nama';
+}
+
+function getDebiturAmount(contactInfo) {
+    if (!contactInfo) return 0;
+    const keys = Object.keys(contactInfo);
+    const priority = ['os', 'total terutang', 'total_terutang', 'tagihan', 'amount', 'principal', 'limit'];
+    for (const target of priority) {
+        const found = keys.find(k => k.trim().toLowerCase() === target || k.trim().toLowerCase().includes(target));
+        if (found && isValidVal(contactInfo[found])) {
+            const num = Number(String(contactInfo[found]).replace(/[^\d.-]/g, ''));
+            if (!isNaN(num) && num > 0) return num;
+        }
+    }
+    return 0;
+}
+
+function getDebiturPhone(contactInfo) {
+    if (!contactInfo) return '';
+    const keys = Object.keys(contactInfo);
+    const priority = ['hp', 'no whatsapp', 'no_whatsapp', 'whatsapp', 'wa', 'no hp', 'telepon', 'telp'];
+    for (const target of priority) {
+        const found = keys.find(k => {
+            const lk = k.trim().toLowerCase();
+            return (lk === target || lk.includes(target)) && !lk.includes('kantor') && !lk.includes('ec');
+        });
+        if (found && isValidVal(contactInfo[found])) return String(contactInfo[found]).trim();
+    }
+    return '';
+}
+
+function getDebiturFullAddress(db, contactInfo) {
+    if (isValidVal(db.alamat_lengkap)) return String(db.alamat_lengkap).trim();
+    if (!contactInfo) return '-';
+
+    const norm = {};
+    for (const [k, v] of Object.entries(contactInfo)) {
+        norm[k.trim().toUpperCase()] = v;
+    }
+
+    let baseAddr = '';
+    if (isValidVal(norm['ALAMAT MAIN'])) {
+        baseAddr = String(norm['ALAMAT MAIN']).trim();
+    } else if (isValidVal(norm['ALAMAT KTP'])) {
+        baseAddr = String(norm['ALAMAT KTP']).trim();
+    } else {
+        const parts = ['ALAMAT 1', 'ALAMAT 2', 'ALAMAT 3', 'ALAMAT 4']
+            .map(c => isValidVal(norm[c]) ? String(norm[c]).trim() : null)
+            .filter(Boolean);
+        baseAddr = parts.join(', ');
+    }
+
+    const areaParts = ['KEL', 'KEC', 'KOTA', 'KODE POS']
+        .map(c => isValidVal(norm[c]) ? String(norm[c]).trim() : null)
+        .filter(w => w && !baseAddr.toLowerCase().includes(w.toLowerCase()));
+
+    const combined = [baseAddr, ...areaParts].filter(Boolean).join(', ');
+    return combined || '-';
+}
+
+// ==========================================
 // 1. TARIK DATA DARI SUPABASE
 // ==========================================
 async function loadCollectorTasks() {
@@ -53,14 +138,7 @@ async function loadCollectorTasks() {
                 .single();
              
             if (!detailError && debiturDetail) {
-                let dName = debiturDetail.name || '';
-                
-                if (task.sumber_tabel === 'excel_debitur' && debiturDetail.debitur) {
-                    const keyName = Object.keys(debiturDetail.debitur).find(k => k.toLowerCase().includes('nama'));
-                    if(keyName) {
-                        dName = debiturDetail.debitur[keyName];
-                    }
-                }
+                const dName = getDebiturName(debiturDetail, task.sumber_tabel);
                 
                 finalTasks.push({ 
                     ...task, 
@@ -181,31 +259,25 @@ function renderTaskPage() {
 
     container.innerHTML = paginatedData.map((task) => {
         const db = task.detail_debitur;
-        
-        let namaDebitur = db.name || 'Tanpa Nama';
-        
-        if (task.sumber_tabel === 'excel_debitur' && db.debitur) {
-            const nameKey = Object.keys(db.debitur).find(k => k.toLowerCase().includes('nama') || k.toLowerCase().includes('name'));
-            if(nameKey) {
-                namaDebitur = db.debitur[nameKey];
-            }
-        }
-
+        const namaDebitur = getDebiturName(db, task.sumber_tabel);
         const contactInfo = task.sumber_tabel === 'excel_debitur' ? db.debitur : db.contact_info;
         
-        const amountKey = Object.keys(contactInfo || {}).find(k => k.toLowerCase().includes('terutang') || k.toLowerCase().includes('amount') || k.toLowerCase().includes('tagihan'));
-        const rawAmount = amountKey ? contactInfo[amountKey] : 0;
-        const formatRp = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(String(rawAmount).replace(/\D/g, ''));
+        const numericAmount = getDebiturAmount(contactInfo);
+        const formatRp = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(numericAmount);
         
-        const waKey = Object.keys(contactInfo || {}).find(k => k.toLowerCase().includes('wa') || k.toLowerCase().includes('whatsapp') || k.toLowerCase().includes('telepon') || k.toLowerCase().includes('hp'));
-        const wa = waKey ? String(contactInfo[waKey]) : '';
+        const wa = getDebiturPhone(contactInfo);
         const linkWa = wa ? `https://wa.me/${wa.replace(/\D/g, '').replace(/^0/, '62')}` : '#';
         
-        const arrLokasi = [db.kelurahan, db.kecamatan].filter(Boolean);
+        const kelDisplay = db.kelurahan || (contactInfo && isValidVal(contactInfo['KEL']) ? contactInfo['KEL'] : '');
+        const kecDisplay = db.kecamatan || (contactInfo && isValidVal(contactInfo['KEC']) ? contactInfo['KEC'] : '');
+        const kotaDisplay = db.kota_kabupaten || (contactInfo && isValidVal(contactInfo['KOTA']) ? contactInfo['KOTA'] : '');
+        const arrLokasi = [kelDisplay, kecDisplay, kotaDisplay].filter(Boolean);
         const alamatSingkat = arrLokasi.length > 0 ? arrLokasi.join(', ') : 'Cek Detail Alamat';
 
+        const fullAlamat = getDebiturFullAddress(db, contactInfo);
         const jsonStringInfo = encodeURIComponent(JSON.stringify(contactInfo || {}));
-        const safeAlamatLengkap = db.alamat_lengkap ? db.alamat_lengkap.replace(/'/g, "\\'") : '-';
+        const safeAlamatLengkap = fullAlamat.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\r?\n/g, ' ');
+        const safeNamaDebitur = namaDebitur.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\r?\n/g, ' ');
 
         const badgeStatus = getStatusBadge(task.status);
         const isDikerjakan = task.status !== 'Ditugaskan';
@@ -240,13 +312,13 @@ function renderTaskPage() {
                 </div>
 
                 <div class="grid grid-cols-4 gap-2 mt-auto">
-                    <button onclick="openModalDetail('${namaDebitur.replace(/'/g, "\\'")}', '${safeAlamatLengkap}', '${jsonStringInfo}')" class="col-span-2 bg-slate-100 text-slate-600 text-[10px] font-black rounded-xl uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200 w-full py-3 shadow-sm">
+                    <button onclick="openModalDetail('${safeNamaDebitur}', '${safeAlamatLengkap}', '${jsonStringInfo}')" class="col-span-2 bg-slate-100 text-slate-600 text-[10px] font-black rounded-xl uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200 w-full py-3 shadow-sm">
                         🔍 Rincian
                     </button>
                     <a href="${linkWa}" target="_blank" class="col-span-1 bg-green-50 text-green-600 border border-green-200 rounded-xl flex items-center justify-center hover:bg-green-100 transition-colors shadow-sm">
                         <span class="text-xl leading-none pt-0.5">📞</span>
                     </a>
-                    <button onclick="openModalEksekusi('${task.id}', '${namaDebitur.replace(/'/g, "\\'")}')" class="col-span-1 text-white rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-sm border w-full ${btnStyle}">
+                    <button onclick="openModalEksekusi('${task.id}', '${safeNamaDebitur}')" class="col-span-1 text-white rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-sm border w-full ${btnStyle}">
                         <span class="text-sm font-bold pt-0.5 text-white">${btnText}</span>
                     </button>
                 </div>
@@ -257,8 +329,33 @@ function renderTaskPage() {
 
 
 // ==========================================
-// 3. LOGIKA MODAL RINCIAN (BONGKAR JSON & MAPS)
+// 3. LOGIKA MODAL RINCIAN (BONGKAR FULL TEMPLATE & MAPS)
 // ==========================================
+function formatTemplateLabel(rawKey) {
+    const k = rawKey.trim().toUpperCase();
+    // Rapikan penamaan kolom duplikat dari Excel (KOTA.1 / KOTA_1 untuk Kantor, KOTA.2 / KOTA_2 untuk EC)
+    if (k === 'KOTA.1' || k === 'KOTA_1') return 'KOTA KANTOR';
+    if (k === 'KODE POS.1' || k === 'KODE POS_1') return 'KODE POS KANTOR';
+    if (k === 'KOTA.2' || k === 'KOTA_2') return 'KOTA EC';
+    if (k === 'KODE POS.2' || k === 'KODE POS_2') return 'KODE POS EC';
+    return k.replace(/_/g, ' ');
+}
+
+function formatVAValue(val) {
+    const str = String(val).trim();
+    if (str.startsWith('{') && str.endsWith('}')) {
+        try {
+            const vaObj = JSON.parse(str);
+            return Object.entries(vaObj)
+                .map(([bank, nomor]) => `<span class="block text-[10px] leading-snug"><span class="text-slate-400">${bank}:</span> ${nomor}</span>`)
+                .join('');
+        } catch (e) {
+            return str;
+        }
+    }
+    return str;
+}
+
 window.openModalDetail = function(nama, alamat, jsonStrEncoded) {
     const infoData = JSON.parse(decodeURIComponent(jsonStrEncoded));
     
@@ -266,53 +363,74 @@ window.openModalDetail = function(nama, alamat, jsonStrEncoded) {
     document.getElementById('detail_alamat').innerText = alamat;
     
     // UPDATE GOOGLE MAPS LINK OTOMATIS
-    const queryMaps = alamat !== '-' ? alamat : (nama + ' ' + (infoData.KECAMATAN || ''));
+    const queryMaps = alamat !== '-' ? alamat : (nama + ' ' + (infoData.KOTA || infoData.KEC || infoData.KECAMATAN || ''));
     document.getElementById('btn_maps_link').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryMaps)}`;
 
     const listContainer = document.getElementById('detail_json_list');
     
     let htmlTagihan = ''; 
     let htmlPribadi = ''; 
+    let htmlAlamat = '';
+    let htmlKantor = '';
+    let htmlEC = '';
     let htmlLainnya = '';
     
     for (const [key, value] of Object.entries(infoData)) {
-        const lowerKey = key.toLowerCase();
+        const lowerKey = key.trim().toLowerCase();
         
-        // Lewati data yang sudah ada di Header
-        if (lowerKey === 'nama' || lowerKey === 'name' || lowerKey === 'alamat lengkap' || lowerKey === 'alamat' || lowerKey === '_sumber') continue;
+        // Lewati nama utama yang sudah tampil di judul modal & metadata internal
+        if (lowerKey === 'nama nasabah' || lowerKey === 'nama' || lowerKey === 'name' || lowerKey === '_sumber') continue;
         
-        const cleanKey = key.replace(/_/g, ' ').toUpperCase(); 
-        let cleanValue = value ? value : '-';
+        const cleanKey = formatTemplateLabel(key); 
+        let cleanValue = (value !== undefined && value !== null && String(value).trim() !== '') ? String(value).trim() : '-';
 
-        // Format angka jadi Rupiah jika terdeteksi kolom Uang
-        if ((lowerKey.includes('amount') || lowerKey.includes('principal') || lowerKey.includes('terutang') || lowerKey.includes('limit') || lowerKey.includes('installment')) && !isNaN(String(cleanValue).replace(/\D/g, ''))) {
-            const numOnly = String(cleanValue).replace(/\D/g, '');
-            if(numOnly.length > 0) {
+        // Format angka jadi Rupiah untuk seluruh kolom nominal keuangan pada template
+        const isMoneyCol = /^(os|principal|limit|lpa|sum\s*pay|total\s*terutang|terutang|tagihan|amount|installment)$/i.test(lowerKey) ||
+                           lowerKey.includes('terutang') || lowerKey.includes('tagihan') || lowerKey.includes('principal');
+        if (isMoneyCol && cleanValue !== '-') {
+            const numOnly = Number(cleanValue.replace(/[^\d.-]/g, ''));
+            if (!isNaN(numOnly) && numOnly > 0) {
                 cleanValue = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(numOnly);
             }
         }
 
+        // Format Virtual Account (VA) jika berbentuk JSON multi-bank
+        if (lowerKey === 'va' && cleanValue !== '-') {
+            cleanValue = formatVAValue(cleanValue);
+        }
+
         const rowHtml = `
-            <div class="flex justify-between py-2.5 border-b border-slate-100 last:border-0 items-center hover:bg-slate-50 transition-colors px-1">
-                <span class="text-[10px] font-bold text-slate-400 w-[45%] break-words pr-2 leading-tight">${cleanKey}</span>
-                <span class="text-[11px] font-black text-slate-700 w-[55%] text-right break-words leading-tight">${cleanValue}</span>
+            <div class="flex justify-between py-2.5 border-b border-slate-100 last:border-0 items-start hover:bg-slate-50 transition-colors px-1 gap-2">
+                <span class="text-[10px] font-bold text-slate-400 w-[42%] break-words leading-tight">${cleanKey}</span>
+                <span class="text-[11px] font-black text-slate-700 w-[58%] text-right break-words leading-tight">${cleanValue}</span>
             </div>
         `;
         
-        // Pengelompokan Kategori
-        if (lowerKey.match(/dpd|os|amount|principal|terutang|tagihan|limit|tenor|lpa|installment|byr|bayar|loan/)) { 
+        // Pengelompokan Kategori sesuai Struktur Lengkap Template
+        if (lowerKey.match(/^(os|principal|limit|dpd|lpa|lpd|lpc|tenor|va|kartu|sum\s*pay|open\s*date|tahun\s*wo|bln\s*wo|aktifasi|loan\s*type|transaksi\s*akhir|act\s*type)/) ||
+            lowerKey.match(/amount|terutang|tagihan|installment|byr|bayar|loan/)) { 
             htmlTagihan += rowHtml; 
-        } else if (lowerKey.match(/lahir|agama|pekerjaan|gender|mother|ibu|sttus/)) { 
+        } else if (lowerKey.match(/^(ttl|agama|status|gender|sex|ibu\s*kandung|kerjaan|pekerjaan)/) ||
+                   lowerKey.match(/lahir|mother|ibu|sttus/)) { 
             htmlPribadi += rowHtml; 
+        } else if (lowerKey.includes('kantor') || lowerKey === 'kota.1' || lowerKey === 'kota_1' || lowerKey === 'kode pos.1' || lowerKey === 'kode pos_1') {
+            htmlKantor += rowHtml;
+        } else if (lowerKey.includes(' ec') || lowerKey.startsWith('ec') || lowerKey === 'kota.2' || lowerKey === 'kota_2' || lowerKey === 'kode pos.2' || lowerKey === 'kode pos_2') {
+            htmlEC += rowHtml;
+        } else if (lowerKey.match(/^(alamat|kota|kode\s*pos|kec|kel|city|kecamatan|kelurahan|provinsi)/)) {
+            htmlAlamat += rowHtml;
         } else { 
             htmlLainnya += rowHtml; 
         }
     }
     
     listContainer.innerHTML = `
-        ${htmlTagihan ? `<div class="mb-5 bg-red-50/30 p-2 rounded-xl border border-red-50"><div class="flex items-center gap-2 mb-2 pb-1 border-b border-red-100"><span class="text-sm">💰</span><p class="text-[10px] font-black text-red-600 uppercase tracking-widest">Detail Keuangan</p></div>${htmlTagihan}</div>` : ''}
-        ${htmlPribadi ? `<div class="mb-5 bg-blue-50/30 p-2 rounded-xl border border-blue-50"><div class="flex items-center gap-2 mb-2 pb-1 border-b border-blue-100"><span class="text-sm">👤</span><p class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Profil Pribadi</p></div>${htmlPribadi}</div>` : ''}
-        ${htmlLainnya ? `<div class="mb-2 p-2"><div class="flex items-center gap-2 mb-2 pb-1 border-b border-slate-200"><span class="text-sm">📝</span><p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Kontak & Keterangan</p></div>${htmlLainnya}</div>` : ''}
+        ${htmlTagihan ? `<div class="mb-4 bg-red-50/30 p-3 rounded-xl border border-red-100"><div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-red-100"><span class="text-sm">💰</span><p class="text-[10px] font-black text-red-600 uppercase tracking-widest">Detail Keuangan & Pinjaman</p></div>${htmlTagihan}</div>` : ''}
+        ${htmlPribadi ? `<div class="mb-4 bg-blue-50/30 p-3 rounded-xl border border-blue-100"><div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-blue-100"><span class="text-sm">👤</span><p class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Profil Pribadi</p></div>${htmlPribadi}</div>` : ''}
+        ${htmlAlamat ? `<div class="mb-4 bg-emerald-50/30 p-3 rounded-xl border border-emerald-100"><div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-emerald-100"><span class="text-sm">🏠</span><p class="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Alamat Domisili & KTP</p></div>${htmlAlamat}</div>` : ''}
+        ${htmlKantor ? `<div class="mb-4 bg-amber-50/30 p-3 rounded-xl border border-amber-100"><div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-amber-100"><span class="text-sm">🏢</span><p class="text-[10px] font-black text-amber-700 uppercase tracking-widest">Data Kantor & Pekerjaan</p></div>${htmlKantor}</div>` : ''}
+        ${htmlEC ? `<div class="mb-4 bg-purple-50/30 p-3 rounded-xl border border-purple-100"><div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-purple-100"><span class="text-sm">☎️</span><p class="text-[10px] font-black text-purple-700 uppercase tracking-widest">Emergency Contact (EC)</p></div>${htmlEC}</div>` : ''}
+        ${htmlLainnya ? `<div class="mb-2 bg-slate-50/60 p-3 rounded-xl border border-slate-200"><div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-200"><span class="text-sm">📋</span><p class="text-[10px] font-black text-slate-600 uppercase tracking-widest">Akun, Kontak & Penugasan</p></div>${htmlLainnya}</div>` : ''}
     `;
     
     const paramTitle = listContainer.previousElementSibling; 

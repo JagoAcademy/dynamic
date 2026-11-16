@@ -80,6 +80,115 @@ window.closeMobileSidebar = function() {
 }
 
 // =========================================
+// HELPER EKSTRAK IDENTITAS SESUAI TEMPLATE
+// =========================================
+function isValidCell(val) {
+    if (val === undefined || val === null) return false;
+    const str = String(val).trim();
+    return str !== '' && str !== '0' && str !== '.' && str !== '-';
+}
+
+function extractDebiturIdentity(rawData) {
+    const keys = Object.keys(rawData || {});
+    
+    // 1. Cari NAMA NASABAH (Hindari tertukar dengan NAMA EC atau NAMA KANTOR)
+    const namePriority = ['nama nasabah', 'nama debitur', 'nama customer', 'nama', 'name'];
+    let nameKey = null;
+    for (const target of namePriority) {
+        nameKey = keys.find(k => k.trim().toLowerCase() === target);
+        if (nameKey && isValidCell(rawData[nameKey])) break;
+    }
+    if (!nameKey || !isValidCell(rawData[nameKey])) {
+        nameKey = keys.find(k => {
+            const lk = k.trim().toLowerCase();
+            return (lk.includes('nama') || lk.includes('name')) && 
+                   !lk.includes('kantor') && !lk.includes('ec') && !lk.includes('ibu') && !lk.includes('mother');
+        });
+    }
+
+    // 2. Cari NO NASABAH / NO KARTU / NIK
+    const idPriority = ['no nasabah/ no kartu', 'no nasabah', 'no kartu', 'no akun', 'nik', 'debtor', 'user id'];
+    let idKey = null;
+    for (const target of idPriority) {
+        idKey = keys.find(k => k.trim().toLowerCase() === target);
+        if (idKey && isValidCell(rawData[idKey])) break;
+    }
+    if (!idKey || !isValidCell(rawData[idKey])) {
+        idKey = keys.find(k => {
+            const lk = k.trim().toLowerCase();
+            return lk.includes('no nasabah') || lk.includes('no kartu') || lk.includes('no akun') || lk.includes('nik') || lk.includes('id') || lk.includes('ktp');
+        });
+    }
+
+    const nameVal = (nameKey && isValidCell(rawData[nameKey])) ? String(rawData[nameKey]).trim() : 'Tanpa Nama';
+    const nikVal = (idKey && isValidCell(rawData[idKey])) ? String(rawData[idKey]).trim() : '-';
+
+    return { name: nameVal, nik: nikVal, nameKey, idKey };
+}
+
+function extractTemplateLocation(rawData) {
+    const normMap = {};
+    for (const [k, v] of Object.entries(rawData || {})) {
+        const cleanK = k.trim().toUpperCase();
+        if (!(cleanK in normMap)) {
+            normMap[cleanK] = v;
+        }
+    }
+
+    // Ambil wilayah langsung dari kolom template jika tersedia
+    const kelTemplate = isValidCell(normMap['KEL']) ? String(normMap['KEL']).trim() : (isValidCell(normMap['KELURAHAN']) ? String(normMap['KELURAHAN']).trim() : null);
+    const kecTemplate = isValidCell(normMap['KEC']) ? String(normMap['KEC']).trim() : (isValidCell(normMap['KECAMATAN']) ? String(normMap['KECAMATAN']).trim() : null);
+    const kotaTemplate = isValidCell(normMap['KOTA']) ? String(normMap['KOTA']).trim() : (isValidCell(normMap['CITY']) ? String(normMap['CITY']).trim() : null);
+    const posTemplate = isValidCell(normMap['KODE POS']) ? String(normMap['KODE POS']).trim() : (isValidCell(normMap['KODEPOS']) ? String(normMap['KODEPOS']).trim() : null);
+
+    // Susun Alamat Utama dari ALAMAT MAIN -> ALAMAT KTP -> ALAMAT 1..4
+    let alamatUtama = '';
+    if (isValidCell(normMap['ALAMAT MAIN'])) {
+        alamatUtama = String(normMap['ALAMAT MAIN']).trim();
+    } else if (isValidCell(normMap['ALAMAT KTP'])) {
+        alamatUtama = String(normMap['ALAMAT KTP']).trim();
+    } else {
+        const parts = ['ALAMAT 1', 'ALAMAT 2', 'ALAMAT 3', 'ALAMAT 4']
+            .map(col => isValidCell(normMap[col]) ? String(normMap[col]).trim() : null)
+            .filter(Boolean);
+        
+        if (parts.length > 0) {
+            alamatUtama = parts.join(', ');
+        } else {
+            const fallbackAlamatKey = Object.keys(rawData || {}).find(k => {
+                const lk = k.trim().toLowerCase();
+                return lk.includes('alamat') && !lk.includes('kantor') && !lk.includes('ec');
+            });
+            if (fallbackAlamatKey && isValidCell(rawData[fallbackAlamatKey])) {
+                alamatUtama = String(rawData[fallbackAlamatKey]).trim();
+            }
+        }
+    }
+
+    // Lengkapi alamat utama dengan KEL, KEC, KOTA, KODE POS jika belum tercantum di dalam string alamat
+    const extraWilayah = [kelTemplate, kecTemplate, kotaTemplate, posTemplate].filter(w => {
+        if (!w) return false;
+        return !alamatUtama.toLowerCase().includes(w.toLowerCase());
+    });
+    if (alamatUtama && extraWilayah.length > 0) {
+        alamatUtama = `${alamatUtama}, ${extraWilayah.join(', ')}`;
+    } else if (!alamatUtama && extraWilayah.length > 0) {
+        alamatUtama = extraWilayah.join(', ');
+    }
+
+    const parsedFallback = parseAlamat(alamatUtama);
+
+    return {
+        alamat_lengkap: alamatUtama || null,
+        kelurahan: kelTemplate || parsedFallback.kelurahan || null,
+        kecamatan: kecTemplate || parsedFallback.kecamatan || null,
+        kota_kabupaten: kotaTemplate || parsedFallback.kota_kabupaten || null,
+        kodepos: posTemplate || parsedFallback.kodepos || null,
+        provinsi: parsedFallback.provinsi || null
+    };
+}
+
+// =========================================
 // FUNGSI BYPASS LIMIT 1000 SUPABASE (LOOP FETCH)
 // =========================================
 async function fetchAllRows(tableName) {
@@ -131,17 +240,15 @@ async function fetchAllData() {
         
         const normalizedExcel = (resExc || []).map(e => {
             const rawData = e.debitur || {};
-            const nameKey = Object.keys(rawData).find(k => k.toLowerCase().includes('nama') || k.toLowerCase().includes('name'));
-            const idKey = Object.keys(rawData).find(k => k.toLowerCase().includes('id') || k.toLowerCase().includes('nik') || k.toLowerCase().includes('no_akun'));
+            const identity = extractDebiturIdentity(rawData);
             
             const contactInfo = { ...rawData };
-            if (nameKey) delete contactInfo[nameKey];
-            if (idKey) delete contactInfo[idKey];
+            if (identity.nameKey) delete contactInfo[identity.nameKey];
             
             return {
                 ...e, 
-                name: nameKey ? rawData[nameKey] : 'Tanpa Nama',
-                nik: idKey ? rawData[idKey] : '-',
+                name: identity.name,
+                nik: identity.nik,
                 contact_info: contactInfo,
                 sumber_tabel: 'excel_debitur'
             };
@@ -810,27 +917,63 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
         } else { 
             const arrayBuffer = await file.arrayBuffer(); 
             const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' }); 
-            extractedRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]); 
+            
+            // Prioritaskan sheet pertama yang memiliki isi (atau sheet 'JUDUL TEMPLATE' jika sheet pertama kosong)
+            let targetSheetName = workbook.SheetNames[0];
+            extractedRows = XLSX.utils.sheet_to_json(workbook.Sheets[targetSheetName], { defval: '' });
+            if (extractedRows.length === 0 && workbook.SheetNames.length > 1) {
+                for (const sName of workbook.SheetNames) {
+                    const tempRows = XLSX.utils.sheet_to_json(workbook.Sheets[sName], { defval: '' });
+                    if (tempRows.length > 0) {
+                        extractedRows = tempRows;
+                        break;
+                    }
+                }
+            }
         }
         
         if (!extractedRows || extractedRows.length === 0) throw new Error("File kosong atau format rusak.");
-        submitBtn.innerText = `Menyimpan ${extractedRows.length} Baris...`;
         
-        const payload = extractedRows.map(row => {
-          const alamatKey = Object.keys(row).find(k => k.toLowerCase().includes('alamat')); 
-          const locInfo = parseAlamat(alamatKey ? String(row[alamatKey]) : null);
-          return { tanggal_upload: isoUploadDate, client: clientName, alamat_lengkap: locInfo ? String(row[alamatKey]) : null, kelurahan: locInfo.kelurahan, kecamatan: locInfo.kecamatan, kota_kabupaten: locInfo.kota_kabupaten, kodepos: locInfo.kodepos, provinsi: locInfo.provinsi, debitur: row, status: 'Pending' };
-        });
+        // Bersihkan nama kolom (hapus spasi berlebih di awal/akhir key) & filter baris kosong/NOTE
+        const validPayload = [];
+        for (const rawRow of extractedRows) {
+            const cleanRow = {};
+            for (const [k, v] of Object.entries(rawRow)) {
+                const trimmedKey = k.trim();
+                cleanRow[trimmedKey] = v;
+            }
+
+            const identity = extractDebiturIdentity(cleanRow);
+            // Lewati baris kosong atau baris catatan template (NOTE)
+            if (identity.name === 'Tanpa Nama' && identity.nik === '-') continue;
+
+            const locInfo = extractTemplateLocation(cleanRow);
+            validPayload.push({
+                tanggal_upload: isoUploadDate,
+                client: clientName,
+                alamat_lengkap: locInfo.alamat_lengkap,
+                kelurahan: locInfo.kelurahan,
+                kecamatan: locInfo.kecamatan,
+                kota_kabupaten: locInfo.kota_kabupaten,
+                kodepos: locInfo.kodepos,
+                provinsi: locInfo.provinsi,
+                debitur: cleanRow,
+                status: 'Pending'
+            });
+        }
+
+        if (validPayload.length === 0) throw new Error("Tidak ditemukan baris data nasabah yang valid di dalam file.");
+        submitBtn.innerText = `Menyimpan ${validPayload.length} Baris...`;
         
         // Data dipecah per-500 agar tidak kena limit JSON payload dari API Supabase
         const chunkSize = 500;
-        for (let i = 0; i < payload.length; i += chunkSize) {
-            const chunk = payload.slice(i, i + chunkSize);
+        for (let i = 0; i < validPayload.length; i += chunkSize) {
+            const chunk = validPayload.slice(i, i + chunkSize);
             const { error } = await supabase.from('excel_debitur').insert(chunk);
             if (error) throw error;
         }
         
-        alert(`✅ UPLOAD BERHASIL!\n\n${extractedRows.length} data sukses masuk.`); 
+        alert(`✅ UPLOAD BERHASIL!\n\n${validPayload.length} data sukses masuk.`); 
         closeExcelModal(); 
         await fetchAllData(); 
         
