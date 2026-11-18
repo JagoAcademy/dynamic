@@ -12,6 +12,18 @@ let globalPenugasan = [];
 let globalCollectors = [];
 
 let unassignedDebitur = [];
+
+// State Pagination Tab Penugasan Kolektor (15 per halaman)
+let assignFilteredData = [];
+let assignCurrentPage = 1;
+const assignPerPage = 15;
+let selectedAssignSet = new Set();
+
+// State Pagination Tab Menunggu Penugasan / Antrean (15 per halaman)
+let antreanCurrentPage = 1;
+const antreanPerPage = 15;
+
+// State Pagination Tab Master Data
 let masterFilteredData = [];
 let masterCurrentPage = 1;
 const itemsPerPage = 12;
@@ -35,7 +47,7 @@ const initApp = async () => {
 
   if (elExcel) { elExcel.value = strDate; elExcel.dataset.date = isoDate; }
 
-  // 1. Hilangkan tampilan form manual debitur oleh admin
+  // Hilangkan tampilan form manual debitur oleh admin
   const formManual = document.getElementById('formEditDebitur');
   if (formManual) {
     const manualCard = formManual.closest('.bg-white') || formManual.parentElement;
@@ -100,7 +112,7 @@ function isValidCell(val) {
     return str !== '' && str !== '0' && str !== '.' && str !== '-';
 }
 
-// 2. WO buat 3 digit angka (contoh: 177.416174 -> "177", 45 -> "045")
+// WO buat 3 digit angka (contoh: 177.416174 -> "177", 45 -> "045")
 function formatWO3Digit(val) {
     if (!isValidCell(val)) return val;
     const num = Number(String(val).replace(/,/g, '.').replace(/[^\d.-]/g, ''));
@@ -109,7 +121,7 @@ function formatWO3Digit(val) {
     return String(rounded).padStart(3, '0');
 }
 
-// 3. Paksa membaca Tanggal-Bulan-Tahun (DD/MM/YYYY) atau serial Excel
+// Paksa membaca Tanggal-Bulan-Tahun (DD/MM/YYYY) atau serial Excel
 function parseDateDDMMYYYY(val) {
     if (val === undefined || val === null || String(val).trim() === '' || String(val).trim() === '-') {
         return null;
@@ -147,7 +159,6 @@ function parseDateDDMMYYYY(val) {
         }
     }
 
-    // Format ISO YYYY-MM-DD
     const isoMatch = str.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})(?:[T\s].*)?$/);
     if (isoMatch) {
         const y = parseInt(isoMatch[1], 10);
@@ -162,7 +173,6 @@ function parseDateDDMMYYYY(val) {
         }
     }
 
-    // Paksa DD/MM/YYYY atau DD-MM-YYYY atau DD.MM.YYYY (Tanggal - Bulan - Tahun)
     const dmyMatch = str.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})(?:\s.*)?$/);
     if (dmyMatch) {
         const d = parseInt(dmyMatch[1], 10);
@@ -178,7 +188,6 @@ function parseDateDDMMYYYY(val) {
         }
     }
 
-    // Format DD NamaBulan YYYY (contoh: 01 Okt 2026)
     const monthMap = {
         jan: 1, januari: 1, january: 1,
         feb: 2, februari: 2, february: 2,
@@ -309,7 +318,6 @@ function extractTemplateLocation(rawData) {
     };
 }
 
-// 5. Cocokkan nilai kolom FC dengan akun collector di database
 function matchCollectorByFC(fcRaw) {
     if (!isValidCell(fcRaw)) return null;
     const fcClean = String(fcRaw).trim().toLowerCase();
@@ -358,7 +366,7 @@ async function fetchAllRows(tableName) {
 
 
 // =========================================
-// FETCH ALL DATA UTAMA (TANPA MANUAL DEBITUR)
+// FETCH ALL DATA UTAMA
 // =========================================
 async function fetchAllData() {
     const loadingUI = document.getElementById('global-loading');
@@ -395,6 +403,10 @@ async function fetchAllData() {
         const assignedIds = new Set(globalPenugasan.map(p => p.debitur_id));
         unassignedDebitur = globalDebitur.filter(d => !assignedIds.has(d.id));
         
+        selectedAssignSet.clear();
+        assignCurrentPage = 1;
+        antreanCurrentPage = 1;
+
         masterFilteredData = [...globalDebitur];
         masterCurrentPage = 1;
 
@@ -523,28 +535,73 @@ document.getElementById('formEditKolektor')?.addEventListener('submit', async (e
 
 
 // =========================================
-// TAB 2 & 4: PENUGASAN & ANTREAN
+// TAB 4: MENUNGGU PENUGASAN / ANTREAN (15 PER HALAMAN)
 // =========================================
+window.prevAntreanPage = function() {
+    if (antreanCurrentPage > 1) {
+        antreanCurrentPage--;
+        renderAntreanTab();
+    }
+}
+
+window.nextAntreanPage = function() {
+    const maxPage = Math.ceil(unassignedDebitur.length / antreanPerPage);
+    if (antreanCurrentPage < maxPage) {
+        antreanCurrentPage++;
+        renderAntreanTab();
+    }
+}
+
 function renderAntreanTab() {
     const listContainer = document.getElementById('antrean-list'); 
-    document.getElementById('badgeAntreanCount').innerText = `${unassignedDebitur.length} Antrean`;
+    const totalItems = unassignedDebitur.length;
+    document.getElementById('badgeAntreanCount').innerText = `${totalItems} Antrean`;
     
-    if(unassignedDebitur.length === 0) { 
+    if(totalItems === 0) { 
         listContainer.innerHTML = '<p class="text-sm text-slate-500 py-4 text-center bg-slate-50 rounded-xl border border-slate-200">Tidak ada kasus menganggur. Semua sudah ditugaskan!</p>'; 
         return; 
     }
+
+    const maxPage = Math.ceil(totalItems / antreanPerPage);
+    if (antreanCurrentPage > maxPage) antreanCurrentPage = maxPage;
+    if (antreanCurrentPage < 1) antreanCurrentPage = 1;
+
+    const startIdx = (antreanCurrentPage - 1) * antreanPerPage;
+    const paginatedAntrean = unassignedDebitur.slice(startIdx, startIdx + antreanPerPage);
     
-    listContainer.innerHTML = unassignedDebitur.map(d => `
+    const cardsHtml = paginatedAntrean.map(d => `
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-3 hover:border-orange-200 transition-colors">
            <div class="flex-1">
               <span class="text-[9px] font-black text-orange-600 uppercase tracking-wider bg-orange-50 px-2 py-0.5 rounded-md mb-1 inline-block">🏢 ${d.client}</span>
-              <h3 class="font-black text-slate-800 text-[13px] uppercase">${d.name}</h3><p class="text-[10px] text-slate-500 font-bold mt-0.5">No. Kartu/Debitur: ${d.nik} | Kec. ${d.kecamatan || '-'}</p>
+              <h3 class="font-black text-slate-800 text-[13px] uppercase">${d.name}</h3>
+              <p class="text-[10px] text-slate-500 font-bold mt-0.5">No. Kartu/Debitur: ${d.nik} | Kec. ${d.kecamatan || '-'}</p>
            </div>
            <span class="text-[9px] bg-slate-100 text-slate-500 font-bold px-3 py-1.5 rounded-lg border border-slate-200">Menunggu Kolektor</span>
         </div>
     `).join('');
+
+    const paginationHtml = `
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 mt-3">
+            <button onclick="prevAntreanPage()" ${antreanCurrentPage === 1 ? 'disabled' : ''} class="px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider border border-slate-200 bg-slate-50 text-slate-700 hover:bg-orange-50 hover:text-[#E65C00] hover:border-orange-200 disabled:opacity-40 disabled:pointer-events-none transition-all">
+                ⬅️ Prev 15
+            </button>
+            <div class="text-center">
+                <span class="text-[11px] font-black text-[#0B1B3D] block">Halaman ${antreanCurrentPage} dari ${maxPage}</span>
+                <span class="text-[9px] font-bold text-slate-400">Menampilkan ${startIdx + 1}–${Math.min(startIdx + antreanPerPage, totalItems)} dari ${totalItems} antrean</span>
+            </div>
+            <button onclick="nextAntreanPage()" ${antreanCurrentPage === maxPage ? 'disabled' : ''} class="px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider border border-slate-200 bg-slate-50 text-slate-700 hover:bg-orange-50 hover:text-[#E65C00] hover:border-orange-200 disabled:opacity-40 disabled:pointer-events-none transition-all">
+                Next 15 ➡️
+            </button>
+        </div>
+    `;
+
+    listContainer.innerHTML = cardsHtml + paginationHtml;
 }
 
+
+// =========================================
+// TAB 2: PENUGASAN KOLEKTOR (15 PER HALAMAN)
+// =========================================
 function populateAssignDropdowns() {
     const uniqueClients = [...new Set(unassignedDebitur.map(d => d.client))].filter(Boolean); 
     const filterTab = document.getElementById('filter_assign_client');
@@ -560,54 +617,156 @@ window.runAssignFilter = function() {
   const kel = document.getElementById('filter_assign_kelurahan').value.toLowerCase(); 
   const pos = document.getElementById('filter_assign_kodepos').value.toLowerCase();
   
-  const filtered = unassignedDebitur.filter(d => {
+  assignFilteredData = unassignedDebitur.filter(d => {
     const cekLokasi = (key) => (d[key] || '').toLowerCase(); 
     return (client === 'ALL' || d.client === client) && 
            (!kec || cekLokasi('kecamatan').includes(kec)) && 
            (!kel || cekLokasi('kelurahan').includes(kel)) && 
            (!pos || cekLokasi('kodepos').includes(pos));
   });
-  renderAssignList(filtered);
+
+  assignCurrentPage = 1;
+  renderAssignList();
+}
+
+window.prevAssignPage = function() {
+    if (assignCurrentPage > 1) {
+        assignCurrentPage--;
+        renderAssignList();
+    }
+}
+
+window.nextAssignPage = function() {
+    const maxPage = Math.ceil(assignFilteredData.length / assignPerPage);
+    if (assignCurrentPage < maxPage) {
+        assignCurrentPage++;
+        renderAssignList();
+    }
 }
 
 window.updateSelectedCount = function() { 
-    document.getElementById('assign-selected-count').innerText = `${document.querySelectorAll('.assign-checkbox:checked').length} Dipilih`; 
+    const badge = document.getElementById('assign-selected-count');
+    if (badge) badge.innerText = `${selectedAssignSet.size} Dipilih`; 
+}
+
+window.toggleSingleAssign = function(checkbox) {
+    if (checkbox.checked) {
+        selectedAssignSet.add(checkbox.value);
+    } else {
+        selectedAssignSet.delete(checkbox.value);
+    }
+    
+    const pageCheckboxes = Array.from(document.querySelectorAll('.assign-checkbox'));
+    const selectAllEl = document.getElementById('assign-select-all-page');
+    if (selectAllEl) {
+        selectAllEl.checked = pageCheckboxes.length > 0 && pageCheckboxes.every(cb => cb.checked);
+    }
+    updateSelectedCount();
 }
 
 window.toggleAllAssign = function(sourceCheckbox) { 
-    document.querySelectorAll('.assign-checkbox').forEach(cb => cb.checked = sourceCheckbox.checked); 
+    document.querySelectorAll('.assign-checkbox').forEach(cb => {
+        cb.checked = sourceCheckbox.checked;
+        if (sourceCheckbox.checked) {
+            selectedAssignSet.add(cb.value);
+        } else {
+            selectedAssignSet.delete(cb.value);
+        }
+    }); 
     updateSelectedCount(); 
 }
 
-function renderAssignList(dataArray) {
+window.clearAllAssignSelection = function() {
+    selectedAssignSet.clear();
+    renderAssignList();
+}
+
+function renderAssignList() {
   const container = document.getElementById('assign-debitur-list');
-  if (dataArray.length === 0) { 
+  const totalItems = assignFilteredData.length;
+
+  if (totalItems === 0) { 
       container.innerHTML = `<p class="col-span-full text-sm text-slate-500 py-4 text-center bg-white rounded-2xl border border-slate-200">Tidak ada debitur *menganggur* di area ini.</p>`; 
+      updateSelectedCount();
       return; 
   }
+
+  const maxPage = Math.ceil(totalItems / assignPerPage);
+  if (assignCurrentPage > maxPage) assignCurrentPage = maxPage;
+  if (assignCurrentPage < 1) assignCurrentPage = 1;
+
+  const startIdx = (assignCurrentPage - 1) * assignPerPage;
+  const paginatedData = assignFilteredData.slice(startIdx, startIdx + assignPerPage);
+
+  const allPageChecked = paginatedData.length > 0 && paginatedData.every(d => selectedAssignSet.has(`${d.id}|${d.sumber_tabel}`));
   
-  container.innerHTML = `<div class="col-span-full bg-blue-50 px-4 py-3 rounded-xl border border-blue-200 flex gap-3 items-center mb-1"><input type="checkbox" onclick="toggleAllAssign(this)" class="w-5 h-5 cursor-pointer accent-blue-600 rounded"><span class="text-xs font-black text-blue-900 uppercase tracking-wide">Pilih Semua (${dataArray.length} Debitur)</span></div>` + dataArray.map(d => {
+  const headerBar = `
+    <div class="col-span-full bg-blue-50 px-4 py-3 rounded-xl border border-blue-200 flex flex-wrap justify-between items-center gap-2 mb-1">
+        <label class="flex gap-3 items-center cursor-pointer">
+            <input type="checkbox" id="assign-select-all-page" ${allPageChecked ? 'checked' : ''} onclick="toggleAllAssign(this)" class="w-5 h-5 cursor-pointer accent-blue-600 rounded">
+            <span class="text-xs font-black text-blue-900 uppercase tracking-wide">Pilih Semua di Halaman Ini (${paginatedData.length} dari ${totalItems} Debitur)</span>
+        </label>
+        ${selectedAssignSet.size > 0 ? `<button type="button" onclick="clearAllAssignSelection()" class="text-[10px] font-black text-red-600 bg-white border border-red-200 px-2.5 py-1 rounded-lg uppercase hover:bg-red-50 transition-colors">Reset (${selectedAssignSet.size})</button>` : ''}
+    </div>
+  `;
+
+  const cardsHtml = paginatedData.map(d => {
+    const itemVal = `${d.id}|${d.sumber_tabel}`;
+    const isChecked = selectedAssignSet.has(itemVal) ? 'checked' : '';
     const fullAlamat = [d.alamat_lengkap, d.kelurahan, d.kecamatan].filter(Boolean).join(' | ');
-    return `<label class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4 cursor-pointer hover:border-blue-400 transition-colors"><input type="checkbox" value="${d.id}|${d.sumber_tabel}" onchange="updateSelectedCount()" class="assign-checkbox w-5 h-5 accent-blue-600 rounded mt-1 shadow-sm"><div class="flex-1"><div class="flex items-center gap-2 mb-1"><span class="text-[9px] font-black text-orange-600 uppercase tracking-wider bg-orange-50 px-2 py-0.5 rounded-md">🏢 ${d.client}</span><span class="text-slate-400 text-[9px] font-bold">No: ${d.nik}</span></div><h3 class="font-black text-[#0B1B3D] text-[13px] uppercase leading-tight">${d.name}</h3><p class="text-[10px] text-slate-500 font-medium mt-1 truncate max-w-[200px]">📍 ${fullAlamat || '-'}</p></div></label>`;
+    return `
+      <label class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4 cursor-pointer hover:border-blue-400 transition-colors">
+        <input type="checkbox" value="${itemVal}" ${isChecked} onchange="toggleSingleAssign(this)" class="assign-checkbox w-5 h-5 accent-blue-600 rounded mt-1 shadow-sm">
+        <div class="flex-1 overflow-hidden">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-[9px] font-black text-orange-600 uppercase tracking-wider bg-orange-50 px-2 py-0.5 rounded-md">🏢 ${d.client}</span>
+            <span class="text-slate-400 text-[9px] font-bold truncate">No: ${d.nik}</span>
+          </div>
+          <h3 class="font-black text-[#0B1B3D] text-[13px] uppercase leading-tight truncate">${d.name}</h3>
+          <p class="text-[10px] text-slate-500 font-medium mt-1 truncate">📍 ${fullAlamat || '-'}</p>
+        </div>
+      </label>
+    `;
   }).join('');
+
+  const paginationBar = `
+    <div class="col-span-full bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 mt-2">
+        <button type="button" onclick="prevAssignPage()" ${assignCurrentPage === 1 ? 'disabled' : ''} class="px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider border border-slate-200 bg-slate-50 text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 disabled:opacity-40 disabled:pointer-events-none transition-all">
+            ⬅️ Prev 15
+        </button>
+        <div class="text-center">
+            <span class="text-[11px] font-black text-[#0B1B3D] block">Halaman ${assignCurrentPage} dari ${maxPage}</span>
+            <span class="text-[9px] font-bold text-slate-400">Menampilkan ${startIdx + 1}–${Math.min(startIdx + assignPerPage, totalItems)} dari ${totalItems} debitur</span>
+        </div>
+        <button type="button" onclick="nextAssignPage()" ${assignCurrentPage === maxPage ? 'disabled' : ''} class="px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider border border-slate-200 bg-slate-50 text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 disabled:opacity-40 disabled:pointer-events-none transition-all">
+            Next 15 ➡️
+        </button>
+    </div>
+  `;
+
+  container.innerHTML = headerBar + cardsHtml + paginationBar;
   updateSelectedCount(); 
 }
 
 window.submitPenugasan = async function() {
   const selectedKolektor = document.getElementById('select_kolektor').value; 
-  const checkedBoxes = document.querySelectorAll('.assign-checkbox:checked');
   if(!selectedKolektor) { alert("❌ Pilih nama kolektornya dulu bray!"); return; } 
-  if(checkedBoxes.length === 0) { alert("❌ Belum ada debitur yang dicentang!"); return; }
+  if(selectedAssignSet.size === 0) { alert("❌ Belum ada debitur yang dicentang!"); return; }
   
-  const payload = Array.from(checkedBoxes).map(cb => { 
-      const [debitur_id, sumber_tabel] = cb.value.split('|'); 
+  const payload = Array.from(selectedAssignSet).map(val => { 
+      const [debitur_id, sumber_tabel] = val.split('|'); 
       return { collector_id: selectedKolektor, debitur_id: debitur_id, sumber_tabel: sumber_tabel, status: 'Ditugaskan' }; 
   });
   
   try { 
-      const { error } = await supabase.from('penugasan_kolektor').insert(payload); 
-      if (error) throw error; 
+      const chunkSize = 500;
+      for (let i = 0; i < payload.length; i += chunkSize) {
+          const chunk = payload.slice(i, i + chunkSize);
+          const { error } = await supabase.from('penugasan_kolektor').insert(chunk); 
+          if (error) throw error; 
+      }
       alert(`🚀 MANTAP! ${payload.length} Debitur berhasil ditugaskan.`); 
+      selectedAssignSet.clear();
       await fetchAllData(); 
   } catch (err) { 
       alert("❌ Gagal menugaskan kolektor: " + err.message); 
@@ -700,7 +859,7 @@ window.openLaporan = function(namaDb, namaKol, status, catatan, tgl, img) {
     }
     
     document.getElementById('modal-laporan').classList.remove('hidden'); 
-    document.getElementById('modal-laporan').classList.add('flex');
+    document.getElementById('modal-laporan').classList.add('flex'); 
 }
 
 window.closeLaporan = function() { 
@@ -920,7 +1079,7 @@ function parseAlamat(alamatStr) {
 
 
 // =========================================
-// PARSER PDF YANG DIPERBAIKI (TOLAK "PERIODE ACCOUNT")
+// PARSER PDF
 // =========================================
 async function parsePDFToJSON(file) {
     if (!window.pdfjsLib) throw new Error("Library PDF.js belum termuat.");
@@ -1041,14 +1200,12 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
             const identity = extractDebiturIdentity(cleanRow);
             if (identity.name === 'Tanpa Nama' && identity.nik === '-') continue;
 
-            // 2. WO buat 3 digit angka
             for (const k of Object.keys(cleanRow)) {
                 if (/^(bln\s*wo|wo)$/i.test(k.trim()) && isValidCell(cleanRow[k])) {
                     cleanRow[k] = formatWO3Digit(cleanRow[k]);
                 }
             }
 
-            // 3. Start harus duluan daripada End (paksa baca Tanggal/Bulan/Tahun DD/MM/YYYY)
             const startKey = Object.keys(cleanRow).find(k => k.trim().toLowerCase() === 'start');
             const endKey = Object.keys(cleanRow).find(k => k.trim().toLowerCase() === 'end');
             const hasStart = startKey && isValidCell(cleanRow[startKey]);
@@ -1102,7 +1259,6 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
             if (insertedChunk) insertedRecords = insertedRecords.concat(insertedChunk);
         }
 
-        // 5. Auto-assign tugas ke akun collector jika kolom FC terisi
         const autoAssignments = [];
         const unmatchedFC = new Set();
 
