@@ -2,91 +2,461 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Panel - AVIANDO</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Admin Panel - ACS</title>
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  
+  <!-- LIBRARY BACA EXCEL, PDF & HTML2PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <style>
-    body { font-family: 'Inter', sans-serif; }
-    .tab-active { border-bottom: 4px solid #E65C00; color: #E65C00; font-weight: 700; }
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    .nav-item.active { background-color: rgba(255, 255, 255, 0.1); border-left: 4px solid #E65C00; color: #ffffff; font-weight: 700; }
+    .section-tab { display: none; }
+    .section-tab.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .modal-enter { animation: slideUp 0.3s ease-out forwards; }
+    @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
   </style>
-  <script type="module" crossorigin src="/assets/admin-dLFLKi9y.js"></script>
+  <script type="module" crossorigin src="/assets/admin-3JtU1jLO.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/supabase-D0OOETQO.js">
 </head>
-<body class="bg-slate-100 min-h-screen">
-  
-  <!-- HEADER FULL WIDTH -->
-  <nav class="w-full bg-gradient-to-r from-[#0B1B3D] to-[#163063] px-6 lg:px-12 py-5 shadow-lg text-white sticky top-0 z-50 flex justify-between items-center">
-    <div class="flex items-center gap-4">
-      <img src="/images/logo.png" class="w-10 h-10 lg:w-12 lg:h-12 bg-white p-1.5 rounded-full shadow-md object-contain">
+<body class="flex h-screen overflow-hidden text-slate-800">
+
+  <!-- SIDEBAR (KIRI) -->
+  <aside id="sidebar" class="bg-[#0B1B3D] text-slate-300 w-64 flex-shrink-0 flex flex-col h-full transition-transform duration-300 absolute md:relative z-50 -translate-x-full md:translate-x-0">
+    <div class="h-20 flex items-center px-6 border-b border-white/10">
+      <img src="/images/logo.png" class="w-10 h-10 bg-white p-1 rounded-full shadow-md object-contain mr-3" onerror="this.src='https://via.placeholder.com/40?text=ACS'">
       <div>
-        <h1 class="text-lg lg:text-xl font-black tracking-tight text-orange-400 uppercase">Admin Portal</h1>
-        <p class="text-slate-300 text-[11px] lg:text-xs font-medium" id="welcomeAdmin">Halo, Admin!</p>
+        <h1 class="text-sm font-black text-white tracking-widest uppercase">ACS ADMIN</h1>
+        <p class="text-[9px] text-orange-400 font-bold uppercase tracking-widest">Control Center</p>
       </div>
     </div>
-    <button onclick="logout()" class="bg-red-500/20 text-red-100 text-xs font-bold px-4 py-2 rounded-full border border-red-400/30 hover:bg-red-500 hover:text-white transition-all active:scale-95">LOGOUT</button>
-  </nav>
 
-  <!-- NAVIGATION TABS FULL WIDTH -->
-  <div class="w-full bg-white border-b border-slate-200 sticky top-[76px] lg:top-[88px] z-40 shadow-sm">
-    <div class="max-w-7xl mx-auto flex px-4">
-      <button onclick="switchTab('akun')" id="tab-akun" class="tab-active py-4 px-6 text-sm text-slate-500 font-semibold transition-all hover:text-orange-600">👥 Kelola Akun</button>
-      <button onclick="switchTab('debitur')" id="tab-debitur" class="py-4 px-6 text-sm text-slate-500 font-semibold transition-all hover:text-orange-600">📁 Manajemen Debitur</button>
+    <!-- Menu Navigasi Admin -->
+    <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1">
+      <p class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Workspace</p>
+      
+      <button data-target="akun" class="nav-item active w-full flex items-center px-3 py-3 rounded-lg text-sm font-semibold hover:bg-white/5 transition-all text-left">
+        <span class="mr-3 text-lg">👥</span> Kelola Akun
+      </button>
+      
+      <button data-target="penugasan" class="nav-item w-full flex items-center px-3 py-3 rounded-lg text-sm font-semibold hover:bg-white/5 transition-all text-left mt-1">
+        <span class="mr-3 text-lg">📍</span> Penugasan Kolektor
+      </button>
+
+      <button data-target="monitoring" class="nav-item w-full flex items-center px-3 py-3 rounded-lg text-sm font-semibold hover:bg-white/5 transition-all text-left mt-1">
+        <span class="mr-3 text-lg">📊</span> Status Penugasan
+      </button>
+
+      <button data-target="antrean" class="nav-item w-full flex items-center px-3 py-3 rounded-lg text-sm font-semibold hover:bg-white/5 transition-all text-left mt-1">
+        <span class="mr-3 text-lg">⏳</span> Menunggu Penugasan
+      </button>
+
+      <p class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 mt-6">Database</p>
+      
+      <button data-target="pembersihan" class="nav-item w-full flex items-center px-3 py-3 rounded-lg text-sm font-semibold hover:bg-white/5 transition-all text-left">
+        <span class="mr-3 text-lg">🗑️</span> Master & Pembersihan
+      </button>
+    </nav>
+
+    <div class="p-4 border-t border-white/10">
+      <button onclick="logout()" class="w-full bg-red-500/10 text-red-400 font-bold text-xs py-3 rounded-lg border border-red-500/20 hover:bg-red-500 hover:text-white transition-all">
+        LOGOUT SISTEM
+      </button>
+    </div>
+  </aside>
+
+  <!-- OVERLAY MOBILE -->
+  <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/50 z-40 hidden md:hidden backdrop-blur-sm" onclick="closeMobileSidebar()"></div>
+
+  <!-- AREA KONTEN UTAMA -->
+  <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+    
+    <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-30">
+      <div class="flex items-center">
+        <button id="mobileMenuBtn" onclick="openMobileSidebar()" class="md:hidden mr-4 text-slate-500 hover:text-slate-800">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+        <div>
+          <h2 id="pageTitle" class="text-lg md:text-xl font-black text-slate-800 uppercase tracking-tight">Kelola Akun</h2>
+          <p class="text-xs font-semibold text-slate-500" id="welcomeAdmin">Halo, Admin!</p>
+        </div>
+      </div>
+      <div id="global-loading" class="hidden flex items-center gap-2">
+          <span class="animate-spin text-orange-500">⏳</span>
+          <span id="loading-text" class="text-xs font-bold text-slate-500">Sinkronisasi Database...</span>
+      </div>
+    </header>
+
+    <div class="flex-1 overflow-y-auto p-6 md:p-8">
+      
+      <!-- TAB 1: KELOLA AKUN (DATABASE DI ATAS, FORM DI BAWAH, MATIKAN AUTOFILL, 2X PASSWORD + UNHIDE) -->
+      <div id="akun" class="section-tab active">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          
+          <!-- DATABASE / DAFTAR KOLEKTOR AKTIF (DI PINDAH KE ATAS) -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+             <div class="flex items-center gap-3 mb-6">
+                <span class="text-2xl">👥</span>
+                <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Daftar Kolektor Aktif</h2>
+             </div>
+             <div id="collector-list" class="space-y-2 max-h-[450px] overflow-y-auto pr-2"></div>
+          </div>
+
+          <!-- FORM BUAT AKUN (DI BAWAH) -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="text-2xl">📋</span>
+                <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Buat Akun Collector</h2>
+            </div>
+            
+            <!-- autocomplete="off" untuk matikan cache/autofill browser -->
+            <form id="formCollector" autocomplete="off" class="space-y-4">
+              <!-- Hidden dummy inputs untuk menipu autofill browser -->
+              <input type="text" style="display:none" autocomplete="username">
+              <input type="password" style="display:none" autocomplete="current-password">
+
+              <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Nama Lengkap</label>
+                  <input type="text" id="c_name" required autocomplete="off" placeholder="Nama Lengkap Collector" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
+              </div>
+
+              <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Username Login</label>
+                  <input type="text" id="c_user" required autocomplete="off" placeholder="Username Login" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
+              </div>
+
+              <!-- Password 1 dengan Unhide -->
+              <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Password</label>
+                  <div class="relative">
+                      <input type="password" id="c_pass" required autocomplete="new-password" placeholder="Password Akun" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-12 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
+                      <button type="button" onclick="togglePassField('c_pass', 'eyePass1')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-orange-500">
+                          <svg id="eyePass1" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                      </button>
+                  </div>
+              </div>
+
+              <!-- Konfirmasi Password 2 dengan Unhide -->
+              <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Konfirmasi Password</label>
+                  <div class="relative">
+                      <input type="password" id="c_pass_confirm" required autocomplete="new-password" placeholder="Ulangi Password Akun" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-12 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
+                      <button type="button" onclick="togglePassField('c_pass_confirm', 'eyePass2')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-orange-500">
+                          <svg id="eyePass2" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                      </button>
+                  </div>
+              </div>
+
+              <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Nomor WhatsApp (Opsional)</label>
+                  <input type="number" id="c_phone" autocomplete="off" placeholder="62812345..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
+              </div>
+
+              <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all hover:bg-orange-600 shadow-md">Simpan Akun Collector</button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TAB 2: PENUGASAN KOLEKTOR -->
+      <div id="penugasan" class="section-tab">
+         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6">
+            <h2 class="text-sm font-black text-[#0B1B3D] uppercase mb-4 tracking-wide border-b border-slate-100 pb-3">📍 Filter Kasus Belum Ditugaskan</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+               <select id="filter_assign_client" onchange="runAssignFilter()" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"><option value="ALL">Semua Klien</option></select>
+               <input type="text" id="filter_assign_kecamatan" onkeyup="runAssignFilter()" placeholder="Filter Kecamatan..." class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
+               <input type="text" id="filter_assign_kelurahan" onkeyup="runAssignFilter()" placeholder="Filter Kelurahan..." class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
+               <input type="text" id="filter_assign_kodepos" onkeyup="runAssignFilter()" placeholder="Filter Kode Pos..." class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
+            </div>
+         </div>
+         <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-5 rounded-2xl border border-blue-200 shadow-sm mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+               <h2 class="text-sm font-black text-blue-900 uppercase">Pilih Kolektor Untuk Bertugas</h2>
+               <span id="assign-selected-count" class="bg-white text-blue-700 border border-blue-200 text-[11px] font-black px-3 py-1.5 rounded-full">0 Dipilih</span>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+               <select id="select_kolektor" class="w-full sm:w-56 bg-white border border-blue-300 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"><option value="">-- Pilih Kolektor --</option></select>
+               <button type="button" onclick="submitPenugasan()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl shadow-[0_4px_10px_rgba(37,99,235,0.3)] transition-all active:scale-95">🚀 TUGASKAN SEKARANG</button>
+            </div>
+         </div>
+         <div id="assign-debitur-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+      </div>
+
+      <!-- TAB 3: STATUS PENUGASAN (MONITORING) -->
+      <div id="monitoring" class="section-tab">
+         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3 w-full md:w-auto">
+               <span class="text-2xl">📊</span>
+               <h2 class="text-sm font-black text-[#0B1B3D] uppercase">Monitoring Hasil Kolektor</h2>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                <select id="filter_mon_kolektor" onchange="runMonitorFilter()" class="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-orange-500"><option value="ALL">Semua Kolektor</option></select>
+                <select id="filter_mon_status" onchange="runMonitorFilter()" class="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-orange-500">
+                   <option value="ALL">Semua Status</option>
+                   <option value="Ditugaskan">Menunggu Dikerjakan</option>
+                   <option value="Janji">Janji Bayar / Cicil</option>
+                   <option value="Lunas">Lunas / Transfer</option>
+                   <option value="Gagal">Gagal / Invalid</option>
+                </select>
+            </div>
+         </div>
+         <div id="monitoring-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </div>
+
+      <!-- TAB 4: MENUNGGU PENUGASAN (ANTREAN) -->
+      <div id="antrean" class="section-tab">
+         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+               <span class="text-2xl">⏳</span>
+               <h2 class="text-sm font-black text-[#0B1B3D] uppercase">Daftar Kasus Menganggur</h2>
+            </div>
+            <span id="badgeAntreanCount" class="bg-yellow-100 text-yellow-700 text-xs font-black px-3 py-1.5 rounded-full uppercase tracking-wide border border-yellow-200">0 Antrean</span>
+         </div>
+         <div id="antrean-list" class="space-y-3"></div>
+      </div>
+
+      <!-- TAB 5: MASTER DATA & PEMBERSIHAN -->
+      <div id="pembersihan" class="section-tab">
+        
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8 transition-all">
+          <div class="flex items-center mb-6 pb-4 border-b border-slate-100">
+              <h2 class="text-sm font-black text-[#0B1B3D] uppercase">Input Data Kasus Baru (Manual)</h2>
+          </div>
+          <form id="formEditDebitur" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div class="space-y-3">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Informasi Dasar</h3>
+                <input type="text" id="manual_date" readonly class="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-xl px-4 py-2.5 text-sm font-bold cursor-not-allowed mb-1">
+                <input type="text" id="input_client" required placeholder="Nama Perusahaan Klien" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
+                <input type="text" id="input_nama" required placeholder="Nama Lengkap Debitur" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
+                <input type="text" id="input_nik" required placeholder="Nomor ID Akun / NIK" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
+                <input type="number" id="input_amount" required placeholder="Total Terutang (Rp)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
+                <input type="date" id="input_tgl" required title="Tanggal Jatuh Tempo" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
+              </div>
+              <div class="space-y-3">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Area Penugasan</h3>
+                <textarea id="input_alamat" placeholder="Alamat Lengkap" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-orange-500"></textarea>
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="text" id="input_kelurahan" placeholder="Kelurahan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
+                  <input type="text" id="input_kecamatan" placeholder="Kecamatan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
+                </div>
+                <input type="text" id="input_kota" placeholder="Kota / Kabupaten" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="text" id="input_kodepos" placeholder="Kode Pos" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
+                  <input type="text" id="input_provinsi" placeholder="Provinsi" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500">
+                </div>
+              </div>
+              <div class="space-y-3">
+                <div class="flex justify-between items-center mb-2">
+                  <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Detail Ekstra (JSON)</h3>
+                  <button type="button" onclick="addJsonField()" class="text-[11px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">+ Tambah Field</button>
+                </div>
+                <div id="jsonb-fields-container" class="space-y-2">
+                  <div class="flex gap-2 json-row">
+                    <input type="text" value="No WhatsApp" readonly class="w-1/3 bg-slate-100 border border-slate-200 text-slate-500 rounded-lg px-3 py-2 text-xs font-semibold">
+                    <input type="text" placeholder="6281234..." required class="json-val w-2/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-6 active:scale-95 transition-all hover:bg-orange-600 shadow-md">Simpan Data Manual ke Database</button>
+          </form>
+        </div>
+
+        <div class="bg-red-50 p-5 rounded-2xl border border-red-200 shadow-sm mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3 w-full md:w-auto">
+               <span class="text-2xl">🗄️</span>
+               <div>
+                   <h2 class="text-sm font-black text-red-900 uppercase">Kelola Master Data</h2>
+                   <p class="text-[11px] font-bold text-red-700">Total: <span id="total-master-count">0</span> Data Terdaftar</p>
+               </div>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                <button type="button" onclick="openExcelModal()" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95">
+                    <span class="text-base">📁</span> Upload Excel/PDF Baru
+                </button>
+                <button type="button" onclick="massDeleteAll()" class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95">
+                    Hapus Seluruh Database ⚠️
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-4 flex flex-col md:flex-row gap-4 justify-between items-center">
+            <div class="flex flex-col sm:flex-row gap-3 w-full flex-1">
+                <select id="filter_master_client" onchange="runMasterFilter()" class="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-red-500 cursor-pointer">
+                   <option value="ALL">Semua Klien</option>
+                </select>
+                <input type="text" id="filter_master_search" onkeyup="runMasterFilter()" placeholder="Cari Nama / NIK..." class="w-full md:max-w-md bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-red-500 transition-all">
+            </div>
+            <button type="button" onclick="triggerMassDelete()" class="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-6 py-3 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+                🗑️ Hapus Terpilih (<span id="master-selected-count">0</span>)
+            </button>
+        </div>
+
+        <div id="master-debitur-list" class="space-y-3">
+          <p class="text-sm text-slate-500 py-4 text-center bg-white rounded-2xl border border-slate-200">Memuat master data database...</p>
+        </div>
+
+        <div id="pagination-controls" class="hidden flex justify-between items-center mt-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+           <span id="page-info" class="text-[11px] font-bold text-slate-500">Menampilkan 0 - 0 dari 0 data</span>
+           <div class="flex gap-2">
+              <button id="btn-prev" onclick="prevMasterPage()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+              <button id="btn-next" onclick="nextMasterPage()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+           </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- MODAL EXCEL / PDF -->
+  <div id="modal-excel" class="fixed inset-0 bg-slate-900/60 z-[100] hidden flex items-center justify-center backdrop-blur-sm px-4">
+    <div class="bg-white w-full max-w-md p-6 lg:p-8 rounded-3xl shadow-2xl relative border border-slate-200 modal-enter">
+      <button onclick="closeExcelModal()" class="absolute top-4 right-5 text-slate-400 hover:text-red-500 font-bold text-2xl leading-none transition-colors">&times;</button>
+      <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+        <span class="text-4xl drop-shadow-sm">📁</span>
+        <div>
+          <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Upload Data Massal</h2>
+          <p class="text-[11px] text-slate-500 font-medium">Format: Excel (.xlsx), CSV, atau PDF</p>
+        </div>
+      </div>
+      <form id="formUploadExcel" class="space-y-5">
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tanggal Upload</label>
+          <input type="text" id="excel_date" readonly class="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-xl px-4 py-3 text-sm font-bold cursor-not-allowed">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Perusahaan Klien</label>
+          <input type="text" id="excel_client" required placeholder="Cth: Bank XYZ / Leasing ABC" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 transition-all">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pilih File Data</label>
+          <input type="file" id="excel_file" accept=".xlsx, .xls, .csv, .pdf" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-green-100 file:text-green-700 hover:file:bg-green-200 cursor-pointer transition-all">
+        </div>
+        <button type="submit" id="btnUploadProcess" class="w-full bg-green-600 text-white font-bold text-sm py-4 rounded-xl mt-4 active:scale-95 transition-all hover:bg-green-700 shadow-md flex justify-center items-center gap-2">
+          Mulai Proses & Upload Data
+        </button>
+      </form>
     </div>
   </div>
 
-  <!-- MAIN WORKSPACE -->
-  <main class="max-w-7xl mx-auto p-6 lg:p-10 w-full">
-    
-    <!-- TAB 1: KELOLA AKUN -->
-    <div id="content-akun" class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-      <div class="bg-white p-6 lg:p-8 rounded-2xl border border-slate-200 shadow-sm">
-        <div class="flex items-center gap-3 mb-6">
-            <span class="text-3xl">📋</span>
-            <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide">Buat Akun Collector</h2>
-        </div>
-        <form id="formCollector" class="space-y-4">
-          <input type="text" id="c_user" required placeholder="Username Collector (Email)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-          <input type="password" id="c_pass" required placeholder="Password Akun" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-          <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all hover:bg-orange-600 shadow-md">Simpan Akun Collector</button>
-        </form>
-      </div>
-    </div>
-
-    <!-- TAB 2: MANAJEMEN DEBITUR -->
-    <div id="content-debitur" class="hidden">
-      <div id="editContainer" class="hidden mb-8 bg-orange-50 p-6 lg:p-8 rounded-2xl border border-orange-200 shadow-sm">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-sm font-black text-orange-900 uppercase">Input / Edit Data Debitur</h2>
-            <button onclick="batalEdit()" class="text-xs font-bold text-red-500 bg-red-100 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors">Batal</button>
-        </div>
-        <form id="formEditDebitur" class="space-y-4">
-          <input type="hidden" id="edit_id">
-          <input type="text" id="edit_nama" required placeholder="Nama Lengkap Debitur" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input type="date" id="edit_tgl" required title="Tanggal Jatuh Tempo" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-            <select id="edit_kategori" required class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-              <option value="Lancar">Lancar</option>
-              <option value="Kurang Lancar">Kurang Lancar</option>
-              <option value="Diragukan">Diragukan</option>
-              <option value="Macet">Macet</option>
-            </select>
+  <!-- MODAL KONFIRMASI HAPUS & PDF -->
+  <div id="modal-delete-confirm" class="fixed inset-0 bg-slate-900/70 z-[110] hidden flex items-center justify-center backdrop-blur-sm px-4">
+      <div class="bg-white w-full max-w-sm p-6 rounded-3xl shadow-2xl relative border border-slate-200 modal-enter text-center">
+          <span class="text-5xl block mb-3 drop-shadow-sm">⚠️</span>
+          <h2 class="text-base font-black text-[#0B1B3D] uppercase tracking-wide mb-2">Konfirmasi Hapus</h2>
+          <p class="text-[13px] text-slate-500 mb-6 font-medium leading-relaxed">Anda akan menghapus <span id="del-count-text" class="font-black text-red-600 text-base">0</span> data. Tindakan ini permanen. Apakah Anda ingin mengekstrak laporan PDF terlebih dahulu?</p>
+          
+          <div class="flex flex-col gap-3">
+              <button onclick="executeMassDelete(true)" class="w-full bg-blue-600 text-white font-bold text-sm py-3.5 rounded-xl hover:bg-blue-700 transition-all flex justify-center items-center gap-2 shadow-sm active:scale-95">
+                  📄 Ya, Export PDF & Hapus
+              </button>
+              <button onclick="executeMassDelete(false)" class="w-full bg-red-50 border border-red-200 text-red-600 font-bold text-sm py-3.5 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-95">
+                  🗑️ Tidak, Langsung Hapus
+              </button>
+              <button onclick="closeDeleteConfirm()" class="w-full bg-slate-100 text-slate-500 font-bold text-sm py-3.5 rounded-xl hover:bg-slate-200 transition-all mt-1 active:scale-95">
+                  Batal
+              </button>
           </div>
-          <input type="number" id="edit_wa" required placeholder="Nomor WA (628...)" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
-          <button type="submit" class="w-full bg-[#E65C00] text-white font-bold text-sm py-4 rounded-xl mt-2 active:scale-95 transition-all hover:bg-orange-600 shadow-md">Simpan Data Debitur</button>
-        </form>
       </div>
+  </div>
 
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-sm font-black text-slate-800 uppercase">Daftar Kasus Debitur</h2>
+  <!-- MODAL MASTER DETAIL DATA JSON -->
+  <div id="modal-master-detail" class="fixed inset-0 bg-slate-900/70 z-[120] hidden flex items-center justify-center backdrop-blur-sm px-4">
+      <div class="bg-white w-full max-w-md p-6 rounded-3xl shadow-2xl relative border border-slate-200 modal-enter flex flex-col max-h-[85vh]">
+          <div class="flex justify-between items-center mb-4 pb-4 border-b border-slate-100 shrink-0">
+              <div>
+                  <h2 class="text-sm font-black text-[#0B1B3D] uppercase">Raw Data Debitur</h2>
+                  <p class="text-[10px] text-slate-500 font-bold">Hasil Parsing JSONb (Import Excel / PDF)</p>
+              </div>
+              <button onclick="closeMasterDetail()" class="bg-slate-100 text-slate-500 w-8 h-8 rounded-full font-bold flex items-center justify-center hover:bg-red-100 hover:text-red-500 transition-colors">&times;</button>
+          </div>
+          <div id="master-detail-content" class="overflow-y-auto space-y-3 flex-1 pb-4 pr-1"></div>
       </div>
-      
-      <!-- Di PC, card berjejer 3 kolom -->
-      <div id="admin-debitur-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        <p class="text-sm text-slate-500 py-4 col-span-full">Memuat data database...</p>
-      </div>
-    </div>
+  </div>
 
-  </main>
+  <!-- MODAL EDIT KOLEKTOR -->
+  <div id="modal-edit-kolektor" class="fixed inset-0 bg-slate-900/60 z-[100] hidden flex items-center justify-center backdrop-blur-sm px-4">
+      <div class="bg-white w-full max-w-sm p-6 rounded-3xl shadow-2xl relative border border-slate-200 modal-enter">
+          <button onclick="closeEditKolektor()" class="absolute top-4 right-5 text-slate-400 hover:text-red-500 font-bold text-2xl leading-none">&times;</button>
+          <h2 class="text-sm font-black text-[#0B1B3D] uppercase tracking-wide mb-4">Edit Akun Kolektor</h2>
+          <form id="formEditKolektor" class="space-y-4">
+              <input type="hidden" id="edit_col_id">
+              <input type="text" id="edit_col_name" required placeholder="Nama Lengkap" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
+              <input type="text" id="edit_col_user" readonly class="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-xl px-4 py-3 text-sm font-bold cursor-not-allowed">
+              <input type="number" id="edit_col_phone" placeholder="Nomor WA (Opsional)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
+              <div>
+                 <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Ganti Password (Opsional)</label>
+                 <input type="password" id="edit_col_pass" placeholder="Kosongkan jika tidak diganti" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500">
+              </div>
+              <button type="submit" class="w-full bg-[#0B1B3D] text-white font-bold text-sm py-4 rounded-xl mt-2 hover:bg-slate-800">Simpan Perubahan</button>
+          </form>
+      </div>
+  </div>
+
+  <!-- MODAL LAPORAN -->
+  <div id="modal-laporan" class="fixed inset-0 bg-slate-900/70 z-[100] hidden flex justify-center items-end md:items-center px-4 md:px-0">
+     <div class="bg-white w-full md:w-full md:max-w-md rounded-t-3xl md:rounded-3xl max-h-[85vh] flex flex-col modal-enter relative shadow-2xl pb-6 md:pb-0">
+         <div class="p-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+             <div>
+                 <p class="text-[10px] font-black text-[#E65C00] uppercase tracking-widest mb-0.5">Detail Laporan Lapangan</p>
+                 <h3 id="lap_debitur_name" class="text-sm font-black text-slate-800 uppercase leading-tight truncate max-w-[250px]">-</h3>
+             </div>
+             <button onclick="closeLaporan()" class="bg-slate-100 text-slate-500 w-8 h-8 rounded-full font-bold flex items-center justify-center hover:bg-slate-200 transition-colors">&times;</button>
+         </div>
+         <div class="p-5 overflow-y-auto flex-1 bg-slate-50 md:rounded-b-3xl space-y-4">
+             <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
+                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Bukti Foto / Transfer</p>
+                 <img id="lap_foto" src="" alt="Bukti Lapangan" class="w-full h-48 object-cover rounded-lg border border-slate-100 bg-slate-100" onerror="this.style.display='none'">
+                 <p id="lap_no_foto" class="text-xs font-bold text-slate-400 py-6 hidden">Tidak ada foto bukti.</p>
+             </div>
+             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Kolektor Bertugas</p>
+                 <p id="lap_kol_name" class="text-xs font-black text-slate-800 uppercase">-</p>
+             </div>
+             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Hasil Kunjungan</p>
+                 <p id="lap_status" class="text-sm font-black text-blue-600 uppercase">-</p>
+                 <div id="lap_tgl_wrap" class="mt-3 hidden pt-3 border-t border-slate-100">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tanggal Janji Bayar</p>
+                    <p id="lap_tgl_janji" class="text-xs font-bold text-slate-700">-</p>
+                 </div>
+             </div>
+             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Catatan Lapangan</p>
+                 <p id="lap_catatan" class="text-xs font-semibold text-slate-700 leading-relaxed italic">-</p>
+             </div>
+         </div>
+     </div>
+  </div>
+
+  <!-- SCRIPT UNHIDE PASSWORD DI FORM KOLEKTOR -->
+  <script>
+      function togglePassField(fieldId, iconId) {
+          const field = document.getElementById(fieldId);
+          const icon = document.getElementById(iconId);
+          if (field.type === 'password') {
+              field.type = 'text';
+              icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>`;
+          } else {
+              field.type = 'password';
+              icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>`;
+          }
+      }
+  </script>
+
 </body>
 </html>

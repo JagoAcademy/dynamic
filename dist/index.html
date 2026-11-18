@@ -1,87 +1,80 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Aviando Collector System</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>ACS - Aviando Collector System</title>
   
-  <!-- Memanggil File CSS Terpisah di Root -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
   
-  <!-- Manifest Link untuk Fitur Install PWA (Diambil dari folder public saat build) -->
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0f2b5c">
-  <link rel="stylesheet" crossorigin href="/assets/main-CEFfdm9g.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .bg-gradient-custom { background: linear-gradient(135deg, #0B1B3D 0%, #1A3673 100%); }
+  </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col md:flex-row selection:bg-[#E65C00] selection:text-white bg-[#0B1B3D] overflow-x-hidden">
 
-  <div class="app-container">
+  <!-- BAGIAN KIRI (DESKTOP) / ATAS (MOBILE) -->
+  <main class="flex-1 flex flex-col items-center justify-center px-6 pt-12 pb-16 md:pb-12 bg-gradient-custom text-white">
     
-    <!-- BAGIAN ATAS: Logo, Judul & Indikator Fitur -->
-    <div class="top-section">
-      
-      <!-- Lingkaran Logo ACS -->
-      <div class="logo-wrapper">
-        <img src="/images/logo.png" alt="Logo ACS" class="logo-img">
-      </div>
-      
-      <!-- Judul Aplikasi -->
-      <h1 class="title-main">Aviando<br>Collector System</h1>
-      <p class="title-sub">Sistem Penagihan Terpadu</p>
-      
-      <!-- Deskripsi Singkat -->
-      <p class="description">
-        Platform manajemen tugas penagihan. Pantau aktivitas lapangan dan tingkatkan <span class="highlight">recovery rate</span> secara real-time.
-      </p>
-      
-      <!-- Grid 3 Fitur Utama -->
-      <div class="features-grid">
-        <div class="feature-item">
-          <div class="feature-icon">⚖</div>
-          <span class="feature-text">TASK ASSIGN</span>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon">⚡</div>
-          <span class="feature-text">FAST UPDATE</span>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon">📊</div>
-          <span class="feature-text">REAL-TIME</span>
-        </div>
-      </div>
-      
+    <!-- Logo (Bisa diklik kembali ke index) -->
+    <a href="index.html" title="Beranda" class="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl shadow-xl overflow-hidden mb-6 md:mb-8 transition-transform hover:scale-105 active:scale-95 block">
+        <img src="/images/logo.png" alt="Logo ACS" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150/000000/FFFFFF?text=ACS'">
+    </a>
+
+    <!-- Judul Aplikasi -->
+    <div class="text-center mb-10 md:mb-12">
+      <h1 class="text-3xl sm:text-4xl md:text-5xl font-black mb-2 tracking-tight">Aviando<br/>Collector System</h1>
+      <p class="text-[#E65C00] text-[11px] sm:text-xs md:text-sm font-bold uppercase tracking-[0.2em]">Sistem Penagihan Terpadu</p>
     </div>
 
-    <!-- BAGIAN BAWAH: Tombol Navigasi & Hak Cipta -->
-    <div class="bottom-section">
-      
-      <!-- Tombol Akses Menuju Halaman Login Portal -->
-      <button class="btn-login" onclick="location.href='/login.html'">
-        <span>👤</span>
-        <span>AKSES LOGIN PORTAL</span>
-      </button>
-      
-      <!-- Catatan Kaki / Footer -->
-      <div class="footer">
-        <img src="/images/logo.png" alt="Logo Footer" class="footer-logo">
-        <p class="footer-title">AVIANDO COLLECTOR SYSTEM</p>
-        <p class="developer-text">Developed by <span>ADITYA WEB-DEV</span></p>
-        <p>© 2026 All Rights Reserved.</p>
+    <!-- Badge Fitur -->
+    <div class="grid grid-cols-2 gap-3 mb-4 w-full max-w-[320px] md:max-w-[400px]">
+      <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full py-2.5 px-3 flex items-center justify-center gap-2 shadow-sm">
+        <span class="text-base md:text-lg">⚖️</span>
+        <span class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-200">Task Assign</span>
       </div>
-      
+      <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full py-2.5 px-3 flex items-center justify-center gap-2 shadow-sm">
+        <span class="text-base md:text-lg">⚡</span>
+        <span class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-200">Fast Update</span>
+      </div>
+    </div>
+    
+    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full py-2.5 px-6 flex items-center justify-center gap-2 shadow-sm mb-6 md:mb-0">
+        <span class="text-base md:text-lg">📊</span>
+        <span class="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-200">Real-Time Sync</span>
     </div>
 
-  </div>
+  </main>
 
-  <!-- Script Otomatis Registrasi Service Worker (PWA) -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        // Karena Vite melempar file public ke root dist, panggil langsung '/sw.js'
-        navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('✅ PWA: Service Worker terdaftar beres!', reg))
-          .catch(err => console.error('❌ PWA: Gagal daftar Service Worker:', err));
-      });
-    }
-  </script>
+  <!-- BAGIAN KANAN (DESKTOP) / BAWAH (MOBILE) -->
+  <aside class="bg-white text-slate-800 rounded-t-[2.5rem] md:rounded-none w-full md:w-1/2 lg:w-[45%] xl:w-[40%] p-8 md:p-12 lg:p-16 shadow-[0_-10px_40px_rgba(0,0,0,0.2)] md:shadow-[-10px_0_40px_rgba(0,0,0,0.15)] flex flex-col justify-between items-center z-10 mt-[-2rem] md:mt-0 relative shrink-0">
+      
+      <!-- Konten Kosong buat padding atas di Mobile agar seimbang -->
+      <div class="hidden md:block w-full">
+         <h2 class="text-2xl lg:text-3xl font-black text-[#0B1B3D] mb-2 uppercase tracking-wide text-center">Selamat Datang</h2>
+         <p class="text-xs lg:text-sm font-semibold text-slate-500 text-center">Silakan masuk ke portal manajemen penagihan.</p>
+      </div>
+
+      <!-- Tombol Menuju Login -->
+      <div class="w-full w-max-md my-auto pt-6 md:pt-0">
+         <a href="login.html" class="w-full bg-[#E65C00] hover:bg-orange-600 text-white font-black text-xs sm:text-sm md:text-base py-4 md:py-5 rounded-2xl flex items-center justify-center gap-2 uppercase tracking-widest transition-all active:scale-95 shadow-[0_8px_20px_rgba(230,92,0,0.3)]">
+           <span class="text-lg md:text-xl leading-none pt-0.5">👤</span> AKSES LOGIN PORTAL
+         </a>
+      </div>
+      
+      <!-- Footer Info & Watermark -->
+      <div class="text-center flex flex-col items-center mt-10 md:mt-auto">
+        <a href="index.html" class="w-10 h-10 md:w-12 md:h-12 mb-3 opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all block">
+           <img src="/images/logo.png" alt="Logo Footer" class="w-full h-full object-cover rounded-md" onerror="this.src='https://via.placeholder.com/40'">
+        </a>
+        <p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Aviando Collector System</p>
+        <p class="text-[8px] md:text-[9px] font-bold text-slate-400 mt-1">Developed by PT Teleknologi Prestasi Indonesia</p>
+        <p class="text-[8px] md:text-[9px] font-semibold text-slate-300 mt-2.5 tracking-wider uppercase">All Rights Reserved © 2026 PT Teleknologi Prestasi Indonesia</p>
+      </div>
+
+  </aside>
+
 </body>
 </html>
