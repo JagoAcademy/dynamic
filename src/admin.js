@@ -26,7 +26,6 @@ if (localStorage.getItem('logged_in') !== 'true' || localStorage.getItem('user_r
 
 // Inisialisasi Aplikasi
 const initApp = async () => {
-  const elManual = document.getElementById('manual_date');
   const elExcel = document.getElementById('excel_date'); 
   const today = new Date();
   
@@ -34,8 +33,21 @@ const initApp = async () => {
   const strDate = today.toLocaleDateString('id-ID', options);
   const isoDate = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, '0') + "-" + String(today.getDate()).padStart(2, '0');
 
-  if (elManual) { elManual.value = strDate; elManual.dataset.date = isoDate; }
   if (elExcel) { elExcel.value = strDate; elExcel.dataset.date = isoDate; }
+
+  // 1. Hilangkan tampilan form manual debitur oleh admin
+  const formManual = document.getElementById('formEditDebitur');
+  if (formManual) {
+    const manualCard = formManual.closest('.bg-white') || formManual.parentElement;
+    if (manualCard) {
+      const parentGrid = manualCard.parentElement;
+      manualCard.style.display = 'none';
+      if (parentGrid && parentGrid.className.includes('lg:grid-cols-2')) {
+        parentGrid.classList.remove('lg:grid-cols-2');
+        parentGrid.classList.add('grid-cols-1');
+      }
+    }
+  }
 
   await fetchAllData(); 
 };
@@ -80,7 +92,7 @@ window.closeMobileSidebar = function() {
 }
 
 // =========================================
-// HELPER EKSTRAK IDENTITAS SESUAI TEMPLATE
+// HELPER VALIDASI & FORMAT TEMPLATE
 // =========================================
 function isValidCell(val) {
     if (val === undefined || val === null) return false;
@@ -88,10 +100,123 @@ function isValidCell(val) {
     return str !== '' && str !== '0' && str !== '.' && str !== '-';
 }
 
+// 2. WO buat 3 digit angka (contoh: 177.416174 -> "177", 45 -> "045")
+function formatWO3Digit(val) {
+    if (!isValidCell(val)) return val;
+    const num = Number(String(val).replace(/,/g, '.').replace(/[^\d.-]/g, ''));
+    if (isNaN(num)) return String(val).trim();
+    const rounded = Math.max(0, Math.round(num));
+    return String(rounded).padStart(3, '0');
+}
+
+// 3. Paksa membaca Tanggal-Bulan-Tahun (DD/MM/YYYY) atau serial Excel
+function parseDateDDMMYYYY(val) {
+    if (val === undefined || val === null || String(val).trim() === '' || String(val).trim() === '-') {
+        return null;
+    }
+
+    if (val instanceof Date && !isNaN(val.getTime())) {
+        const d = val.getDate();
+        const m = val.getMonth() + 1;
+        const y = val.getFullYear();
+        return {
+            date: new Date(y, m - 1, d),
+            formatted: `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`
+        };
+    }
+
+    if (typeof val === 'number' && val > 20000 && val < 90000) {
+        const utcDays = Math.floor(val - 25569);
+        const utcValue = utcDays * 86400 * 1000;
+        const dt = new Date(utcValue);
+        const d = dt.getUTCDate();
+        const m = dt.getUTCMonth() + 1;
+        const y = dt.getUTCFullYear();
+        return {
+            date: new Date(y, m - 1, d),
+            formatted: `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`
+        };
+    }
+
+    const str = String(val).trim();
+
+    if (/^\d{5}$/.test(str)) {
+        const numVal = Number(str);
+        if (numVal > 20000 && numVal < 90000) {
+            return parseDateDDMMYYYY(numVal);
+        }
+    }
+
+    // Format ISO YYYY-MM-DD
+    const isoMatch = str.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})(?:[T\s].*)?$/);
+    if (isoMatch) {
+        const y = parseInt(isoMatch[1], 10);
+        const m = parseInt(isoMatch[2], 10);
+        const d = parseInt(isoMatch[3], 10);
+        const dt = new Date(y, m - 1, d);
+        if (dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d) {
+            return {
+                date: dt,
+                formatted: `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`
+            };
+        }
+    }
+
+    // Paksa DD/MM/YYYY atau DD-MM-YYYY atau DD.MM.YYYY (Tanggal - Bulan - Tahun)
+    const dmyMatch = str.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})(?:\s.*)?$/);
+    if (dmyMatch) {
+        const d = parseInt(dmyMatch[1], 10);
+        const m = parseInt(dmyMatch[2], 10);
+        let y = parseInt(dmyMatch[3], 10);
+        if (y < 100) y += 2000;
+        const dt = new Date(y, m - 1, d);
+        if (dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d) {
+            return {
+                date: dt,
+                formatted: `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`
+            };
+        }
+    }
+
+    // Format DD NamaBulan YYYY (contoh: 01 Okt 2026)
+    const monthMap = {
+        jan: 1, januari: 1, january: 1,
+        feb: 2, februari: 2, february: 2,
+        mar: 3, maret: 3, march: 3,
+        apr: 4, april: 4,
+        mei: 5, may: 5,
+        jun: 6, juni: 6, june: 6,
+        jul: 7, juli: 7, july: 7,
+        agu: 8, ags: 8, agustus: 8, aug: 8, august: 8,
+        sep: 9, sept: 9, september: 9,
+        okt: 10, oktober: 10, oct: 10, october: 10,
+        nov: 11, november: 11,
+        des: 12, desember: 12, dec: 12, december: 12
+    };
+    const textMonthMatch = str.match(/^(\d{1,2})[-\s\/.]([a-zA-Z]+)[-\s\/.](\d{2,4})$/);
+    if (textMonthMatch) {
+        const d = parseInt(textMonthMatch[1], 10);
+        const mName = textMonthMatch[2].toLowerCase();
+        let y = parseInt(textMonthMatch[3], 10);
+        if (y < 100) y += 2000;
+        const m = monthMap[mName];
+        if (m) {
+            const dt = new Date(y, m - 1, d);
+            if (dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d) {
+                return {
+                    date: dt,
+                    formatted: `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`
+                };
+            }
+        }
+    }
+
+    return null;
+}
+
 function extractDebiturIdentity(rawData) {
     const keys = Object.keys(rawData || {});
     
-    // 1. Cari NAMA NASABAH (Hindari tertukar dengan NAMA EC atau NAMA KANTOR)
     const namePriority = ['nama nasabah', 'nama debitur', 'nama customer', 'nama', 'name'];
     let nameKey = null;
     for (const target of namePriority) {
@@ -106,8 +231,7 @@ function extractDebiturIdentity(rawData) {
         });
     }
 
-    // 2. Cari NO NASABAH / NO KARTU / NIK
-    const idPriority = ['no nasabah/ no kartu', 'no nasabah', 'no kartu', 'no akun', 'nik', 'debtor', 'user id'];
+    const idPriority = ['no nasabah/ no kartu', 'no nasabah', 'no kartu', 'no debitur', 'no akun', 'nik', 'debtor', 'user id'];
     let idKey = null;
     for (const target of idPriority) {
         idKey = keys.find(k => k.trim().toLowerCase() === target);
@@ -116,7 +240,7 @@ function extractDebiturIdentity(rawData) {
     if (!idKey || !isValidCell(rawData[idKey])) {
         idKey = keys.find(k => {
             const lk = k.trim().toLowerCase();
-            return lk.includes('no nasabah') || lk.includes('no kartu') || lk.includes('no akun') || lk.includes('nik') || lk.includes('id') || lk.includes('ktp');
+            return lk.includes('no nasabah') || lk.includes('no kartu') || lk.includes('no debitur') || lk.includes('no akun') || lk.includes('nik') || lk.includes('id') || lk.includes('ktp');
         });
     }
 
@@ -135,13 +259,11 @@ function extractTemplateLocation(rawData) {
         }
     }
 
-    // Ambil wilayah langsung dari kolom template jika tersedia
     const kelTemplate = isValidCell(normMap['KEL']) ? String(normMap['KEL']).trim() : (isValidCell(normMap['KELURAHAN']) ? String(normMap['KELURAHAN']).trim() : null);
     const kecTemplate = isValidCell(normMap['KEC']) ? String(normMap['KEC']).trim() : (isValidCell(normMap['KECAMATAN']) ? String(normMap['KECAMATAN']).trim() : null);
     const kotaTemplate = isValidCell(normMap['KOTA']) ? String(normMap['KOTA']).trim() : (isValidCell(normMap['CITY']) ? String(normMap['CITY']).trim() : null);
     const posTemplate = isValidCell(normMap['KODE POS']) ? String(normMap['KODE POS']).trim() : (isValidCell(normMap['KODEPOS']) ? String(normMap['KODEPOS']).trim() : null);
 
-    // Susun Alamat Utama dari ALAMAT MAIN -> ALAMAT KTP -> ALAMAT 1..4
     let alamatUtama = '';
     if (isValidCell(normMap['ALAMAT MAIN'])) {
         alamatUtama = String(normMap['ALAMAT MAIN']).trim();
@@ -165,7 +287,6 @@ function extractTemplateLocation(rawData) {
         }
     }
 
-    // Lengkapi alamat utama dengan KEL, KEC, KOTA, KODE POS jika belum tercantum di dalam string alamat
     const extraWilayah = [kelTemplate, kecTemplate, kotaTemplate, posTemplate].filter(w => {
         if (!w) return false;
         return !alamatUtama.toLowerCase().includes(w.toLowerCase());
@@ -186,6 +307,25 @@ function extractTemplateLocation(rawData) {
         kodepos: posTemplate || parsedFallback.kodepos || null,
         provinsi: parsedFallback.provinsi || null
     };
+}
+
+// 5. Cocokkan nilai kolom FC dengan akun collector di database
+function matchCollectorByFC(fcRaw) {
+    if (!isValidCell(fcRaw)) return null;
+    const fcClean = String(fcRaw).trim().toLowerCase();
+    
+    let found = globalCollectors.find(c => 
+        (c.username && c.username.trim().toLowerCase() === fcClean) ||
+        (c.name && c.name.trim().toLowerCase() === fcClean)
+    );
+    if (found) return found;
+
+    if (fcClean.length >= 3) {
+        found = globalCollectors.find(c => 
+            c.name && c.name.trim().toLowerCase().split(/\s+/)[0] === fcClean
+        );
+    }
+    return found || null;
 }
 
 // =========================================
@@ -218,15 +358,13 @@ async function fetchAllRows(tableName) {
 
 
 // =========================================
-// FETCH ALL DATA UTAMA
+// FETCH ALL DATA UTAMA (TANPA MANUAL DEBITUR)
 // =========================================
 async function fetchAllData() {
     const loadingUI = document.getElementById('global-loading');
     if(loadingUI) loadingUI.classList.remove('hidden');
 
     try {
-        // Fetch menggunakan bypass loop untuk mengatasi limit server Supabase
-        const resMan = await fetchAllRows('manual_debitur');
         const resExc = await fetchAllRows('excel_debitur');
         const resPen = await fetchAllRows('penugasan_kolektor');
         
@@ -236,8 +374,6 @@ async function fetchAllData() {
         globalCollectors = resCol || [];
         globalPenugasan = resPen || [];
 
-        const normalizedManual = (resMan || []).map(d => ({ ...d, sumber_tabel: 'manual_debitur' }));
-        
         const normalizedExcel = (resExc || []).map(e => {
             const rawData = e.debitur || {};
             const identity = extractDebiturIdentity(rawData);
@@ -254,7 +390,7 @@ async function fetchAllData() {
             };
         });
 
-        globalDebitur = [...normalizedManual, ...normalizedExcel].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        globalDebitur = [...normalizedExcel].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         const assignedIds = new Set(globalPenugasan.map(p => p.debitur_id));
         unassignedDebitur = globalDebitur.filter(d => !assignedIds.has(d.id));
@@ -402,7 +538,7 @@ function renderAntreanTab() {
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-3 hover:border-orange-200 transition-colors">
            <div class="flex-1">
               <span class="text-[9px] font-black text-orange-600 uppercase tracking-wider bg-orange-50 px-2 py-0.5 rounded-md mb-1 inline-block">🏢 ${d.client}</span>
-              <h3 class="font-black text-slate-800 text-[13px] uppercase">${d.name}</h3><p class="text-[10px] text-slate-500 font-bold mt-0.5">ID: ${d.nik} | Kec. ${d.kecamatan || '-'}</p>
+              <h3 class="font-black text-slate-800 text-[13px] uppercase">${d.name}</h3><p class="text-[10px] text-slate-500 font-bold mt-0.5">No. Kartu/Debitur: ${d.nik} | Kec. ${d.kecamatan || '-'}</p>
            </div>
            <span class="text-[9px] bg-slate-100 text-slate-500 font-bold px-3 py-1.5 rounded-lg border border-slate-200">Menunggu Kolektor</span>
         </div>
@@ -452,7 +588,7 @@ function renderAssignList(dataArray) {
   
   container.innerHTML = `<div class="col-span-full bg-blue-50 px-4 py-3 rounded-xl border border-blue-200 flex gap-3 items-center mb-1"><input type="checkbox" onclick="toggleAllAssign(this)" class="w-5 h-5 cursor-pointer accent-blue-600 rounded"><span class="text-xs font-black text-blue-900 uppercase tracking-wide">Pilih Semua (${dataArray.length} Debitur)</span></div>` + dataArray.map(d => {
     const fullAlamat = [d.alamat_lengkap, d.kelurahan, d.kecamatan].filter(Boolean).join(' | ');
-    return `<label class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4 cursor-pointer hover:border-blue-400 transition-colors"><input type="checkbox" value="${d.id}|${d.sumber_tabel}" onchange="updateSelectedCount()" class="assign-checkbox w-5 h-5 accent-blue-600 rounded mt-1 shadow-sm"><div class="flex-1"><div class="flex items-center gap-2 mb-1"><span class="text-[9px] font-black text-orange-600 uppercase tracking-wider bg-orange-50 px-2 py-0.5 rounded-md">🏢 ${d.client}</span><span class="text-slate-400 text-[9px] font-bold">ID: ${d.nik}</span></div><h3 class="font-black text-[#0B1B3D] text-[13px] uppercase leading-tight">${d.name}</h3><p class="text-[10px] text-slate-500 font-medium mt-1 truncate max-w-[200px]">📍 ${fullAlamat || '-'}</p></div></label>`;
+    return `<label class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4 cursor-pointer hover:border-blue-400 transition-colors"><input type="checkbox" value="${d.id}|${d.sumber_tabel}" onchange="updateSelectedCount()" class="assign-checkbox w-5 h-5 accent-blue-600 rounded mt-1 shadow-sm"><div class="flex-1"><div class="flex items-center gap-2 mb-1"><span class="text-[9px] font-black text-orange-600 uppercase tracking-wider bg-orange-50 px-2 py-0.5 rounded-md">🏢 ${d.client}</span><span class="text-slate-400 text-[9px] font-bold">No: ${d.nik}</span></div><h3 class="font-black text-[#0B1B3D] text-[13px] uppercase leading-tight">${d.name}</h3><p class="text-[10px] text-slate-500 font-medium mt-1 truncate max-w-[200px]">📍 ${fullAlamat || '-'}</p></div></label>`;
   }).join('');
   updateSelectedCount(); 
 }
@@ -645,8 +781,8 @@ function renderMasterTab() {
         ? `<span class="text-[9px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded border border-green-200">Ditugaskan</span>`
         : `<span class="text-[9px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded border border-slate-200">Nganggur</span>`;
 
-    const contactInfo = d.sumber_tabel === 'excel_debitur' ? d.debitur : d.contact_info;
-    const jsonEncoded = encodeURIComponent(JSON.stringify(contactInfo || {}));
+    const contactInfo = d.debitur || d.contact_info || {};
+    const jsonEncoded = encodeURIComponent(JSON.stringify(contactInfo));
 
     return `
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4 hover:border-red-300 transition-colors">
@@ -660,7 +796,7 @@ function renderMasterTab() {
              <span>${d.name}</span>
              <span class="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded text-[9px] shrink-0 border border-blue-100 shadow-sm font-bold">🔍 Cek Data JSON</span>
           </h3>
-          <p class="text-[10px] text-slate-400 font-bold">ID: <span class="text-slate-600">${d.nik}</span> | Masuk: ${d.tanggal_upload}</p>
+          <p class="text-[10px] text-slate-400 font-bold">No. Kartu/Debitur: <span class="text-slate-600">${d.nik}</span> | Masuk: ${d.tanggal_upload}</p>
         </div>
       </div>
     `;
@@ -725,7 +861,7 @@ window.executeMassDelete = async function(isExportPdf) {
            <h2 style="text-align:center; color:#0B1B3D; margin-bottom:5px;">Laporan Penghapusan Master Data ACS</h2>
            <p style="text-align:center; font-size:12px; color:#666; margin-top:0;">Diekspor pada: ${new Date().toLocaleString('id-ID')}</p>
            <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse; font-size:11px; margin-top:20px; border-color:#ccc;">
-             <tr style="background-color:#f1f5f9; color:#333;"><th>No</th><th>Perusahaan Klien</th><th>Nama Debitur</th><th>NIK / ID Akun</th><th>Tanggal Masuk Database</th></tr>
+             <tr style="background-color:#f1f5f9; color:#333;"><th>No</th><th>Perusahaan Klien</th><th>Nama Debitur</th><th>No. Kartu / Debitur</th><th>Tanggal Masuk Database</th></tr>
              ${dataToExport.map((d, index) => `<tr><td style="text-align:center;">${index + 1}</td><td>${d.client}</td><td>${d.name}</td><td>${d.nik}</td><td>${d.tanggal_upload}</td></tr>`).join('')}
            </table>
            <p style="font-size:10px; color:#999; margin-top:30px;">Dokumen ini digenerate secara otomatis oleh Aviando Collector System.</p>
@@ -776,44 +912,6 @@ window.massDeleteAll = async function() {
     } catch (err) { alert("Gagal hapus massal: " + err.message); }
 }
 
-
-// --- INPUT MANUAL & PARSER EXCEL/PDF ---
-window.addJsonField = function() {
-  const container = document.getElementById('jsonb-fields-container');
-  const newRow = document.createElement('div'); newRow.className = "flex gap-2 json-row mt-2";
-  newRow.innerHTML = `<input type="text" placeholder="Label (Cth: Agama)" required class="json-key w-1/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-orange-500"><input type="text" placeholder="Isi Data..." required class="json-val w-2/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"><button type="button" onclick="this.parentElement.remove()" class="bg-red-100 text-red-500 px-3 rounded-lg font-bold hover:bg-red-200">X</button>`;
-  container.appendChild(newRow);
-}
-
-document.getElementById('formEditDebitur')?.addEventListener('submit', async (e) => {
-  e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Menyimpan Data...";
-  const isoUploadDate = document.getElementById('manual_date').dataset.date;
-  
-  const jsonbData = { total_terutang: document.getElementById('input_amount').value, jatuh_tempo: document.getElementById('input_tgl').value };
-  
-  document.querySelectorAll('.json-row').forEach(row => {
-    const key = row.querySelector('.json-key') || row.querySelector('input[readonly]');
-    const val = row.querySelector('.json-val');
-    if (key && val && val.value.trim() !== '') { jsonbData[key.value.trim().replace(/\s+/g, '_').toLowerCase()] = val.value.trim(); }
-  });
-  
-  try {
-    const { error } = await supabase.from('manual_debitur').insert([{ tanggal_upload: isoUploadDate, client: document.getElementById('input_client').value.trim(), name: document.getElementById('input_nama').value.trim(), nik: document.getElementById('input_nik').value.trim(), alamat_lengkap: document.getElementById('input_alamat').value.trim(), kelurahan: document.getElementById('input_kelurahan').value.trim(), kecamatan: document.getElementById('input_kecamatan').value.trim(), kota_kabupaten: document.getElementById('input_kota').value.trim(), kodepos: document.getElementById('input_kodepos').value.trim(), provinsi: document.getElementById('input_provinsi').value.trim(), contact_info: jsonbData }]);
-    
-    if (error) throw error; 
-    alert(`✅ Data berhasil disimpan!`); 
-    e.target.reset(); 
-    
-    document.getElementById('jsonb-fields-container').innerHTML = `<div class="flex gap-2 json-row"><input type="text" value="No WhatsApp" readonly class="w-1/3 bg-slate-100 border border-slate-200 text-slate-500 rounded-lg px-3 py-2 text-xs font-semibold"><input type="text" placeholder="6281234..." required class="json-val w-2/3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"></div>`; 
-    
-    await fetchAllData(); 
-  } catch (err) { 
-      alert("Gagal simpan debitur: " + err.message); 
-  } finally { 
-      btn.innerText = "Simpan Data Manual ke Database"; 
-  }
-});
-
 function parseAlamat(alamatStr) {
   if (!alamatStr) return {}; const str = String(alamatStr);
   const extract = (prefix) => { const rgx = new RegExp(`(?:${prefix})\\s*([a-zA-Z\\s]+?)(?:,|\\b(?:kec|kel|desa|kota|kab|prov)\\b|\\d{5}|$)`, 'i'); const match = str.match(rgx); return match ? match[1].trim() : null; };
@@ -840,7 +938,6 @@ async function parsePDFToJSON(file) {
         
         let rowData = { "_sumber": `PDF Halaman ${i}` };
         
-        // 1. Ekstrak NIK / CC
         const matchCcBri = textNoSpace.match(/(\d{16})/); 
         if (matchCcBri) {
             rowData["NIK"] = matchCcBri[1]; 
@@ -849,31 +946,25 @@ async function parsePDFToJSON(file) {
             if (matchNikUmum) rowData["NIK"] = matchNikUmum[1].trim(); 
         }
         
-        // 2. Ekstrak Nama (Pencegahan Teks "Periode Account")
         let namaDebitur = null;
-        // Regex diperketat, harus nyambung lurus setelah tanda titik dua (:)
         const matchNamaBri = textNormalized.match(/NAMA CUSTOMER\s*:\s*([A-Za-z\s\.\'\-]{3,40})/i); 
         const matchNamaUmum = textNormalized.match(/(?:Nama Debitur|Nama|Name)\s*:\s*([A-Za-z\s\.\'\-]{3,40})/i);
         
         if (matchNamaBri) namaDebitur = matchNamaBri[1].replace(/TELEPON|JENIS/i, '').trim(); 
         else if (matchNamaUmum) namaDebitur = matchNamaUmum[1].trim();
         
-        // Validasi: Kalau ternyata isinya kata "periode", kita buang biar sistem nggak gila
         if (namaDebitur && !namaDebitur.toLowerCase().includes("periode")) {
             rowData["Nama"] = namaDebitur;
         }
         
-        // 3. Ekstrak Uang
         const matchUangBriNoSpace = textNoSpace.match(/Rp\.?(\d{5,})/i); 
         const matchUangNormal = textNormalized.match(/Rp\.?\s*([\d\.,]{5,})/i);
         if (matchUangBriNoSpace) rowData["Total Terutang"] = matchUangBriNoSpace[1]; 
         else if (matchUangNormal) rowData["Total Terutang"] = matchUangNormal[1].replace(/[^\d]/g, '');
         
-        // 4. Ekstrak Alamat
         const matchAlamatBri = textNormalized.match(/ALAMAT[^:]*:\s*(.*?)(?:KANTOR|EMERGENCY|TELEPON|MEMO|$)/i); 
         if (matchAlamatBri) rowData["Alamat Lengkap"] = matchAlamatBri[1].replace(/\b\d{16}\b/g, '').replace(/\|/g, '').trim();
         
-        // 5. Ekstrak Telp & Kolektibilitas
         const matchTelp = textNoSpace.match(/(?:08|628)\d{8,11}/); 
         if (matchTelp) rowData["No WhatsApp"] = matchTelp[0];
         
@@ -911,6 +1002,11 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
     submitBtn.disabled = true;
     
     try {
+        if (globalCollectors.length === 0) {
+            const { data: freshCols } = await supabase.from('users').select('*').eq('role', 'collector');
+            globalCollectors = freshCols || [];
+        }
+
         let extractedRows = []; 
         if (isPDF) { 
             extractedRows = await parsePDFToJSON(file); 
@@ -918,7 +1014,6 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
             const arrayBuffer = await file.arrayBuffer(); 
             const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' }); 
             
-            // Prioritaskan sheet pertama yang memiliki isi (atau sheet 'JUDUL TEMPLATE' jika sheet pertama kosong)
             let targetSheetName = workbook.SheetNames[0];
             extractedRows = XLSX.utils.sheet_to_json(workbook.Sheets[targetSheetName], { defval: '' });
             if (extractedRows.length === 0 && workbook.SheetNames.length > 1) {
@@ -934,9 +1029,9 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
         
         if (!extractedRows || extractedRows.length === 0) throw new Error("File kosong atau format rusak.");
         
-        // Bersihkan nama kolom (hapus spasi berlebih di awal/akhir key) & filter baris kosong/NOTE
         const validPayload = [];
-        for (const rawRow of extractedRows) {
+        for (let idx = 0; idx < extractedRows.length; idx++) {
+            const rawRow = extractedRows[idx];
             const cleanRow = {};
             for (const [k, v] of Object.entries(rawRow)) {
                 const trimmedKey = k.trim();
@@ -944,8 +1039,38 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
             }
 
             const identity = extractDebiturIdentity(cleanRow);
-            // Lewati baris kosong atau baris catatan template (NOTE)
             if (identity.name === 'Tanpa Nama' && identity.nik === '-') continue;
+
+            // 2. WO buat 3 digit angka
+            for (const k of Object.keys(cleanRow)) {
+                if (/^(bln\s*wo|wo)$/i.test(k.trim()) && isValidCell(cleanRow[k])) {
+                    cleanRow[k] = formatWO3Digit(cleanRow[k]);
+                }
+            }
+
+            // 3. Start harus duluan daripada End (paksa baca Tanggal/Bulan/Tahun DD/MM/YYYY)
+            const startKey = Object.keys(cleanRow).find(k => k.trim().toLowerCase() === 'start');
+            const endKey = Object.keys(cleanRow).find(k => k.trim().toLowerCase() === 'end');
+            const hasStart = startKey && isValidCell(cleanRow[startKey]);
+            const hasEnd = endKey && isValidCell(cleanRow[endKey]);
+
+            if (hasStart || hasEnd) {
+                const parsedStart = hasStart ? parseDateDDMMYYYY(cleanRow[startKey]) : null;
+                const parsedEnd = hasEnd ? parseDateDDMMYYYY(cleanRow[endKey]) : null;
+
+                if (hasStart && !parsedStart) {
+                    throw new Error(`Baris ke-${idx + 2} (${identity.name}): Format tanggal START "${cleanRow[startKey]}" tidak valid. Wajib Tanggal/Bulan/Tahun (DD/MM/YYYY).`);
+                }
+                if (hasEnd && !parsedEnd) {
+                    throw new Error(`Baris ke-${idx + 2} (${identity.name}): Format tanggal END "${cleanRow[endKey]}" tidak valid. Wajib Tanggal/Bulan/Tahun (DD/MM/YYYY).`);
+                }
+                if (parsedStart && parsedEnd && parsedStart.date.getTime() >= parsedEnd.date.getTime()) {
+                    throw new Error(`Baris ke-${idx + 2} (${identity.name}): Tanggal START (${parsedStart.formatted}) harus lebih awal (duluan) daripada tanggal END (${parsedEnd.formatted})!`);
+                }
+
+                if (parsedStart) cleanRow[startKey] = parsedStart.formatted;
+                if (parsedEnd) cleanRow[endKey] = parsedEnd.formatted;
+            }
 
             const locInfo = extractTemplateLocation(cleanRow);
             validPayload.push({
@@ -965,15 +1090,60 @@ document.getElementById('formUploadExcel')?.addEventListener('submit', async (e)
         if (validPayload.length === 0) throw new Error("Tidak ditemukan baris data nasabah yang valid di dalam file.");
         submitBtn.innerText = `Menyimpan ${validPayload.length} Baris...`;
         
-        // Data dipecah per-500 agar tidak kena limit JSON payload dari API Supabase
         const chunkSize = 500;
+        let insertedRecords = [];
         for (let i = 0; i < validPayload.length; i += chunkSize) {
             const chunk = validPayload.slice(i, i + chunkSize);
-            const { error } = await supabase.from('excel_debitur').insert(chunk);
+            const { data: insertedChunk, error } = await supabase
+                .from('excel_debitur')
+                .insert(chunk)
+                .select('id, debitur');
             if (error) throw error;
+            if (insertedChunk) insertedRecords = insertedRecords.concat(insertedChunk);
+        }
+
+        // 5. Auto-assign tugas ke akun collector jika kolom FC terisi
+        const autoAssignments = [];
+        const unmatchedFC = new Set();
+
+        for (const rec of insertedRecords) {
+            const debJson = rec.debitur || {};
+            const fcKey = Object.keys(debJson).find(k => /^(fc|field\s*collector)$/i.test(k.trim()));
+            const fcVal = fcKey ? debJson[fcKey] : null;
+
+            if (isValidCell(fcVal)) {
+                const matchedCol = matchCollectorByFC(fcVal);
+                if (matchedCol) {
+                    autoAssignments.push({
+                        collector_id: matchedCol.id,
+                        debitur_id: rec.id,
+                        sumber_tabel: 'excel_debitur',
+                        status: 'Ditugaskan'
+                    });
+                } else {
+                    unmatchedFC.add(String(fcVal).trim());
+                }
+            }
+        }
+
+        if (autoAssignments.length > 0) {
+            submitBtn.innerText = `Menugaskan ${autoAssignments.length} Data FC...`;
+            for (let i = 0; i < autoAssignments.length; i += chunkSize) {
+                const assignChunk = autoAssignments.slice(i, i + chunkSize);
+                const { error: assignErr } = await supabase.from('penugasan_kolektor').insert(assignChunk);
+                if (assignErr) throw assignErr;
+            }
         }
         
-        alert(`✅ UPLOAD BERHASIL!\n\n${validPayload.length} data sukses masuk.`); 
+        let msgSuccess = `✅ UPLOAD BERHASIL!\n\n• ${validPayload.length} data sukses masuk.`;
+        if (autoAssignments.length > 0) {
+            msgSuccess += `\n• 🤖 ${autoAssignments.length} data otomatis ditugaskan sesuai kolom FC.`;
+        }
+        if (unmatchedFC.size > 0) {
+            msgSuccess += `\n• ⚠️ Nama FC tidak ditemukan di akun kolektor (masuk antrean): ${Array.from(unmatchedFC).join(', ')}`;
+        }
+
+        alert(msgSuccess); 
         closeExcelModal(); 
         await fetchAllData(); 
         

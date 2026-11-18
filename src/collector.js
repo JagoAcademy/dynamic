@@ -29,6 +29,40 @@ function isValidVal(val) {
     return str !== '' && str !== '0' && str !== '.' && str !== '-';
 }
 
+// 2. Format WO menjadi 3 digit angka
+function formatWO3Digit(val) {
+    if (!isValidVal(val)) return '-';
+    const num = Number(String(val).replace(/,/g, '.').replace(/[^\d.-]/g, ''));
+    if (isNaN(num)) return String(val).trim();
+    const rounded = Math.max(0, Math.round(num));
+    return String(rounded).padStart(3, '0');
+}
+
+// 3. Format tampilan tanggal START / END (DD/MM/YYYY)
+function formatDateDDMMYYYYDisplay(val) {
+    if (!isValidVal(val)) return '-';
+    if (typeof val === 'number' && val > 20000 && val < 90000) {
+        const utcDays = Math.floor(val - 25569);
+        const dt = new Date(utcDays * 86400 * 1000);
+        return `${String(dt.getUTCDate()).padStart(2, '0')}/${String(dt.getUTCMonth() + 1).padStart(2, '0')}/${dt.getUTCFullYear()}`;
+    }
+    const str = String(val).trim();
+    if (/^\d{5}$/.test(str)) {
+        const numVal = Number(str);
+        if (numVal > 20000 && numVal < 90000) return formatDateDDMMYYYYDisplay(numVal);
+    }
+    const isoMatch = str.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})(?:[T\s].*)?$/);
+    if (isoMatch) {
+        return `${isoMatch[3].padStart(2, '0')}/${isoMatch[2].padStart(2, '0')}/${isoMatch[1]}`;
+    }
+    const dmyMatch = str.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})(?:\s.*)?$/);
+    if (dmyMatch) {
+        const y = dmyMatch[3].length === 2 ? `20${dmyMatch[3]}` : dmyMatch[3];
+        return `${dmyMatch[1].padStart(2, '0')}/${dmyMatch[2].padStart(2, '0')}/${y}`;
+    }
+    return str;
+}
+
 function getDebiturName(db, sumberTabel) {
     if (sumberTabel === 'excel_debitur' && db.debitur) {
         const raw = db.debitur;
@@ -46,6 +80,24 @@ function getDebiturName(db, sumberTabel) {
         if (fallback && isValidVal(raw[fallback])) return String(raw[fallback]).trim();
     }
     return db.name || 'Tanpa Nama';
+}
+
+// 4. Ekstrak Nomor Kartu / No Debitur untuk posisi paling atas
+function getDebiturCardOrAccountNo(db, contactInfo) {
+    if (contactInfo) {
+        const keys = Object.keys(contactInfo);
+        const priority = ['no nasabah/ no kartu', 'no kartu', 'no nasabah', 'no debitur', 'no akun', 'nik', 'debtor', 'user id'];
+        for (const target of priority) {
+            const found = keys.find(k => k.trim().toLowerCase() === target);
+            if (found && isValidVal(contactInfo[found])) return String(contactInfo[found]).trim();
+        }
+        const fallback = keys.find(k => {
+            const lk = k.trim().toLowerCase();
+            return lk.includes('no kartu') || lk.includes('no nasabah') || lk.includes('no debitur') || lk.includes('no akun') || lk.includes('nik');
+        });
+        if (fallback && isValidVal(contactInfo[fallback])) return String(contactInfo[fallback]).trim();
+    }
+    return isValidVal(db.nik) ? String(db.nik).trim() : '-';
 }
 
 function getDebiturAmount(contactInfo) {
@@ -139,16 +191,17 @@ async function loadCollectorTasks() {
              
             if (!detailError && debiturDetail) {
                 const dName = getDebiturName(debiturDetail, task.sumber_tabel);
+                const cInfo = task.sumber_tabel === 'excel_debitur' ? debiturDetail.debitur : debiturDetail.contact_info;
+                const dNo = getDebiturCardOrAccountNo(debiturDetail, cInfo);
                 
                 finalTasks.push({ 
                     ...task, 
                     detail_debitur: debiturDetail, 
-                    search_name: String(dName).toLowerCase() 
+                    search_name: `${String(dName).toLowerCase()} ${String(dNo).toLowerCase()}`
                 });
             }
         }
 
-        // Sorting: Tugas yang belum dikerjakan ("Ditugaskan") muncul paling atas
         finalTasks.sort((a, b) => {
             if (a.status === 'Ditugaskan' && b.status !== 'Ditugaskan') return -1;
             if (a.status !== 'Ditugaskan' && b.status === 'Ditugaskan') return 1;
@@ -167,7 +220,7 @@ async function loadCollectorTasks() {
 }
 
 // ==========================================
-// FUNGSI PEMBANTU (BACKGROUND CARD)
+// FUNGSI PEMBANTU (BACKGROUND CARD & BADGE)
 // ==========================================
 function getCardBackground(status) {
     if (!status || status === 'Ditugaskan') return 'bg-white border-slate-200 hover:border-orange-300';
@@ -177,9 +230,6 @@ function getCardBackground(status) {
     return 'bg-red-50/40 border-red-200 hover:border-red-400';
 }
 
-// ==========================================
-// FUNGSI PEMBANTU (BADGE STATUS)
-// ==========================================
 function getStatusBadge(status) {
     if (!status || status === 'Ditugaskan') {
         return `<span class="text-[10px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest border border-slate-200">⏳ Belum Dikerjakan</span>`;
@@ -261,6 +311,7 @@ function renderTaskPage() {
         const db = task.detail_debitur;
         const namaDebitur = getDebiturName(db, task.sumber_tabel);
         const contactInfo = task.sumber_tabel === 'excel_debitur' ? db.debitur : db.contact_info;
+        const noKartuDebitur = getDebiturCardOrAccountNo(db, contactInfo);
         
         const numericAmount = getDebiturAmount(contactInfo);
         const formatRp = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(numericAmount);
@@ -291,11 +342,17 @@ function renderTaskPage() {
 
         return `
             <div class="${cardBgClass} p-5 rounded-2xl border shadow-[0_2px_15px_-4px_rgba(0,0,0,0.05)] flex flex-col h-full transition-colors">
-                <div class="flex justify-between items-start mb-3">
+                <div class="flex justify-between items-start mb-2.5">
                     <span class="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest border border-slate-200">
                         🏢 ${db.client || '-'}
                     </span>
                     ${badgeStatus}
+                </div>
+
+                <!-- 4. INFORMASI NOMOR KARTU / NO DEBITUR PALING ATAS -->
+                <div class="bg-slate-100/90 border border-slate-200 rounded-lg px-2.5 py-1.5 mb-2.5 flex items-center justify-between gap-2">
+                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-wider shrink-0">💳 No. Kartu / Debitur</span>
+                    <span class="text-[11px] font-black text-[#0B1B3D] tracking-wide truncate">${noKartuDebitur}</span>
                 </div>
                 
                 <h3 class="font-black text-[#0B1B3D] text-[15px] uppercase leading-tight mb-1">${namaDebitur}</h3>
@@ -329,11 +386,10 @@ function renderTaskPage() {
 
 
 // ==========================================
-// 3. LOGIKA MODAL RINCIAN (BONGKAR FULL TEMPLATE & MAPS)
+// 3. LOGIKA MODAL RINCIAN (NO KARTU/DEBITUR PALING ATAS, BUKAN DI COLLECTOR FIELD)
 // ==========================================
 function formatTemplateLabel(rawKey) {
     const k = rawKey.trim().toUpperCase();
-    // Rapikan penamaan kolom duplikat dari Excel (KOTA.1 / KOTA_1 untuk Kantor, KOTA.2 / KOTA_2 untuk EC)
     if (k === 'KOTA.1' || k === 'KOTA_1') return 'KOTA KANTOR';
     if (k === 'KODE POS.1' || k === 'KODE POS_1') return 'KODE POS KANTOR';
     if (k === 'KOTA.2' || k === 'KOTA_2') return 'KOTA EC';
@@ -362,29 +418,35 @@ window.openModalDetail = function(nama, alamat, jsonStrEncoded) {
     document.getElementById('detail_nama').innerText = nama;
     document.getElementById('detail_alamat').innerText = alamat;
     
-    // UPDATE GOOGLE MAPS LINK OTOMATIS
     const queryMaps = alamat !== '-' ? alamat : (nama + ' ' + (infoData.KOTA || infoData.KEC || infoData.KECAMATAN || ''));
     document.getElementById('btn_maps_link').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryMaps)}`;
 
     const listContainer = document.getElementById('detail_json_list');
     
+    let htmlIdentitasAtas = '';
     let htmlTagihan = ''; 
     let htmlPribadi = ''; 
     let htmlAlamat = '';
     let htmlKantor = '';
     let htmlEC = '';
-    let htmlLainnya = '';
+    let htmlCollectorField = '';
     
     for (const [key, value] of Object.entries(infoData)) {
         const lowerKey = key.trim().toLowerCase();
         
-        // Lewati nama utama yang sudah tampil di judul modal & metadata internal
         if (lowerKey === 'nama nasabah' || lowerKey === 'nama' || lowerKey === 'name' || lowerKey === '_sumber') continue;
         
         const cleanKey = formatTemplateLabel(key); 
         let cleanValue = (value !== undefined && value !== null && String(value).trim() !== '') ? String(value).trim() : '-';
 
-        // Format angka jadi Rupiah untuk seluruh kolom nominal keuangan pada template
+        if (/^(bln\s*wo|wo)$/i.test(lowerKey) && cleanValue !== '-') {
+            cleanValue = formatWO3Digit(cleanValue);
+        }
+
+        if ((lowerKey === 'start' || lowerKey === 'end') && cleanValue !== '-') {
+            cleanValue = formatDateDDMMYYYYDisplay(cleanValue);
+        }
+
         const isMoneyCol = /^(os|principal|limit|lpa|sum\s*pay|total\s*terutang|terutang|tagihan|amount|installment)$/i.test(lowerKey) ||
                            lowerKey.includes('terutang') || lowerKey.includes('tagihan') || lowerKey.includes('principal');
         if (isMoneyCol && cleanValue !== '-') {
@@ -394,7 +456,6 @@ window.openModalDetail = function(nama, alamat, jsonStrEncoded) {
             }
         }
 
-        // Format Virtual Account (VA) jika berbentuk JSON multi-bank
         if (lowerKey === 'va' && cleanValue !== '-') {
             cleanValue = formatVAValue(cleanValue);
         }
@@ -406,31 +467,41 @@ window.openModalDetail = function(nama, alamat, jsonStrEncoded) {
             </div>
         `;
         
-        // Pengelompokan Kategori sesuai Struktur Lengkap Template
-        if (lowerKey.match(/^(os|principal|limit|dpd|lpa|lpd|lpc|tenor|va|kartu|sum\s*pay|open\s*date|tahun\s*wo|bln\s*wo|aktifasi|loan\s*type|transaksi\s*akhir|act\s*type)/) ||
+        // 4. NOMOR KARTU / NO DEBITUR -> PALING ATAS (BUKAN DI COLLECTOR FIELD)
+        if (lowerKey.match(/^(no\s*nasabah\/?\s*no\s*kartu|no\s*kartu|no\s*nasabah|no\s*debitur|no\s*akun|debtor|user\s*id|nik)$/) ||
+            lowerKey.includes('no kartu') || lowerKey.includes('no nasabah') || lowerKey.includes('no debitur')) {
+            htmlIdentitasAtas += rowHtml;
+        }
+        else if (lowerKey.match(/^(os|principal|limit|dpd|lpa|lpd|lpc|tenor|va|kartu|sum\s*pay|open\s*date|tahun\s*wo|bln\s*wo|wo|aktifasi|loan\s*type|transaksi\s*akhir|act\s*type)/) ||
             lowerKey.match(/amount|terutang|tagihan|installment|byr|bayar|loan/)) { 
             htmlTagihan += rowHtml; 
-        } else if (lowerKey.match(/^(ttl|agama|status|gender|sex|ibu\s*kandung|kerjaan|pekerjaan)/) ||
+        } 
+        else if (lowerKey.match(/^(ttl|agama|status|gender|sex|ibu\s*kandung|kerjaan|pekerjaan)/) ||
                    lowerKey.match(/lahir|mother|ibu|sttus/)) { 
             htmlPribadi += rowHtml; 
-        } else if (lowerKey.includes('kantor') || lowerKey === 'kota.1' || lowerKey === 'kota_1' || lowerKey === 'kode pos.1' || lowerKey === 'kode pos_1') {
+        } 
+        else if (lowerKey.includes('kantor') || lowerKey === 'kota.1' || lowerKey === 'kota_1' || lowerKey === 'kode pos.1' || lowerKey === 'kode pos_1') {
             htmlKantor += rowHtml;
-        } else if (lowerKey.includes(' ec') || lowerKey.startsWith('ec') || lowerKey === 'kota.2' || lowerKey === 'kota_2' || lowerKey === 'kode pos.2' || lowerKey === 'kode pos_2') {
+        } 
+        else if (lowerKey.includes(' ec') || lowerKey.startsWith('ec') || lowerKey === 'kota.2' || lowerKey === 'kota_2' || lowerKey === 'kode pos.2' || lowerKey === 'kode pos_2') {
             htmlEC += rowHtml;
-        } else if (lowerKey.match(/^(alamat|kota|kode\s*pos|kec|kel|city|kecamatan|kelurahan|provinsi)/)) {
+        } 
+        else if (lowerKey.match(/^(alamat|kota|kode\s*pos|kec|kel|city|kecamatan|kelurahan|provinsi)/)) {
             htmlAlamat += rowHtml;
-        } else { 
-            htmlLainnya += rowHtml; 
+        } 
+        else { 
+            htmlCollectorField += rowHtml; 
         }
     }
     
     listContainer.innerHTML = `
+        ${htmlIdentitasAtas ? `<div class="mb-4 bg-orange-50/50 p-3 rounded-xl border border-orange-200"><div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-orange-200"><span class="text-sm">💳</span><p class="text-[10px] font-black text-[#E65C00] uppercase tracking-widest">Nomor Kartu & Identitas Debitur</p></div>${htmlIdentitasAtas}</div>` : ''}
         ${htmlTagihan ? `<div class="mb-4 bg-red-50/30 p-3 rounded-xl border border-red-100"><div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-red-100"><span class="text-sm">💰</span><p class="text-[10px] font-black text-red-600 uppercase tracking-widest">Detail Keuangan & Pinjaman</p></div>${htmlTagihan}</div>` : ''}
         ${htmlPribadi ? `<div class="mb-4 bg-blue-50/30 p-3 rounded-xl border border-blue-100"><div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-blue-100"><span class="text-sm">👤</span><p class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Profil Pribadi</p></div>${htmlPribadi}</div>` : ''}
         ${htmlAlamat ? `<div class="mb-4 bg-emerald-50/30 p-3 rounded-xl border border-emerald-100"><div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-emerald-100"><span class="text-sm">🏠</span><p class="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Alamat Domisili & KTP</p></div>${htmlAlamat}</div>` : ''}
         ${htmlKantor ? `<div class="mb-4 bg-amber-50/30 p-3 rounded-xl border border-amber-100"><div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-amber-100"><span class="text-sm">🏢</span><p class="text-[10px] font-black text-amber-700 uppercase tracking-widest">Data Kantor & Pekerjaan</p></div>${htmlKantor}</div>` : ''}
         ${htmlEC ? `<div class="mb-4 bg-purple-50/30 p-3 rounded-xl border border-purple-100"><div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-purple-100"><span class="text-sm">☎️</span><p class="text-[10px] font-black text-purple-700 uppercase tracking-widest">Emergency Contact (EC)</p></div>${htmlEC}</div>` : ''}
-        ${htmlLainnya ? `<div class="mb-2 bg-slate-50/60 p-3 rounded-xl border border-slate-200"><div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-200"><span class="text-sm">📋</span><p class="text-[10px] font-black text-slate-600 uppercase tracking-widest">Akun, Kontak & Penugasan</p></div>${htmlLainnya}</div>` : ''}
+        ${htmlCollectorField ? `<div class="mb-2 bg-slate-50/60 p-3 rounded-xl border border-slate-200"><div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-200"><span class="text-sm">📋</span><p class="text-[10px] font-black text-slate-600 uppercase tracking-widest">Kontak & Collector Field</p></div>${htmlCollectorField}</div>` : ''}
     `;
     
     const paramTitle = listContainer.previousElementSibling; 
@@ -453,8 +524,6 @@ window.closeModalDetail = function() {
 // ==========================================
 // 4. LOGIKA MODAL EKSEKUSI TUGAS
 // ==========================================
-
-// Fungsi Auto-Ketik Format Rupiah
 window.formatRupiahInput = function(input) {
     let val = input.value.replace(/\D/g, '');
     if (val !== '') { 
@@ -467,7 +536,6 @@ window.openModalEksekusi = function(penugasanId, nama) {
     document.getElementById('hidden_penugasan_id').value = penugasanId; 
     document.getElementById('modalDebiturName').innerText = nama;
     
-    // SETUP TANGGAL & WAKTU EKSEKUSI (Format: 24 Okt 2023, 14:30)
     const now = new Date(); 
     const options = { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' };
     document.getElementById('waktu_eksekusi').value = now.toLocaleDateString('id-ID', options).replace(/\./g, ':');
@@ -476,7 +544,7 @@ window.openModalEksekusi = function(penugasanId, nama) {
     document.getElementById('modalEksekusi').classList.add('flex'); 
     document.body.style.overflow = 'hidden'; 
     
-    toggleJanjiBayar(); // Reset UI state saat dibuka
+    toggleJanjiBayar();
 }
 
 window.closeModalEksekusi = function() {
@@ -488,20 +556,17 @@ window.closeModalEksekusi = function() {
     document.body.style.overflow = 'auto'; 
 }
 
-// Munculkan nama file saat user berhasil upload foto/screenshot
 window.previewFileName = function(input) {
     if(input.files && input.files[0]) { 
         document.getElementById('labelFoto').innerHTML = `<span class="text-green-600 font-black">✅ FOTO / BUKTI SIAP</span><br><span class="text-[9px] mt-1 text-slate-500">${input.files[0].name}</span>`; 
     }
 }
 
-// Logika Hide/Show Input Janji Bayar & Nominal Uang
 window.toggleJanjiBayar = function() {
     const val = document.getElementById('hasil_tindak_lanjut').value; 
     const wrapDate = document.getElementById('wrapper_janji_bayar'); 
     const wrapNominal = document.getElementById('wrapper_nominal');
     
-    // Munculkan Tanggal Janji jika PTP / Cicil
     if(val.includes('Janji') || val.includes('Cicil')) { 
         wrapDate.style.display = 'block'; 
     } else { 
@@ -509,7 +574,6 @@ window.toggleJanjiBayar = function() {
         document.getElementById('tgl_janji').value = ''; 
     }
 
-    // Munculkan Input Nominal Uang jika ada transaksi (Janji, Cicil, Lunas)
     if(val.includes('Janji') || val.includes('Sebagian') || val.includes('Lunas') || val.includes('Cicil')) { 
         wrapNominal.style.display = 'block'; 
     } else { 
@@ -531,7 +595,6 @@ document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e
     const catatanVal = document.getElementById('catatan').value; 
     const waktuVal = document.getElementById('waktu_eksekusi').value;
     
-    // Bersihkan titik Rupiah, ubah jadi integer murni
     const nominalRaw = document.getElementById('nominal_bayar').value.replace(/\D/g, ''); 
     const nominalVal = nominalRaw ? parseInt(nominalRaw) : null;
     
@@ -546,7 +609,6 @@ document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e
     btn.disabled = true;
 
     try {
-        // Upload Foto ke Storage Supabase
         const fileExt = fileBukti.name.split('.').pop(); 
         const fileName = `bukti_${penugasanId}_${Date.now()}.${fileExt}`;
         
@@ -556,12 +618,10 @@ document.getElementById('formLogAktivitas')?.addEventListener('submit', async (e
             
         if (uploadError) throw new Error("Gagal upload foto: " + uploadError.message);
         
-        // Ambil URL Publik
         const { data: { publicUrl } } = supabase.storage.from('bukti_kunjungan').getPublicUrl(fileName);
         
         btn.innerHTML = "⏳ MENYIMPAN DATA...";
 
-        // Update Tabel Penugasan
         const { error: updateError } = await supabase.from('penugasan_kolektor')
             .update({ 
                 status: statusVal, 
